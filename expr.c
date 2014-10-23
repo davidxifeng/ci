@@ -6,14 +6,15 @@
 extern char *p, *lp;
 extern char *data;
 
-extern int tk, src, line, *le, *e, ival, *id, *sym;
+extern int src, line, *le, *e, ival, *id, *sym;
+extern enum Token tk;
 
 extern int loc; // local variable offset
 extern int ty;  // current expression type
 
 void parse_expr() {
     int t, *d;
-    switch (tk) {
+    switch ((int)tk) {
         case 0:
             printf("%d: unexpected eof in expression\n", line);
             exit(-1);

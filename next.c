@@ -7,7 +7,8 @@
 extern char *p, *lp;
 extern char *data;
 
-extern int tk, src, line, *le, *e, ival, *id, *sym;
+extern int src, line, *le, *e, ival, *id, *sym;
+extern enum Token tk;
 
 void dump_source() {
     // TODO: fix LEV opcode of function display bug

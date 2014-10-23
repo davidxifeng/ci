@@ -2,11 +2,17 @@
 
 // tokens and classes (operators last and in precedence order)
 enum Token {
-  Num = 128, Fun, Sys, Glo, Loc, Id,
-  Char, Else, Enum, If, Int, Return, While,
-  Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge,
-  Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
+    // " ~ ; ! { } ( ) ] , :
+    Num = 128, Fun, Sys, Glo, Loc, Id,
+
+    // keywords
+    Char, Else, Enum, If, Int, Return, While,
+
+    // operators
+    Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge,
+    Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
 };
+
 
 // opcodes
 enum Opcodes {
