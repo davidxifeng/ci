@@ -1,4 +1,6 @@
 
+ci_bin:
+	clang -m32 -O -o ci ci.c
 
-target:
+c4_bin:
 	clang -Wno-return-type -m32 -O -o c4 c4.c
