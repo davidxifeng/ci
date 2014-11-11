@@ -22,3 +22,4 @@ enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
 int run_c(int argc, char **argv, int debug);
 
+extern const char *op_codes;

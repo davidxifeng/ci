@@ -6,12 +6,21 @@
 
 extern int * sym;
 
+const char *op_codes =
+    "LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,"
+    "LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,"
+
+    "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,"
+    "SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,"
+
+    "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,";
+
 int run_c(int argc, char **argv, int debug) {
     int *pc, *sp, *bp, a, cycle; // vm registers
 
     int *id = sym, *idmain;
     while (id[Tk]) {
-        if (!memcmp((char *)id[Name], "main", 4)) {
+        if (!memcmp((const void *)id[Name], "main", 4)) {
             idmain = id;
             break;
         }
@@ -39,16 +48,16 @@ int run_c(int argc, char **argv, int debug) {
     *--sp = (int)argv;
     *--sp = (int)t;
 
-    // run...
     cycle = 0;
     while (1) {
         i = *pc++; ++cycle;
         if (debug) {
-        printf("%d> %.4s", cycle,
-            &"LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,"
-            "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,"
-            "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,"[i * 5]);
-        if (i <= ADJ) printf(" %d\n", *pc); else printf("\n");
+            printf("%d> %.4s", cycle, &op_codes[i * 5]);
+            if (i <= ADJ) {
+                printf(" %d\n", *pc);
+            } else {
+                printf("\n");
+            }
         }
         if      (i == LEA) a = (int)(bp + *pc++);                             // load local address
         else if (i == IMM) a = *pc++;                                         // load global address or immediate
@@ -92,6 +101,5 @@ int run_c(int argc, char **argv, int debug) {
         else if (i == EXIT) { printf("exit(%d) cycle = %d\n", *sp, cycle); return *sp; }
         else { printf("unknown instruction = %d! cycle = %d\n", i, cycle); return -1; }
     }
-
-
+    return 0;
 }

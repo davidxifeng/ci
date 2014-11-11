@@ -29,15 +29,12 @@ void next() {
   while (1) {
     if (!(tk = *p)) return;
     ++p;
-    if (tk == '\n')
-    {
+    if (tk == '\n') {
       if (src) {
-        printf("%d: %.*s", line, p - lp, lp);
+        printf("%d: %.*s", line, (int)(p - lp), lp);
         lp = p;
         while (le < e) {
-          printf("%8.4s", &"LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,"
-                           "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,"
-                           "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,"[*++le * 5]);
+          printf("%8.4s",&op_codes[*++le * 5]);
           if (*le <= ADJ) printf(" %d\n", *++le); else printf("\n");
         }
       }
@@ -291,7 +288,6 @@ void stmt()
 }
 
 int main(int argc, char **argv) {
-    FILE *fd;
     int bt, ty, poolsz;
     int i, *t; // temps
 
@@ -336,6 +332,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    FILE *fd;
     if ((fd = fopen(*argv, "r")) == 0) {
         printf("could not fopen(%s)\n", *argv);
         return -1;
