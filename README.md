@@ -1,14 +1,9 @@
-c4 - C in four functions
-========================
+# ci - a little C interpreter
 
-An exercise in minimalism.
+a little C interpreter from [c4](https://github.com/rswier/c4).
 
-Try the following:
+## TODO
 
-    gcc -o c4 c4.c  (you may need the -m32 option on 64bit machines)
-    ./c4 hello.c
-    ./c4 -s hello.c
-    
-    ./c4 c4.c hello.c
-    ./c4 c4.c c4.c hello.c
-
+* code refact
+* more complete C99 support
+* much more to be design~
