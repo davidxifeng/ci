@@ -1,6 +1,6 @@
 
 ci_bin:
-	clang -m32 -O -o ci ci.c vm.c
+	clang -m32 -O -o ci ci.c vm.c next.c expr.c stmt.c
 
 test_ci:
 	./ci test/ci.c hello.c

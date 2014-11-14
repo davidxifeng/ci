@@ -1,6 +1,5 @@
 #pragma once
 
-
 // tokens and classes (operators last and in precedence order)
 enum {
   Num = 128, Fun, Sys, Glo, Loc, Id,
@@ -19,7 +18,9 @@ enum { CHAR, INT, PTR };
 // identifier offsets (since we can't create an ident struct)
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
-
 int run_c(int argc, char **argv, int debug);
+void next();
+void expr(int lev);
+void stmt();
 
 extern const char *op_codes;
