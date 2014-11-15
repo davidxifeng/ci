@@ -48,7 +48,27 @@ void next() {
             return;
         } else if (tk >= '0' && tk <= '9') {
             ival = tk - '0';
-            while (*p >= '0' && *p <= '9') ival = ival * 10 + *p++ - '0';
+            if (*p == 'x' || *p == 'X') {
+                int v;
+                p++;
+                while (1) {
+                    v = *p;
+                    if (v >= '0' && v <= '9') {
+                    } else if (v >= 'A' && v <= 'F') {
+                        v -= 7; // 'A' - ('9' + 1) = 7
+                    } else if (v >= 'a' && v <= 'f') {
+                        v -= 39; // 'a' - ('9' + 1) = 7
+                    } else {
+                        break;
+                    }
+                    ival = ival * 16 + v - '0';
+                    p++;
+                }
+            } else {
+                while (*p >= '0' && *p <= '9') {
+                    ival = ival * 10 + *p++ - '0';
+                }
+            }
             tk = Num;
             return;
         } else if (tk == '/') {

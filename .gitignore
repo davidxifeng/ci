@@ -3,4 +3,5 @@
 /test
 
 *.o
+a.out
 *.asm

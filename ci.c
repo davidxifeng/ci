@@ -1,9 +1,5 @@
 // ci.c - a little C interpreter
 
-// char, int, and pointer types
-// if, while, return, and expression statements
-// just enough features to allow self-compilation and a bit more
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
