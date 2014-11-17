@@ -11,8 +11,7 @@ extern int tk, src, line, *le, *e, ival, *id, *sym;
 
 void next() {
     char *pp;
-    while (1) {
-        if (!(tk = *p)) return;
+    while ((tk = *p)) {
         ++p;
         if (tk == '\n') {
             // use callback to print compile info
@@ -49,9 +48,9 @@ void next() {
         } else if (tk >= '0' && tk <= '9') {
             ival = tk - '0';
             if (*p == 'x' || *p == 'X') {
-                int v;
                 p++;
                 while (1) {
+                    int v;
                     v = *p;
                     if (v >= '0' && v <= '9') {
                     } else if (v >= 'A' && v <= 'F') {

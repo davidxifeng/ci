@@ -1,18 +1,19 @@
 #include <stdio.h>
 
-int test_hex() {
-    int i;
-    i = 0xf;
-    printf("i is %d\n", i);
-    i = 0xFF;
-    printf("i is %d\n", i);
-    i = 0x01F3c;
-    printf("i is %d\n", i);
+char c;
 
+// global/local imm load/store
+int test_hex() {
+    char *pc;
+    char **ppc;
+    pc = &c;
+    ppc = &pc;
+    printf("c is %c\n", **ppc);
     return 0;
 }
 
 int main() {
+    c = 'X';
     test_hex();
     return 0;
 }

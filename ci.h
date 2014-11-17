@@ -13,7 +13,9 @@ enum { LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,
        OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT  };
 
 // types
-enum { CHAR, INT, PTR };
+// 1. basic types
+// 2. pointer types: basic type + n * ptr
+enum { CHAR, INT, /*add new types here*/ PTR };
 
 // identifier offsets (since we can't create an ident struct)
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
