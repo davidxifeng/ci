@@ -20,74 +20,9 @@ int *e, *le,  // current position in emitted code
     line,     // current line number
     src;      // print source and assembly flag
 
-
-int main(int argc, char **argv) {
-    int bt, ty, poolsz;
-    int i, *t; // temps
-
-    int debug = 0;    // print executed instructions
-
-    --argc; ++argv;
-    if (argc > 0 && **argv == '-' && (*argv)[1] == 's') { src = 1; --argc; ++argv; }
-    if (argc > 0 && **argv == '-' && (*argv)[1] == 'd') { debug = 1; --argc; ++argv; }
-    if (argc < 1) { printf("usage: c4 [-s] [-d] file ...\n"); return 0; }
-
-    poolsz = 256*1024; // arbitrary size
-    if (!(sym = malloc(poolsz))) {
-        printf("could not malloc(%d) symbol area\n", poolsz);
-        return -1;
-    }
-    if (!(le = e = malloc(poolsz))) {
-        printf("could not malloc(%d) text area\n", poolsz);
-        return -1;
-    }
-    if (!(data = malloc(poolsz))) {
-        printf("could not malloc(%d) data area\n", poolsz);
-        return -1;
-    }
-
-    memset(sym,  0, poolsz);
-    memset(e,    0, poolsz);
-    memset(data, 0, poolsz);
-
-    p = "char else enum if int return while "
-        "fopen fread fclose printf malloc memset memcmp exit main";
-
-    // add keywords to symbol table
-    i = Char;
-    while (i <= While) {
-        next();
-        id[Tk] = i++;
-    }
-
-    // add library to symbol table
-    i = OPEN;
-    while (i <= EXIT) {
-        next();
-        id[Class] = Sys;
-        id[Type] = INT;
-        id[Val] = i++;
-    }
-    next();
-
-    if (!(lp = p = malloc(poolsz))) {
-        printf("could not malloc(%d) source area\n", poolsz);
-        return -1;
-    }
-
-    FILE *fd;
-    if ((fd = fopen(*argv, "r")) == 0) {
-        printf("could not fopen(%s)\n", *argv);
-        return -1;
-    }
-
-    if ((i = fread(p, 1, poolsz-1, fd)) <= 0) {
-        printf("fread() returned %d\n", i);
-        return -1;
-    }
-    p[i] = 0;
-    fclose(fd);
-
+int parse_c() {
+    int bt, ty;
+    int i;
     // parse declarations
     line = 1;
     next();
@@ -225,8 +160,81 @@ int main(int argc, char **argv) {
         }
         next();
     }
+    return 0;
+}
 
-    if (src) return 0;
-    run_c(argc, argv, debug);
+int main(int argc, char **argv) {
+    int poolsz;
+    int i; // temps
+
+    int debug = 0;    // print executed instructions
+
+    --argc; ++argv;
+    if (argc > 0 && **argv == '-' && (*argv)[1] == 's') { src = 1; --argc; ++argv; }
+    if (argc > 0 && **argv == '-' && (*argv)[1] == 'd') { debug = 1; --argc; ++argv; }
+    if (argc < 1) { printf("usage: c4 [-s] [-d] file ...\n"); return 0; }
+
+    poolsz = 256*1024; // arbitrary size
+    if (!(sym = malloc(poolsz))) {
+        printf("could not malloc(%d) symbol area\n", poolsz);
+        return -1;
+    }
+    if (!(le = e = malloc(poolsz))) {
+        printf("could not malloc(%d) text area\n", poolsz);
+        return -1;
+    }
+    if (!(data = malloc(poolsz))) {
+        printf("could not malloc(%d) data area\n", poolsz);
+        return -1;
+    }
+
+    memset(sym,  0, poolsz);
+    memset(e,    0, poolsz);
+    memset(data, 0, poolsz);
+
+    p = "char else enum if int return while "
+        "fopen fread fclose printf malloc memset memcmp exit main";
+
+    // add keywords to symbol table
+    i = Char;
+    while (i <= While) {
+        next();
+        id[Tk] = i++;
+    }
+
+    // add library to symbol table
+    i = OPEN;
+    while (i <= EXIT) {
+        next();
+        id[Class] = Sys;
+        id[Type] = INT;
+        id[Val] = i++;
+    }
+    next();
+
+    if (!(lp = p = malloc(poolsz))) {
+        printf("could not malloc(%d) source area\n", poolsz);
+        return -1;
+    }
+
+    FILE *fd;
+    if ((fd = fopen(*argv, "r")) == 0) {
+        printf("could not fopen(%s)\n", *argv);
+        return -1;
+    }
+
+    if ((i = fread(p, 1, poolsz-1, fd)) <= 0) {
+        printf("fread() returned %d\n", i);
+        return -1;
+    }
+    p[i] = 0;
+    fclose(fd);
+
+    if ((i = parse_c()) == 0) {
+        if (src) return 0;
+        return run_c(argc, argv, debug);
+    } else {
+        return i;
+    }
     return 0;
 }
