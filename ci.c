@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
             if (tk == '{') {
                 next();
                 i = 0;
-                while (tk != 0 && tk != '}') {
+                while (tk != '}') {
                     if (tk != Id) {
                         printf("%d: bad enum identifier %d\n", line, tk);
                         return -1;
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
             }
         }
 
-        while (tk != 0 && tk != ';' && tk != '}') {
+        while (tk != ';' && tk != '}') {
             ty = bt;
             while (tk == Mul) {
                 next();
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
                 id[Class] = Fun;
                 id[Val] = (int)(e + 1);
                 next(); i = 0;
-                while (tk != 0 && tk != ')') {
+                while (tk != ')') {
                     ty = INT;
                     if (tk == Int) {
                         next();
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
                 while (tk == Int || tk == Char) {
                     bt = (tk == Int) ? INT : CHAR;
                     next();
-                    while (tk != 0 && tk != ';') {
+                    while (tk != ';') {
                         ty = bt;
                         while (tk == Mul) {
                             next();
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
                     next();
                 }
                 *++e = ENT; *++e = i - loc;
-                while (tk != 0 && tk != '}') stmt();
+                while (tk != '}') stmt();
                 *++e = LEV;
                 id = sym; // unwind symbol table locals
                 while (id[Tk]) {

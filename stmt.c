@@ -65,7 +65,7 @@ void stmt() {
         }
     } else if (tk == '{') {
         next();
-        while (tk != 0 && tk != '}') {
+        while (tk != '}') {
             stmt();
         }
         next();

@@ -15,24 +15,33 @@ const char *op_codes =
 
     "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,";
 
+static void
+debug_info(int *pc, int i, int cycle) {
+    printf("%d> %.4s", cycle, &op_codes[i * 5]);
+    if (i <= ADJ) {
+        printf(" %d\n", *pc);
+    } else {
+        printf("\n");
+    }
+}
+
 int run_c(int argc, char **argv, int debug) {
     int *pc, *sp, *bp, a, cycle; // vm registers
 
-    int *id = sym, *idmain;
+    int *id = sym;
     while (id[Tk]) {
         if (!memcmp((const void *)id[Name], "main", 4)) {
-            idmain = id;
             break;
         }
         id = id + Idsz;
     }
 
-    if (!(pc = (int *)idmain[Val])) {
+    if (!(pc = (int *)id[Val])) {
         printf("main() not defined\n");
         return -1;
     }
 
-    int poolsz = 256*1024; // arbitrary size
+    int poolsz = 256 * 1024;
     if (!(sp = malloc(poolsz))) {
         printf("could not malloc(%d) stack area\n", poolsz);
         return -1;
@@ -49,57 +58,67 @@ int run_c(int argc, char **argv, int debug) {
     *--sp = (int)t;
 
     cycle = 0;
+
+#define ci_dispatch(o)  switch(o)
+#define ci_case(c,b)    case c: {b}  break;
+#define ci_default(b)   default: {b};
+
     while (1) {
         i = *pc++; ++cycle;
-        if (debug) {
-            printf("%d> %.4s", cycle, &op_codes[i * 5]);
-            if (i <= ADJ) {
-                printf(" %d\n", *pc);
-            } else {
-                printf("\n");
-            }
+        if (debug) debug_info(pc, i, cycle);
+
+        ci_dispatch(i) {
+            ci_case(LEA, a = (int)(bp + *pc++);)                         // load local address
+            ci_case(IMM, a = *pc++;)                                     // load global address or immediate
+            ci_case(JMP, pc = (int *)*pc;)                             // jump
+            ci_case(JSR, *--sp = (int)(pc + 1); pc = (int *)*pc;)        // jump to subroutine
+            ci_case(BZ,  pc = a ? pc + 1 : (int *)*pc;)                  // branch if zero
+            ci_case(BNZ, pc = a ? (int *)*pc : pc + 1;)                  // branch if not zero
+            ci_case(ENT, *--sp = (int)bp; bp = sp; sp = sp - *pc++;)     // enter subroutine
+            ci_case(ADJ, sp = sp + *pc++;)                               // stack adjust
+            ci_case(LEV, sp = bp; bp = (int *)*sp++; pc = (int *)*sp++;) // leave subroutine
+
+            ci_case(LI,  a = *(int *)a;)          // load int
+            ci_case(LC,  a = *(char *)a;)         // load char
+            ci_case(SI,  *(int *)*sp++ = a;)      // store int
+            ci_case(SC,  a = *(char *)*sp++ = a;) // store char
+            ci_case(PSH, *--sp = a;)              // push
+
+            ci_case(OR,  a = *sp++ |  a;)
+            ci_case(XOR, a = *sp++ ^  a;)
+            ci_case(AND, a = *sp++ &  a;)
+            ci_case(EQ,  a = *sp++ == a;)
+            ci_case(NE,  a = *sp++ != a;)
+            ci_case(LT,  a = *sp++ <  a;)
+            ci_case(GT,  a = *sp++ >  a;)
+            ci_case(LE,  a = *sp++ <= a;)
+            ci_case(GE,  a = *sp++ >= a;)
+            ci_case(SHL, a = *sp++ << a;)
+            ci_case(SHR, a = *sp++ >> a;)
+            ci_case(ADD, a = *sp++ +  a;)
+            ci_case(SUB, a = *sp++ -  a;)
+            ci_case(MUL, a = *sp++ *  a;)
+            ci_case(DIV, a = *sp++ /  a;)
+            ci_case(MOD, a = *sp++ %  a;)
+
+            ci_case(OPEN, a = (int)fopen((const char *)sp[1], (const char *)*sp);)
+            ci_case(READ, a = fread((char *)sp[3], sp[2], sp[1], (FILE *)*sp);)
+            ci_case(CLOS, a = fclose((FILE *)*sp);)
+            ci_case(PRTF,
+                    t = sp + pc[1];
+                    a = printf((char *)t[-1], t[-2], t[-3], t[-4], t[-5], t[-6]);
+                    )
+            ci_case(MALC, a = (int)malloc(*sp);)
+            ci_case(MSET, a = (int)memset((char *)sp[2], sp[1], *sp);)
+            ci_case(MCMP, a = memcmp((char *)sp[2], (char *)sp[1], *sp);)
+            ci_case(EXIT,
+                    printf("exit(%d) cycle = %d\n", *sp, cycle);
+                    return *sp;)
+
+            ci_default(
+                    printf("unknown instruction = %d! cycle = %d\n", i, cycle);
+                    return -1;)
         }
-        if      (i == LEA) a = (int)(bp + *pc++);                             // load local address
-        else if (i == IMM) a = *pc++;                                         // load global address or immediate
-        else if (i == JMP) pc = (int *)(*pc);                                 // jump
-        else if (i == JSR) { *--sp = (int)(pc + 1); pc = (int *)*pc; }        // jump to subroutine
-        else if (i == BZ)  pc = a ? pc + 1 : (int *)*pc;                      // branch if zero
-        else if (i == BNZ) pc = a ? (int *)*pc : pc + 1;                      // branch if not zero
-        else if (i == ENT) { *--sp = (int)bp; bp = sp; sp = sp - *pc++; }     // enter subroutine
-        else if (i == ADJ) sp = sp + *pc++;                                   // stack adjust
-        else if (i == LEV) { sp = bp; bp = (int *)*sp++; pc = (int *)*sp++; } // leave subroutine
-        else if (i == LI)  a = *(int *)a;                                     // load int
-        else if (i == LC)  a = *(char *)a;                                    // load char
-        else if (i == SI)  *(int *)*sp++ = a;                                 // store int
-        else if (i == SC)  a = *(char *)*sp++ = a;                            // store char
-        else if (i == PSH) *--sp = a;                                         // push
-
-        else if (i == OR)  a = *sp++ |  a;
-        else if (i == XOR) a = *sp++ ^  a;
-        else if (i == AND) a = *sp++ &  a;
-        else if (i == EQ)  a = *sp++ == a;
-        else if (i == NE)  a = *sp++ != a;
-        else if (i == LT)  a = *sp++ <  a;
-        else if (i == GT)  a = *sp++ >  a;
-        else if (i == LE)  a = *sp++ <= a;
-        else if (i == GE)  a = *sp++ >= a;
-        else if (i == SHL) a = *sp++ << a;
-        else if (i == SHR) a = *sp++ >> a;
-        else if (i == ADD) a = *sp++ +  a;
-        else if (i == SUB) a = *sp++ -  a;
-        else if (i == MUL) a = *sp++ *  a;
-        else if (i == DIV) a = *sp++ /  a;
-        else if (i == MOD) a = *sp++ %  a;
-
-        else if (i == OPEN) a = (int)fopen((const char *)sp[1], (const char *)*sp);
-        else if (i == READ) a = fread((char *)sp[3], sp[2], sp[1], (FILE *)*sp);
-        else if (i == CLOS) a = fclose((FILE *)*sp);
-        else if (i == PRTF) { t = sp + pc[1]; a = printf((char *)t[-1], t[-2], t[-3], t[-4], t[-5], t[-6]); }
-        else if (i == MALC) a = (int)malloc(*sp);
-        else if (i == MSET) a = (int)memset((char *)sp[2], sp[1], *sp);
-        else if (i == MCMP) a = memcmp((char *)sp[2], (char *)sp[1], *sp);
-        else if (i == EXIT) { printf("exit(%d) cycle = %d\n", *sp, cycle); return *sp; }
-        else { printf("unknown instruction = %d! cycle = %d\n", i, cycle); return -1; }
     }
     return 0;
 }

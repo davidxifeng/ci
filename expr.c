@@ -15,7 +15,7 @@ void parse_expr() {
     int t, *d;
     switch (tk) {
         case 0:
-            printf("%d: unexpected eof in expression", line);
+            printf("%d: unexpected eof in expression\n", line);
             exit(-1);
             break;
         case Num:
@@ -34,7 +34,7 @@ void parse_expr() {
             if (tk == '(') {
                 next();
                 t = 0;
-                while (tk != 0 && tk != ')') {
+                while (tk != ')') {
                     expr(Assign);
                     *++e = PSH; ++t;
                     if (tk == ',') next();
@@ -92,7 +92,7 @@ void parse_expr() {
                 if (tk == ')') {
                     next();
                 } else {
-                    printf("%d: bad cast", line); exit(-1);
+                    printf("%d: bad cast\n", line); exit(-1);
                 }
                 expr(Inc);
                 ty = t;
@@ -179,7 +179,7 @@ void parse_expr() {
             *++e = (ty == CHAR) ? SC : SI;
             break;
         default:
-            printf("%d: bad expression %c\n", line, tk);
+            printf("%d: bad expression\n", line);
             exit(-1);
     }
 }
