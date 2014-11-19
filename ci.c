@@ -67,8 +67,14 @@ int parse_c() {
                 next();
                 ty = ty + PTR;
             }
-            if (tk != Id) { printf("%d: bad global declaration\n", line); return -1; }
-            if (id[Class]) { printf("%d: duplicate global definition\n", line); return -1; }
+            if (tk != Id) {
+                printf("%d: bad global declaration\n", line);
+                return -1;
+            }
+            if (id[Class]) {
+                printf("%d: duplicate global definition\n", line);
+                return -1;
+            }
             next();
             id[Type] = ty;
             if (tk == '(') { // function
@@ -144,19 +150,19 @@ int parse_c() {
                 *++e = LEV;
                 id = sym; // unwind symbol table locals
                 while (id[Tk]) {
-                if (id[Class] == Loc) {
-                    id[Class] = id[HClass];
-                    id[Type] = id[HType];
-                    id[Val] = id[HVal];
-                }
-                id = id + Idsz;
+                    if (id[Class] == Loc) {
+                        id[Class] = id[HClass];
+                        id[Type] = id[HType];
+                        id[Val] = id[HVal];
+                    }
+                    id = id + Idsz;
                 }
             } else {
                 id[Class] = Glo;
                 id[Val] = (int)data;
                 data = data + 4;
+                if (tk == ',') next();
             }
-            if (tk == ',') next();
         }
         next();
     }
@@ -193,7 +199,7 @@ int main(int argc, char **argv) {
     memset(data, 0, poolsz);
 
     p = "char else enum if int return while "
-        "fopen fread fclose printf malloc memset memcmp exit main";
+        "fopen fread fclose printf malloc memset memcmp exit";
 
     // add keywords to symbol table
     i = Char;
@@ -210,7 +216,6 @@ int main(int argc, char **argv) {
         id[Type] = INT;
         id[Val] = i++;
     }
-    next();
 
     if (!(lp = p = malloc(poolsz))) {
         printf("could not malloc(%d) source area\n", poolsz);

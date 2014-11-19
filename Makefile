@@ -7,6 +7,3 @@ test_ci:
 
 full_test_ci:
 	./ci test/ci.c test/hello.c
-
-c4_bin:
-	clang -Wno-return-type -m32 -O -o c4 c4.c

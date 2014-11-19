@@ -146,7 +146,7 @@ void parse_expr() {
             ty = INT;
             break;
         case Add:
-            // 算术计算+
+            // 一元运算符+
             next(); expr(Inc); ty = INT;
             break;
         case Sub:
