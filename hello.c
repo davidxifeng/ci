@@ -1,15 +1,11 @@
 #include <stdio.h>
 
-int c, d, f() {
-    printf("f\n");
-};
+int f(int x) {
+    return x % 2 ? ++x : 2 + x;
+}
 
-int main()
-{
-    int *i;
-    c = 2;
-    i = &c;
-    f();
-    printf("%d \n", *i);
+int main() {
+    printf("f x is %d\n", f(2));
+    printf("f x is %d\n", f(1));
     return 0;
 }
