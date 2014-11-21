@@ -19,21 +19,30 @@ const char * p;
 int tk_value = 0;
 char tk; // token类型: +-*/^ N
 
+// 当前运算符优先级 > 下一个运算符都优先级
+// 或者
+// 当前运算符是右结合都, 其优先级>= 下一个运算符都优先级
+int f(char p1, char p2) {
+    if (p1 == '^') {
+        return get_p(p1) >= get_p(p2);
+    } else {
+        return get_p(p1) > get_p(p2);
+    }
+}
 
 int eval_expr(int x, int min_precedence) {
     while (lookahead() && is_op(tk) && get_p(tk) >= min_precedence) {
-        char op;
         next();
-        op = tk;
+        char op = tk;
         if(next() && tk == 'N') {
             int y = tk_value;
-            if(lookahead() && is_op(tk) && (get_p(tk) > get_p(op))) {
+            if(lookahead() && is_op(tk) && f(tk, op)) {
                 char nop = tk;
                 y = eval_expr(y, get_p(nop));
             }
             x = op_x(x, op, y);
         } else {
-            printf("ERROR! eval_expr: unexpected eof!\n");
+            printf("ERROR! eval_expr: unexpected eof or not number!\n");
         }
     }
     return x;
@@ -53,7 +62,7 @@ const char * es[] =
     , "1+2*3^8-2*3-2+2^4"
     , "1+2*3^2^2-2*3-2+2^4"
     , "1+2*3-1"
-    , "2+3*4+5"
+    , "2^3^2"
     , NULL
     };
 
