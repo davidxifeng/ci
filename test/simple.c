@@ -10,13 +10,15 @@
 
 int lookahead();
 int next();
-int is_op(char p);
+
 int get_p(char p);
+int (*is_op)(char p) = get_p;
 int op_x(int x, char p, int y);
 
 const char * p;
 int tk_value = 0;
 char tk; // token类型: +-*/^ N
+
 
 int eval_expr(int x, int min_precedence) {
     while (lookahead() && is_op(tk) && get_p(tk) >= min_precedence) {
@@ -56,27 +58,20 @@ const char * es[] =
     };
 
 
-int main() {
+int main(int argc, char ** argv) {
     const char ** e = es;
     while ((p = *e++)) {
+        printf("%s = %d\n", p, eval());
+    }
+    while((p = *++argv)) {
         printf("%s = %d\n", p, eval());
     }
     return 0;
 }
 
-int is_op(char p) {
-    switch(p) {
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '^':
-            return 1;
-        default:
-            return 0;
-    }
-}
-
+/**
+ * 1. operator precedence 2. is operator
+ */
 int get_p(char p) {
     switch(p) {
         case '+':
