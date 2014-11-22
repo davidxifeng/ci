@@ -31,10 +31,12 @@ void parse_expr() {
             break;
         case Id:
             d = id; next();
+            // function call
             if (tk == '(') {
                 next();
                 t = 0;
                 while (tk != ')') {
+                    // 参数push
                     expr(Assign);
                     *++e = PSH; ++t;
                     if (tk == ',') next();
@@ -130,7 +132,7 @@ void parse_expr() {
             ty = ty + PTR;
             break;
         case '!':
-            // 逻辑取反操作
+            // 位运算 取反
             next();
             expr(Inc); *++e = PSH;
             *++e = IMM; *++e = 0;

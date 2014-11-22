@@ -13,12 +13,13 @@ char *p, *lp, // current position in source code
 int *e, *le,  // current position in emitted code
     *id,      // currently parsed indentifier
     *sym,     // symbol table (simple list of identifiers)
-    tk,       // current token
     ival,     // current token value
     ty,       // current expression type
     loc,      // local variable offset
     line,     // current line number
     src;      // print source and assembly flag
+
+enum Token tk;       // current token
 
 int parse_c() {
     int bt, ty;
