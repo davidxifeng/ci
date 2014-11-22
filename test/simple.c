@@ -30,6 +30,20 @@ int f(char p1, char p2) {
     }
 }
 
+int next_p(char p) {
+    switch(p) {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+            return get_p(p) + 1;
+        case '^':
+            return get_p(p);
+        default:
+            return 0;
+    }
+}
+
 int eval_expr(int x, int min_precedence) {
     while (lookahead() && is_op(tk) && get_p(tk) >= min_precedence) {
         next();
@@ -37,8 +51,7 @@ int eval_expr(int x, int min_precedence) {
         if(next() && tk == 'N') {
             int y = tk_value;
             if(lookahead() && is_op(tk) && f(tk, op)) {
-                char nop = tk;
-                y = eval_expr(y, get_p(nop));
+                y = eval_expr(y, next_p(op));
             }
             x = op_x(x, op, y);
         } else {
@@ -61,7 +74,7 @@ const char * es[] =
     , "3*3+2^2"
     , "1+2*3^8-2*3-2+2^4"
     , "1+2*3^2^2-2*3-2+2^4"
-    , "1+2*3-1"
+    , "1+2^3*3-1"
     , "2^3^2"
     , NULL
     };
