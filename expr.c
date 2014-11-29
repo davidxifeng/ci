@@ -215,9 +215,12 @@ void expr(int lev) {
             } else {
                 printf("%d: conditional missing colon\n", line); exit(-1);
             }
-            *d = (int)(e + 3); *++e = JMP; d = ++e;
+            *d = (int)(e + 3);
+
+            *++e = JMP;
+            d = ++e;
             expr(Cond);
-            *d = (int)(e + 1);
+            *d = (int)(e + 1 - d);
         }
         else if (tk == Lor) {
             next();

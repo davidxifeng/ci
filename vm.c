@@ -17,7 +17,7 @@ const char *op_codes =
 
 static void
 debug_info(int *pc, int i, int cycle) {
-    printf("%d> %.4s", cycle, &op_codes[i * 5]);
+    printf("%d> %d: %.4s", cycle, (int)pc, &op_codes[i * 5]);
     if (i <= ADJ) {
         printf(" %d\n", *pc);
     } else {
@@ -70,7 +70,9 @@ int run_c(int argc, char **argv, int debug) {
         ci_dispatch(i) {
             ci_case(LEA, a = (int)(bp + *pc++);)                         // load local address
             ci_case(IMM, a = *pc++;)                                     // load global address or immediate
-            ci_case(JMP, pc = (int *)*pc;)                               // jump
+            //ci_case(JMP, pc = (int *)*pc;)                               // jump
+            ci_case(JMP, pc = pc + *pc;)                               // jump
+
             ci_case(JSR, *--sp = (int)(pc + 1); pc = (int *)*pc;)        // jump to subroutine
             ci_case(BZ,  pc = a ? pc + 1 : (int *)*pc;)                  // branch if zero
             ci_case(BNZ, pc = a ? (int *)*pc : pc + 1;)                  // branch if not zero

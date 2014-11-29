@@ -29,11 +29,15 @@ void stmt() {
         *++e = BZ; b = ++e;
         stmt();
         if (tk == Else) {
-            *b = (int)(e + 3); *++e = JMP; b = ++e;
+            *b = (int)(e + 3);
+            *++e = JMP;
+            b = ++e;
             next();
             stmt();
+            *b = (int)(e + 1 - b);
+        } else {
+            *b = (int)(e + 1);
         }
-        *b = (int)(e + 1);
     } else if (tk == While) {
         next();
         a = e + 1;
@@ -50,9 +54,14 @@ void stmt() {
             printf("%d: close paren expected\n", line);
             exit(-1);
         }
-        *++e = BZ; b = ++e;
+        *++e = BZ;
+        b = ++e;
         stmt();
-        *++e = JMP; *++e = (int)a;
+        *++e = JMP;
+        ++e;
+        //*e = (int)a;
+        *e = (int)(a - e);
+
         *b = (int)(e + 1);
     } else if (tk == Return) {
         next();

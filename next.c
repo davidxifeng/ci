@@ -16,7 +16,8 @@ void dump_source() {
         printf("%d: %.*s", line, (int)(p - lp), lp);
         lp = p;
         while (le < e) {
-            printf("%8.4s",&op_codes[*++le * 5]);
+            ++le;
+            printf("%d: %8.4s", (int)le, &op_codes[*le * 5]);
             if (*le <= ADJ) {
                 printf(" %d\n", *++le);
             } else {
