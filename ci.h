@@ -13,7 +13,6 @@ enum Token {
     Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
 };
 
-
 // opcodes
 enum Opcodes {
     LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,
@@ -33,6 +32,19 @@ enum { CHAR, INT, /*add new types here*/ PTR };
 
 // identifier offsets (since we can't create an ident struct)
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
+
+struct Identifier {
+    enum Token tk;
+    int hash;
+    char * name;
+    enum Token tokenClass; // num glo loc fun sys
+    int type;
+    int value; // 函数地址 立即数值 ...
+
+    enum Token hTokenClass;
+    int hType;
+    int hValue;
+};
 
 int run_c(int argc, char **argv, int debug);
 void next();

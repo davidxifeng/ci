@@ -203,10 +203,9 @@ int main(int argc, char **argv) {
         "fopen fread fclose printf malloc memset memcmp exit";
 
     // add keywords to symbol table
-    i = Char;
-    while (i <= While) {
+    for (i = Char; i <= While; i++) {
         next();
-        id[Tk] = i++;
+        id[Tk] = i;
     }
 
     // add library to symbol table
