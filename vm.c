@@ -10,7 +10,8 @@ extern int * be;
 extern char * bd;
 
 const char *op_codes =
-    "LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LGB ,"
+    "LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LGB ,"
+    "LEV ,"
     "LI  ,LC  ,SI  ,SC  ,PSH ,"
 
     "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,"
@@ -21,7 +22,7 @@ const char *op_codes =
 static void
 debug_info(int *pc, int i, int cycle) {
     printf("%d> %d: %.4s", cycle, (int)pc, &op_codes[i * 5]);
-    if (i <= ADJ) {
+    if (i <= LGB) {
         printf(" %d\n", *pc);
     } else {
         printf("\n");
@@ -71,15 +72,16 @@ int run_c(int argc, char **argv, int debug) {
         if (debug) debug_info(pc, i, cycle);
 
         ci_dispatch(i) {
-            ci_case(LEA, a = (int)(bp + *pc++);)                         // load local address
-            ci_case(LGB, a = (int)(bd + *pc++);)                                // load global address
-            ci_case(IMM, a = *pc++;)                                     // load immediate
-            ci_case(JMP, pc = pc + *pc;)                                 // jump
-            ci_case(JSR, *--sp = (int)(pc + 1); pc = be + *pc;)          // jump to subroutine
-            ci_case(BZ,  pc = a ? pc + 1 : pc + *pc;)                    // branch if zero
-            ci_case(BNZ, pc = a ? pc + *pc : pc + 1;)                    // branch if not zero
-            ci_case(ENT, *--sp = (int)bp; bp = sp; sp = sp - *pc++;)     // enter subroutine
-            ci_case(ADJ, sp = sp + *pc++;)                               // stack adjust
+            ci_case(LEA, a = (int)(bp + *pc++);)                     // load local address
+            ci_case(LGB, a = (int)(bd + *pc++);)                     // load global address
+            ci_case(IMM, a = *pc++;)                                 // load immediate
+            ci_case(JMP, pc = pc + *pc;)                             // jump
+            ci_case(JSR, *--sp = (int)(pc + 1); pc = be + *pc;)      // jump to subroutine
+            ci_case(BZ,  pc = a ? pc + 1 : pc + *pc;)                // branch if zero
+            ci_case(BNZ, pc = a ? pc + *pc : pc + 1;)                // branch if not zero
+            ci_case(ENT, *--sp = (int)bp; bp = sp; sp = sp - *pc++;) // enter subroutine
+            ci_case(ADJ, sp = sp + *pc++;)                           // stack adjust
+
             ci_case(LEV, sp = bp; bp = (int *)*sp++; pc = (int *)*sp++;) // leave subroutine
 
             ci_case(LI,  a = *(int *)a;)          // load int

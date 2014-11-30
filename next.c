@@ -18,7 +18,7 @@ void dump_source() {
         while (le < e) {
             ++le;
             printf("%d: %8.4s", (int)le, &op_codes[*le * 5]);
-            if (*le <= ADJ) {
+            if (*le <= LGB) {
                 printf(" %d\n", *++le);
             } else {
                 printf("\n");
