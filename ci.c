@@ -149,7 +149,9 @@ int parse_c() {
                 }
                 *++e = ENT; *++e = i - loc;
                 while (tk != '}') stmt();
-                *++e = LEV;
+                if (*e != LEV) {
+                    *++e = LEV;
+                }
                 id = sym; // unwind symbol table locals
                 while (id[Tk]) {
                     if (id[Class] == Loc) {
