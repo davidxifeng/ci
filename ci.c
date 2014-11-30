@@ -248,36 +248,74 @@ int main(int argc, char **argv) {
     }
     p[i] = 0;
     fclose(fd);
-    e[0] = 65525;
+    e[0] = -20250934;
 
     if ((i = parse_c()) == 0) {
         //if (src) return 0;
-#if 1
-        FILE * f = fopen("text.out.bin", "wb");
-        fwrite(be, sizeof(int), e - be + 1, f);
-        fclose(f);
+        struct Process * p = create_process(e, be, data, bd, argc, argv);
+        save_process("process.bin", p);
+        free_process(p);
 
-        f = fopen("data.out.bin", "wb");
-        fwrite(bd, sizeof(char), poolsz, f); // FIXME later
-        fclose(f);
+        struct Process * p2 = load_process("process.bin");
+        save_process("process2.bin", p2);
+        free_process(p2);
 
-        for (int i = 0; be + i <= e; i++) {
-            printf("%d ", be[i]);
-        }
-        printf("\n");
-
-        for (int i = 0; bd + i <= data; i++) {
-            printf("%02X ", bd[i]);
-        }
-        printf("\n");
-        for (int i = 0; bd + i <= data; i++) {
-            printf(" %c ", ck_visible(bd[i]));
-        }
-        printf("\n");
-#endif
         return run_c(argc, argv, debug);
     } else {
         return i;
     }
     return 0;
+}
+
+int save_process(const char * process_file, struct Process * p) {
+    FILE * f = fopen(process_file, "wb");
+
+    fwrite(&p->text_size, sizeof(p->text_size), 1, f);
+    fwrite(&p->data_size, sizeof(p->data_size), 1, f);
+    fwrite(p->be, 1, p->text_size, f);
+    fwrite(p->bd, 1, p->data_size, f);
+
+    fclose(f);
+    return 0;
+}
+
+struct Process * load_process(const char * process_file) {
+    FILE * f = fopen(process_file, "rb");
+
+    struct Process * p = malloc(sizeof *p);
+
+    fread(&p->text_size, sizeof(p->text_size), 1, f);
+    fread(&p->data_size, sizeof(p->data_size), 1, f);
+    p->be = malloc(p->text_size);
+    fread(p->be, 1, p->text_size, f);
+
+    p->bd = malloc(p->data_size);
+    fread(p->bd, 1, p->data_size, f);
+
+    fclose(f);
+    return p;
+}
+
+struct Process * create_process(int * e, int * be, char * data, char * bd,
+        int argc, char ** argv) {
+    struct Process * p = malloc(sizeof *p);
+
+    int ts = (e - be + 1) * sizeof (int);
+    p->text_size = ts;
+    p->be = malloc(ts);
+    memcpy(p->be, be, ts);
+
+    int ds = data - bd;
+    p->data_size = ds;
+    p->bd = malloc(ds);
+    memcpy(p->bd, bd, ds);
+    return p;
+}
+
+void free_process(struct Process * process) {
+    if(process) {
+        free(process->be);
+        free(process->bd);
+        free(process);
+    }
 }

@@ -45,15 +45,15 @@ int run_c(int argc, char **argv, int debug) {
         return -1;
     }
 
-    int poolsz = 256 * 1024;
-    if (!(sp = malloc(poolsz))) {
-        printf("could not malloc(%d) stack area\n", poolsz);
+    int stack_size = 128 * 1024;
+    if (!(sp = malloc(stack_size * sizeof(int)))) {
+        printf("could not malloc(%d) stack area\n", stack_size);
         return -1;
     }
 
     int i, *t; // temps
     // setup stack
-    sp    = (int *)((int)sp + poolsz);
+    sp    = sp + stack_size;
     *--sp = EXIT; // call exit if main returns
     *--sp = PSH;
     t     = sp;

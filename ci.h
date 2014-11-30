@@ -48,11 +48,30 @@ struct Identifier {
     int hValue;
 };
 
+struct Process {
+    int * be;
+    int text_size;
+    char * bd;
+    int data_size;
+    int main_addr;
+    int argc;
+    char **argv;
+};
+
+struct Process * create_process(
+    int * e,
+    int * be,
+    char * data,
+    char * bd,
+    int argc,
+    char ** argv);
+int save_process(const char * process_file, struct Process * p);
+struct Process * load_process(const char * process_file);
+void free_process(struct Process * process);
+
 int run_c(int argc, char **argv, int debug);
 void next();
 void expr(int lev);
 void stmt();
 
 extern const char *op_codes;
-
-
