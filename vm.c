@@ -5,6 +5,7 @@
 #include "ci.h"
 
 extern int * sym;
+extern int * be;
 
 const char *op_codes =
     "LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,"
@@ -36,7 +37,7 @@ int run_c(int argc, char **argv, int debug) {
         id = id + Idsz;
     }
 
-    if (!(pc = (int *)id[Val])) {
+    if (!(pc = be + id[Val])) {
         printf("main() not defined\n");
         return -1;
     }
@@ -70,12 +71,10 @@ int run_c(int argc, char **argv, int debug) {
         ci_dispatch(i) {
             ci_case(LEA, a = (int)(bp + *pc++);)                         // load local address
             ci_case(IMM, a = *pc++;)                                     // load global address or immediate
-            //ci_case(JMP, pc = (int *)*pc;)                               // jump
-            ci_case(JMP, pc = pc + *pc;)                               // jump
-
-            ci_case(JSR, *--sp = (int)(pc + 1); pc = (int *)*pc;)        // jump to subroutine
-            ci_case(BZ,  pc = a ? pc + 1 : (int *)*pc;)                  // branch if zero
-            ci_case(BNZ, pc = a ? (int *)*pc : pc + 1;)                  // branch if not zero
+            ci_case(JMP, pc = pc + *pc;)                                 // jump
+            ci_case(JSR, *--sp = (int)(pc + 1); pc = be + *pc;)          // jump to subroutine
+            ci_case(BZ,  pc = a ? pc + 1 : pc + *pc;)                    // branch if zero
+            ci_case(BNZ, pc = a ? pc + *pc : pc + 1;)                    // branch if not zero
             ci_case(ENT, *--sp = (int)bp; bp = sp; sp = sp - *pc++;)     // enter subroutine
             ci_case(ADJ, sp = sp + *pc++;)                               // stack adjust
             ci_case(LEV, sp = bp; bp = (int *)*sp++; pc = (int *)*sp++;) // leave subroutine

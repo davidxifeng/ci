@@ -10,6 +10,7 @@
 char *p, *lp, // current position in source code
     *data;    // data/bss pointer
 
+int *be;      // base address of text segment
 int *e, *le,  // current position in emitted code
     *id,      // currently parsed indentifier
     *sym,     // symbol table (simple list of identifiers)
@@ -80,7 +81,7 @@ int parse_c() {
             id[Type] = ty;
             if (tk == '(') { // function
                 id[Class] = Fun;
-                id[Val] = (int)(e + 1);
+                id[Val] = (int)(e + 1 - be); //(int)(e + 1);
                 next(); i = 0;
                 while (tk != ')') {
                     ty = INT;
@@ -186,7 +187,7 @@ int main(int argc, char **argv) {
         printf("could not malloc(%d) symbol area\n", poolsz);
         return -1;
     }
-    if (!(le = e = malloc(poolsz))) {
+    if (!(be = le = e = malloc(poolsz))) {
         printf("could not malloc(%d) text area\n", poolsz);
         return -1;
     }
@@ -236,7 +237,16 @@ int main(int argc, char **argv) {
     fclose(fd);
 
     if ((i = parse_c()) == 0) {
-        if (src) return 0;
+        //if (src) return 0;
+#if 0
+        FILE * f = fopen("text.out.bin", "wb");
+        fwrite(be, sizeof(int), poolsz, f);
+        fclose(f);
+        for (int i = 0; i < 10; i++) {
+            printf("%d ", be[i]);
+        }
+        printf("\n");
+#endif
         return run_c(argc, argv, debug);
     } else {
         return i;

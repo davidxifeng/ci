@@ -215,7 +215,7 @@ void expr(int lev) {
             } else {
                 printf("%d: conditional missing colon\n", line); exit(-1);
             }
-            *d = (int)(e + 3);
+            *d = (int)(e + 3 - d);
 
             *++e = JMP;
             d = ++e;
@@ -226,14 +226,14 @@ void expr(int lev) {
             next();
             *++e = BNZ; d = ++e;
             expr(Lan);
-            *d = (int)(e + 1);
+            *d = (int)(e + 1 - d);
             ty = INT;
         }
         else if (tk == Lan) {
             next();
             *++e = BZ;  d = ++e;
             expr(Or);
-            *d = (int)(e + 1);
+            *d = (int)(e + 1 - d);
             ty = INT;
         }
         else if (tk == Or)  { next(); *++e = PSH; expr(Xor); *++e = OR;  ty = INT; }
