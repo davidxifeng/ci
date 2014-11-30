@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
         FILE * f = fopen("text.out.bin", "wb");
         fwrite(be, sizeof(int), poolsz, f);
         fclose(f);
-        for (int i = 0; be + i < e; i++) {
+        for (int i = 0; be + i <= e; i++) {
             printf("%d ", be[i]);
         }
         printf("\n");
