@@ -10,6 +10,8 @@
 char *p, *lp, // current position in source code
     *data;    // data/bss pointer
 
+char * bd;
+
 int *be;      // base address of text segment
 int *e, *le,  // current position in emitted code
     *id,      // currently parsed indentifier
@@ -163,7 +165,7 @@ int parse_c() {
                 }
             } else {
                 id[Class] = Glo;
-                id[Val] = (int)data;
+                id[Val] = data - bd;
                 data = data + 4;
                 if (tk == ',') next();
             }
@@ -193,7 +195,7 @@ int main(int argc, char **argv) {
         printf("could not malloc(%d) text area\n", poolsz);
         return -1;
     }
-    if (!(data = malloc(poolsz))) {
+    if (!(bd = data = malloc(poolsz))) {
         printf("could not malloc(%d) data area\n", poolsz);
         return -1;
     }

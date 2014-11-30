@@ -15,7 +15,7 @@ enum Token {
 
 // opcodes
 enum Opcodes {
-    LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,
+    LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV , LGB ,
 
     LI  ,LC  ,SI  ,SC  ,PSH ,
 

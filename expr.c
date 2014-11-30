@@ -69,7 +69,7 @@ void parse_expr() {
                         *++e = LEA;
                         *++e = loc - d[Val]; // local variable value: offset
                     } else if (d[Class] == Glo) {
-                        *++e = IMM;
+                        *++e = LGB;
                         *++e = d[Val];
                     } else {
                         printf("%d: undefined variable\n", line); exit(-1);

@@ -4,8 +4,9 @@
 /oci
 
 *.dSYM
-
 *.o
 a.out
+
 *.asm
+*.bin
 *.log

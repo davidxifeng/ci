@@ -5,11 +5,13 @@
 #include "ci.h"
 
 extern int * sym;
+
 extern int * be;
+extern char * bd;
 
 const char *op_codes =
-    "LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,"
-    "LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,"
+    "LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LGB ,"
+    "LI  ,LC  ,SI  ,SC  ,PSH ,"
 
     "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,"
     "SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,"
@@ -70,7 +72,8 @@ int run_c(int argc, char **argv, int debug) {
 
         ci_dispatch(i) {
             ci_case(LEA, a = (int)(bp + *pc++);)                         // load local address
-            ci_case(IMM, a = *pc++;)                                     // load global address or immediate
+            ci_case(LGB, a = (int)(bd + *pc++);)                                // load global address
+            ci_case(IMM, a = *pc++;)                                     // load immediate
             ci_case(JMP, pc = pc + *pc;)                                 // jump
             ci_case(JSR, *--sp = (int)(pc + 1); pc = be + *pc;)          // jump to subroutine
             ci_case(BZ,  pc = a ? pc + 1 : pc + *pc;)                    // branch if zero
