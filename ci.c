@@ -235,14 +235,15 @@ int main(int argc, char **argv) {
     }
     p[i] = 0;
     fclose(fd);
+    e[0] = 65525;
 
     if ((i = parse_c()) == 0) {
         //if (src) return 0;
-#if 0
+#if 1
         FILE * f = fopen("text.out.bin", "wb");
         fwrite(be, sizeof(int), poolsz, f);
         fclose(f);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; be + i < e; i++) {
             printf("%d ", be[i]);
         }
         printf("\n");

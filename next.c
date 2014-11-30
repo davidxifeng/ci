@@ -11,7 +11,6 @@ extern int src, line, *le, *e, ival, *id, *sym;
 extern enum Token tk;
 
 void dump_source() {
-    // TODO: fix LEV opcode of function display bug
     if (src) {
         printf("%d: %.*s", line, (int)(p - lp), lp);
         lp = p;
