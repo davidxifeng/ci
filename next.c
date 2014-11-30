@@ -6,6 +6,7 @@
 
 extern char *p, *lp;
 extern char *data;
+extern char *bd;
 
 extern int src, line, *le, *e, ival, *id, *sym;
 extern enum Token tk;
@@ -97,7 +98,12 @@ void next() {
                 if (tk == '"') *data++ = ival;
             }
             ++p;
-            if (tk == '"') ival = (int)pp; else tk = Num;
+            if (tk == '"') {
+                //ival = (int)pp;
+                ival = (int)(pp - bd);
+            } else {
+                tk = Num;
+            }
             return;
         } else if (tk == '=') {
             if (*p == '=') {
