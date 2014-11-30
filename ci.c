@@ -175,6 +175,15 @@ int parse_c() {
     return 0;
 }
 
+// map toEnum [0 .. 127] :: String
+char ck_visible(char c) {
+    if (c < 33 || c > 126) {
+        return ' ';
+    } else {
+        return c;
+    }
+}
+
 int main(int argc, char **argv) {
     int poolsz;
     int i; // temps
@@ -245,10 +254,24 @@ int main(int argc, char **argv) {
         //if (src) return 0;
 #if 1
         FILE * f = fopen("text.out.bin", "wb");
-        fwrite(be, sizeof(int), poolsz, f);
+        fwrite(be, sizeof(int), e - be + 1, f);
         fclose(f);
+
+        f = fopen("data.out.bin", "wb");
+        fwrite(bd, sizeof(char), poolsz, f); // FIXME later
+        fclose(f);
+
         for (int i = 0; be + i <= e; i++) {
             printf("%d ", be[i]);
+        }
+        printf("\n");
+
+        for (int i = 0; bd + i <= data; i++) {
+            printf("%02X ", bd[i]);
+        }
+        printf("\n");
+        for (int i = 0; bd + i <= data; i++) {
+            printf(" %c ", ck_visible(bd[i]));
         }
         printf("\n");
 #endif
