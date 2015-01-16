@@ -24,7 +24,6 @@ void parse_expr() {
             next(); ty = INT;
             break;
         case '"':
-            //*++e = IMM; *++e = ival; next();
             *++e = LGB; *++e = ival; next();
             while (tk == '"') next();
             // align data pointer by 4 and terminate string with zero
