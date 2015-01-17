@@ -264,7 +264,6 @@ int main(int argc, char **argv) {
     } else {
         return i;
     }
-    return 0;
 }
 
 int save_process(const char * process_file, struct Process * p) {
