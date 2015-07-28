@@ -22,6 +22,8 @@ const char *op_codes =
 static void
 debug_info(int *pc, int i, int cycle) {
     printf("%d> %d: %.4s", cycle, (int)pc, &op_codes[i * 5]);
+
+    // 本组指令有一个操作数
     if (i <= LGB) {
         printf(" %d\n", *pc);
     } else {

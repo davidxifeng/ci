@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
     }
     p[i] = 0;
     fclose(fd);
-    e[0] = -20250934;
+    e[0] = -20250934; // ? magic number meaning
 
     if ((i = parse_c()) == 0) {
         //if (src) return 0;

@@ -68,6 +68,7 @@ struct Process * create_process(
 int save_process(const char * process_file, struct Process * p);
 struct Process * load_process(const char * process_file);
 void free_process(struct Process * process);
+// the next function should be run_process(), six month later
 
 int run_c(int argc, char **argv, int debug);
 void next();
