@@ -82,11 +82,14 @@ const char * es[] =
 
 int main(int argc, char ** argv) {
     const char ** e = es;
-    while ((p = *e++)) {
-        printf("%s = %d\n", p, eval());
+    const char * s;
+    while ((s = *e++)) {
+        p = s;
+        printf("%s = %d\n", s, eval());
     }
-    while((p = *++argv)) {
-        printf("%s = %d\n", p, eval());
+    while((s = *++argv)) {
+        p = s;
+        printf("%s = %d\n", s, eval());
     }
     return 0;
 }
