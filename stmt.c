@@ -6,7 +6,7 @@
 extern char *p, *lp;
 extern char *data;
 
-extern int src, line, *le, *e, ival, *id, *sym;
+extern int src, line, *le, *e, ival;
 extern enum Token tk;
 
 void stmt() {
