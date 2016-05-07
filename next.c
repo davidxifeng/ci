@@ -4,13 +4,14 @@
 
 #include "ci.h"
 
-extern char *p, *lp;
-extern char *data;
-extern char *bd;
 
-extern int src, line, *le, *e, ival, *id, *sym;
+extern char *p, *data, *bd;
+extern int ival, *id, *sym;
 extern enum Token tk;
 
+
+extern char *lp;
+extern int src, line, *le, *e;
 void dump_source() {
     if (src) {
         printf("%d: %.*s", line, (int)(p - lp), lp);
@@ -27,6 +28,8 @@ void dump_source() {
     }
     ++line;
 }
+
+
 
 void next() {
     char *pp;

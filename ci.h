@@ -74,5 +74,6 @@ int run_c(int argc, char **argv, int debug);
 void next();
 void expr(int lev);
 void stmt();
+int parse();
 
 extern const char *op_codes;
