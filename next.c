@@ -21,7 +21,7 @@ void dump_source() {
 
         while (le < e) {
             ++le;
-            printf(ANSI_COLOR_BLUE ">% 3d "
+            printf(ANSI_COLOR_BLUE ">% 7d "
                   ANSI_COLOR_YELLOW "% 4d: "
                   ANSI_COLOR_RED "%8.4s",
                 (int)(le - be), lc++, &op_codes[*le * 5]);
