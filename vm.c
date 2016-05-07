@@ -21,30 +21,34 @@ const char *op_codes =
 
 static void
 debug_info(int *pc, int i, int cycle) {
-    printf("%d> %d: %.4s", cycle, (int)pc, &op_codes[i * 5]);
+    printf(ANSI_COLOR_GREEN "%d> %d: %.4s", cycle, (int)pc, &op_codes[i * 5]);
 
     // 本组指令有一个操作数
     if (i <= LGB) {
-        printf(" %d\n", *pc);
+        printf(" %d\n" ANSI_COLOR_RESET, *pc);
     } else {
-        printf("\n");
+        printf("\n" ANSI_COLOR_RESET);
     }
 }
 
-int run_c(int argc, char **argv, int debug) {
+int run_c(int argc, char **argv, int debug, int main_addr) {
     int *pc, *sp, *bp = NULL, a = 0, cycle; // vm registers
 
-    int *id = sym;
-    while (id[Tk]) {
-        if (!memcmp((const void *)id[Name], "main", 4)) {
-            break;
+    if (main_addr == -1) {
+        int *id = sym;
+        while (id[Tk]) {
+            if (!memcmp((const void *)id[Name], "main", 4)) {
+                break;
+            }
+            id = id + Idsz;
         }
-        id = id + Idsz;
-    }
 
-    if (!(pc = be + id[Val])) {
-        printf("main() not defined\n");
-        return -1;
+        if (!(pc = be + id[Val])) {
+            printf("main() not defined\n");
+            return -1;
+        }
+    } else {
+         pc = be + main_addr;
     }
 
     int stack_size = 128 * 1024;
@@ -120,13 +124,18 @@ int run_c(int argc, char **argv, int debug) {
             ci_case(MSET, a = (int)memset((char *)sp[2], sp[1], *sp);)
             ci_case(MCMP, a = memcmp((char *)sp[2], (char *)sp[1], *sp);)
             ci_case(EXIT,
-                    printf("exit(%d) cycle = %d\n", *sp, cycle);
+                    printf(ANSI_COLOR_BLUE "exit(%d) cycle = %d\n"
+                        ANSI_COLOR_RESET, *sp, cycle);
                     return *sp;)
 
             ci_default(
-                    printf("unknown instruction = %d! cycle = %d\n", i, cycle);
+                    printf(ANSI_COLOR_RED "unknown instruction = %d! cycle = %d\n"
+                        ANSI_COLOR_RESET, i, cycle);
                     return -1;)
         }
     }
     return 0;
 }
+
+
+// vim: tabstop=4 shiftwidth=4 softtabstop=4

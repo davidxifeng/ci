@@ -1,5 +1,11 @@
 #pragma once
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 // tokens and classes (operators last and in precedence order)
 enum Token {
     // " ~ ; ! { } ( ) ] , :
@@ -54,25 +60,20 @@ struct Process {
     char * bd;
     int data_size;
     int main_addr;
-    int argc;
-    char **argv;
 };
 
-struct Process * create_process(
-    int * e,
-    int * be,
-    char * data,
-    char * bd,
-    int argc,
-    char ** argv);
-int save_process(const char * process_file, struct Process * p);
+struct Process * create_process(int * e, int * be, char * data, char * bd, int * sym);
 struct Process * load_process(const char * process_file);
+int save_process(const char * process_file, struct Process * p);
 void free_process(struct Process * process);
+int run_process(int argc, char **argv, int debug);
 
-int run_c(int argc, char **argv, int debug);
+int run_c(int argc, char **argv, int debug, int main_addr);
 void next();
 void expr(int lev);
 void stmt();
 int parse();
 
 extern const char *op_codes;
+
+// vim: tabstop=4 shiftwidth=4 softtabstop=4

@@ -11,18 +11,24 @@ extern enum Token tk;
 
 
 extern char *lp;
-extern int src, line, *le, *e;
+extern int src, line, *le, *e, *be;
 void dump_source() {
     if (src) {
-        printf("%d: %.*s", line, (int)(p - lp), lp);
+        printf(ANSI_COLOR_GREEN "%d: %.*s" ANSI_COLOR_RESET, line, (int)(p - lp), lp);
         lp = p;
+
+        int lc = 1;
+
         while (le < e) {
             ++le;
-            printf("%d: %8.4s", (int)le, &op_codes[*le * 5]);
+            printf(ANSI_COLOR_BLUE ">% 3d "
+                  ANSI_COLOR_YELLOW "% 4d: "
+                  ANSI_COLOR_RED "%8.4s",
+                (int)(le - be), lc++, &op_codes[*le * 5]);
             if (*le <= LGB) {
-                printf(" %d\n", *++le);
+                printf(" %d\n" ANSI_COLOR_RESET, *++le);
             } else {
-                printf("\n");
+                printf("\n" ANSI_COLOR_RESET);
             }
         }
     }
@@ -188,3 +194,4 @@ void next() {
     }
 }
 
+// vim: tabstop=4 shiftwidth=4 softtabstop=4

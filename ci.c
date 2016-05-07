@@ -9,18 +9,18 @@
 
 char *p,
      *lp, // current position in source code
-    *data;    // data/bss pointer
+     *data;    // data/bss pointer
 
 char * bd;
 
 int *be;      // base address of text segment
 int *e, *le,  // current position in emitted code
     *id,      // currently parsed indentifier
-    *sym,     // symbol table (simple list of identifiers)
-    ival,     // current token value
-    ty,       // current expression type
+    *sym,    // symbol table (simple list of identifiers)
+    ival,    // current token value
+    ty,      // current expression type
     loc,      // local variable offset
-    line,     // current line number
+    line,    // current line number
     src;      // print source and assembly flag
 
 enum Token tk;       // current token
@@ -34,18 +34,63 @@ char ck_visible(char c) {
     }
 }
 
-int main(int argc, char **argv) {
-    int poolsz;
-    int i; // temps
+enum Action {
+    RunC = 0,
+    Compile,
+    RunBinary,
+};
 
+int real_main(int, char **, int, enum Action);
+
+int main(int argc, char **argv) {
     int debug = 0;    // print executed instructions
+    enum Action action = RunC;
 
     --argc; ++argv;
-    if (argc > 0 && **argv == '-' && (*argv)[1] == 's') { src = 1; --argc; ++argv; }
-    if (argc > 0 && **argv == '-' && (*argv)[1] == 'd') { debug = 1; --argc; ++argv; }
-    if (argc < 1) { printf("usage: c4 [-s] [-d] file ...\n"); return 0; }
+    if (argc > 0 && **argv == '-' && (*argv)[1] == 's') {
+        --argc; ++argv;
+        src = 1;
+    }
+    if (argc > 0 && **argv == '-' && (*argv)[1] == 'b') {
+        --argc; ++argv;
+        action = RunBinary;
+    }
+    if (argc > 0 && **argv == '-' && (*argv)[1] == 'c') {
+        --argc; ++argv;
+        action = Compile;
+    }
+    if (argc > 0 && **argv == '-' && (*argv)[1] == 'd') {
+        --argc; ++argv;
+        debug = 1;
+    }
+    if (argc < 1) {
+        printf("usage: ci [-s|b|c] [-d] file [...]\n");
+        printf("example:\n");
 
-    poolsz = 256*1024; // arbitrary size
+        printf(ANSI_COLOR_GREEN "\tci -s test.c\n" ANSI_COLOR_RESET);
+        printf("\t\tshow compile code\n\n");
+
+        printf(ANSI_COLOR_GREEN "\tci -b [-d] test.c.bin\n\n" ANSI_COLOR_RESET);
+        printf("\t\trun bytecode\n");
+
+        printf(ANSI_COLOR_GREEN "\tci [-c] test.c\n" ANSI_COLOR_RESET);
+        printf("\t\tcompile and save c code\n\n");
+
+        printf(ANSI_COLOR_GREEN "\tci [-d] test.c\n" ANSI_COLOR_RESET);
+        printf("\t\tcompile and run c code\n\n");
+        return 0;
+    }
+    return real_main(argc, argv, debug, action);
+}
+
+int real_main(int argc, char **argv, int debug, enum Action action) {
+    if (action == RunBinary) {
+        return run_process(argc, argv, debug);
+    }
+    int poolsz = 256*1024; // arbitrary size
+
+    int i; // temps
+
     if (!(sym = malloc(poolsz))) {
         printf("could not malloc(%d) symbol area\n", poolsz);
         return -1;
@@ -59,8 +104,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    memset(sym,  0, poolsz);
-    memset(e,    0, poolsz);
+    memset(sym, 0, poolsz);
+    memset(e,   0, poolsz);
     memset(data, 0, poolsz);
 
     p = "char else enum if int return while "
@@ -103,72 +148,19 @@ int main(int argc, char **argv) {
     // (1 << 32) - 0xfecafeca == 20250934
 
     if ((i = parse()) == 0) {
+        if (action == Compile) {
+            struct Process * p = create_process(e, be, data, bd, sym);
+            char buf[128];
+            snprintf(buf, 128, "%s.bin", *argv);
+            save_process(buf, p);
+            free_process(p);
+            return 0;
+        }
         if (src) return 0;
-        struct Process * p = create_process(e, be, data, bd, argc, argv);
-        save_process("process.bin", p);
-        free_process(p);
-
-        struct Process * pl = load_process("process.bin");
-        be = pl->be;
-        bd = pl->bd;
-        int r = run_c(argc, argv, debug);
-        free_process(pl);
-
-        return r;
+        return run_c(argc, argv, debug, -1);
     } else {
         return i;
     }
 }
 
-int save_process(const char * process_file, struct Process * p) {
-    FILE * f = fopen(process_file, "wb");
-
-    fwrite(&p->text_size, sizeof(p->text_size), 1, f);
-    fwrite(&p->data_size, sizeof(p->data_size), 1, f);
-    fwrite(p->be, 1, p->text_size, f);
-    fwrite(p->bd, 1, p->data_size, f);
-
-    fclose(f);
-    return 0;
-}
-
-struct Process * load_process(const char * process_file) {
-    FILE * f = fopen(process_file, "rb");
-
-    struct Process * p = malloc(sizeof *p);
-
-    fread(&p->text_size, sizeof(p->text_size), 1, f);
-    fread(&p->data_size, sizeof(p->data_size), 1, f);
-    p->be = malloc(p->text_size);
-    fread(p->be, 1, p->text_size, f);
-
-    p->bd = malloc(p->data_size);
-    fread(p->bd, 1, p->data_size, f);
-
-    fclose(f);
-    return p;
-}
-
-struct Process * create_process(int * e, int * be, char * data, char * bd,
-        int argc, char ** argv) {
-    struct Process * p = malloc(sizeof *p);
-
-    int ts = (e - be + 1) * sizeof (int);
-    p->text_size = ts;
-    p->be = malloc(ts);
-    memcpy(p->be, be, ts);
-
-    int ds = data - bd;
-    p->data_size = ds;
-    p->bd = malloc(ds);
-    memcpy(p->bd, bd, ds);
-    return p;
-}
-
-void free_process(struct Process * process) {
-    if(process) {
-        free(process->be);
-        free(process->bd);
-        free(process);
-    }
-}
+// vim: tabstop=4 shiftwidth=4 softtabstop=4
