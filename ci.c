@@ -7,7 +7,8 @@
 #include "ci.h"
 
 
-char *p, *lp, // current position in source code
+char *p,
+     *lp, // current position in source code
     *data;    // data/bss pointer
 
 char * bd;
@@ -97,19 +98,23 @@ int main(int argc, char **argv) {
     }
     p[i] = 0;
     fclose(fd);
-    e[0] = -20250934; // ? magic number meaning
+    e[0] = 0xfecafeca; // magic number cafecafe (little endian)
+    // 0xfecafeca --32位补码表示的数值--> -20250934
+    // (1 << 32) - 0xfecafeca == 20250934
 
     if ((i = parse()) == 0) {
-        //if (src) return 0;
+        if (src) return 0;
         struct Process * p = create_process(e, be, data, bd, argc, argv);
         save_process("process.bin", p);
         free_process(p);
 
-        struct Process * p2 = load_process("process.bin");
-        save_process("process2.bin", p2);
-        free_process(p2);
+        struct Process * pl = load_process("process.bin");
+        be = pl->be;
+        bd = pl->bd;
+        int r = run_c(argc, argv, debug);
+        free_process(pl);
 
-        return run_c(argc, argv, debug);
+        return r;
     } else {
         return i;
     }
