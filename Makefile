@@ -1,6 +1,6 @@
 
 
-ALL_C = ci.c vm.c next.c expr.c stmt.c parser.c
+ALL_C = ci.c vm.c next.c expr.c stmt.c parse.c
 
 ci_bin:
 	clang -Wall -m32 -O -o ci $(ALL_C)
