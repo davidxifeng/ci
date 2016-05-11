@@ -20,8 +20,8 @@ const char *op_codes =
   "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,";
 
 static void
-debug_info(int *pc, int i, int cycle) {
-  printf(COLOR_GREEN "%d> %d: %.4s", cycle, (int)pc, &op_codes[i * 5]);
+dump_instruction(int *pc, int i, int cycle) {
+  printf(COLOR_GREEN "%d> %d: %.4s", cycle, (int)(pc - 1 - be), &op_codes[i * 5]);
 
   // 本组指令有一个操作数
   if (i <= LGB) {
@@ -75,7 +75,7 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
 
   while (1) {
     i = *pc++; ++cycle;
-    if (debug) debug_info(pc, i, cycle);
+    if (debug) dump_instruction(pc, i, cycle);
 
     ci_dispatch(i) {
       ci_case(LEA, a = (int)(bp + *pc++);)                         // load local address
