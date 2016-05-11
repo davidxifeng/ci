@@ -10,3 +10,5 @@ a.out
 *.asm
 *.bin
 *.log
+
+/todo.md

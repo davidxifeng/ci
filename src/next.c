@@ -10,8 +10,39 @@ extern int ival, *id, *sym;
 extern enum Token tk;
 
 
+// buf的长度最坏情况下需要是input的2倍
+void q_string(char * buf, const char * input) {
+    while (*input) {
+        switch(*input) {
+            case '\n':
+                *buf++ = '\\';
+                *buf++ = 'n';
+                break;
+            case '\t':
+                *buf++ = '\\';
+                *buf++ = 'n';
+                break;
+            default :
+                *buf++ = *input;
+        }
+        ++input;
+    }
+    *buf++ = '\0';
+}
+
+const char * id_end(const char * p) {
+    ++p;
+    while ( (*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z')
+            || (*p >= '0' && *p <= '9')
+            || *p == '_') {
+        ++p;
+    }
+    return p;
+}
+
 extern char *lp;
 extern int src, line, *le, *e, *be;
+static char buf[128];
 void dump_source() {
     if (src) {
         printf(ANSI_COLOR_GREEN "%d: %.*s" ANSI_COLOR_RESET, line, (int)(p - lp), lp);
@@ -26,7 +57,29 @@ void dump_source() {
                   ANSI_COLOR_RED "%8.4s",
                 (int)(le - be), lc++, &op_codes[*le * 5]);
             if (*le <= LGB) {
-                printf(" %d\n" ANSI_COLOR_RESET, *++le);
+                printf(" % 4d", *++le);
+
+                if (*(le - 1) == LGB) {
+
+                    int *id = sym;
+                    int print_id = 0;
+                    while (id[Tk]) {
+                        if (id[Class] == Glo && id[Val] == *le) {
+                            print_id = 1;
+                            break;
+                        }
+                        id = id + Idsz;
+                    }
+                    if (print_id) {
+                        int idc = (int)id_end((const char *)id[Name]) - id[Name];
+                        memcpy(buf, (const char *)id[Name], idc);
+                        buf[idc] = '\0';
+                    } else {
+                        q_string(buf, bd + *le);
+                    }
+                    printf(ANSI_COLOR_YELLOW "\t;  %s", buf);
+                }
+                printf("\n" ANSI_COLOR_RESET);
             } else {
                 printf("\n" ANSI_COLOR_RESET);
             }
@@ -102,13 +155,13 @@ void next() {
             pp = data;
             while (*p != 0 && *p != tk) {
                 if ((ival = *p++) == '\\') {
+                    // TODO 在这里增加对标准C的转义字符的支持
                     if ((ival = *p++) == 'n') ival = '\n';
                 }
                 if (tk == '"') *data++ = ival;
             }
             ++p;
             if (tk == '"') {
-                //ival = (int)pp;
                 ival = (int)(pp - bd);
             } else {
                 tk = Num;

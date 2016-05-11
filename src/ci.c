@@ -130,7 +130,6 @@ int real_main(int argc, char **argv, int debug, enum Action action) {
         printf("could not malloc(%d) source area\n", poolsz);
         return -1;
     }
-
     FILE *fd;
     if ((fd = fopen(*argv, "r")) == 0) {
         printf("could not fopen(%s)\n", *argv);
@@ -143,6 +142,7 @@ int real_main(int argc, char **argv, int debug, enum Action action) {
     }
     p[i] = 0;
     fclose(fd);
+
     e[0] = 0xfecafeca; // magic number cafecafe (little endian)
     // 0xfecafeca --32位补码表示的数值--> -20250934
     // (1 << 32) - 0xfecafeca == 20250934
