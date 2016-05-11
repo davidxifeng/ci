@@ -1,36 +1,36 @@
 #pragma once
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
+#define COLOR_RED     "\x1b[31m"
+#define COLOR_GREEN   "\x1b[32m"
+#define COLOR_YELLOW  "\x1b[33m"
+#define COLOR_BLUE    "\x1b[34m"
+#define COLOR_RESET   "\x1b[0m"
 
 // tokens and classes (operators last and in precedence order)
 enum Token {
-    // " ~ ; ! { } ( ) ] , :
-    Num = 128, Fun, Sys, Glo, Loc, Id,
+  // " ~ ; ! { } ( ) ] , :
+  Num = 128, Fun, Sys, Glo, Loc, Id,
 
-    // keywords
-    Char, Else, Enum, If, Int, Return, While,
+  // keywords
+  Char, Else, Enum, If, Int, Return, While,
 
-    // operators
-    Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge,
-    Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
+  // operators
+  Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge,
+  Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
 };
 
 // opcodes
 enum Opcodes {
-    LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LGB ,
+  LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LGB ,
 
-    LEV ,
+  LEV ,
 
-    LI  ,LC  ,SI  ,SC  ,PSH ,
+  LI  ,LC  ,SI  ,SC  ,PSH ,
 
-    OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,
-    SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,
+  OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,
+  SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,
 
-    OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT
+  OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT
 };
 
 // types
@@ -42,24 +42,24 @@ enum { CHAR, INT, /*add new types here*/ PTR };
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
 struct Identifier {
-    enum Token tk;
-    int hash;
-    char * name;
-    enum Token tokenClass; // num glo loc fun sys
-    int type;
-    int value; // 函数地址 立即数值 ...
+  enum Token tk;
+  int hash;
+  char * name;
+  enum Token tokenClass; // num glo loc fun sys
+  int type;
+  int value; // 函数地址 立即数值 ...
 
-    enum Token hTokenClass;
-    int hType;
-    int hValue;
+  enum Token hTokenClass;
+  int hType;
+  int hValue;
 };
 
 struct Process {
-    int * be;
-    int text_size;
-    char * bd;
-    int data_size;
-    int main_addr;
+  int * be;
+  int text_size;
+  char * bd;
+  int data_size;
+  int main_addr;
 };
 
 struct Process * create_process(int * e, int * be, char * data, char * bd, int * sym);
@@ -76,4 +76,4 @@ int parse();
 
 extern const char *op_codes;
 
-// vim: tabstop=4 shiftwidth=4 softtabstop=4
+// vim: tabstop=2 shiftwidth=2 softtabstop=2
