@@ -33,6 +33,8 @@ enum Opcodes {
   OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT
 };
 
+extern const char *op_codes;
+
 // types
 // 1. basic types
 // 2. pointer types: basic type + n * ptr
@@ -54,26 +56,14 @@ struct Identifier {
   int hValue;
 };
 
-struct Process {
-  int * be;
-  int text_size;
-  char * bd;
-  int data_size;
-  int main_addr;
-};
-
-struct Process * create_process(int * e, int * be, char * data, char * bd, int * sym);
-struct Process * load_process(const char * process_file);
-int save_process(const char * process_file, struct Process * p);
-void free_process(struct Process * process);
+int save_process(const char * file, int *e, int *be, char *data, char *bd, int *sym);
 int run_process(int argc, char **argv, int debug);
 
 int run_c(int argc, char **argv, int debug, int main_addr);
+
 void next();
 void expr(int lev);
 void stmt();
 int parse();
-
-extern const char *op_codes;
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2

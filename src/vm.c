@@ -4,6 +4,10 @@
 #include <memory.h>
 #include "ci.h"
 
+#define ci_dispatch(o)  switch(o)
+#define ci_case(c,b)    case c: {b} break;
+#define ci_default(b)   default: {b};
+
 extern int * sym;
 
 extern int * be;
@@ -62,16 +66,13 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
   sp    = sp + stack_size;
   *--sp = EXIT; // call exit if main returns
   *--sp = PSH;
+
   t     = sp;
   *--sp = argc;
   *--sp = (int)argv;
   *--sp = (int)t;
 
   cycle = 0;
-
-#define ci_dispatch(o)  switch(o)
-#define ci_case(c,b)    case c: {b} break;
-#define ci_default(b)   default: {b};
 
   while (1) {
     i = *pc++; ++cycle;
@@ -133,6 +134,5 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
   }
   return 0;
 }
-
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2

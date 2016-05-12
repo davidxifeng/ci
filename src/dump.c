@@ -4,6 +4,14 @@
 
 #include "ci.h"
 
+struct Process {
+  int * be;
+  char * bd;
+  int text_size;
+  int data_size;
+  int main_addr;
+};
+
 struct Process * create_process(int * e, int * be, char * data, char * bd, int * sym) {
   struct Process * p = malloc(sizeof *p);
 
@@ -37,17 +45,19 @@ struct Process * create_process(int * e, int * be, char * data, char * bd, int *
 extern char * bd;
 extern int *be;
 
-int run_process(int argc, char **argv, int debug) {
-  struct Process * pl = load_process(*argv);
-  be = pl->be;
-  bd = pl->bd;
-  int r = run_c(argc, argv, debug, pl->main_addr);
-  free_process(pl);
-  return r;
+void free_process(struct Process * process) {
+  if(process) {
+    free(process->be);
+    free(process->bd);
+    free(process);
+  }
 }
 
+int save_process(const char * process_file,
+    int * e, int * be, char * data, char * bd, int * sym) {
+  struct Process * p = create_process(e, be, data, bd, sym);
+  if (p == NULL) return -1;
 
-int save_process(const char * process_file, struct Process * p) {
   FILE * f = fopen(process_file, "wb");
 
   fwrite(&p->main_addr, sizeof(p->main_addr), 1, f);
@@ -57,11 +67,15 @@ int save_process(const char * process_file, struct Process * p) {
   fwrite(p->bd, 1, p->data_size, f);
 
   fclose(f);
+
+  free_process(p);
+
   return 0;
 }
 
 struct Process * load_process(const char * process_file) {
   FILE * f = fopen(process_file, "rb");
+  if (!f) return NULL;
 
   struct Process * p = malloc(sizeof *p);
 
@@ -78,12 +92,15 @@ struct Process * load_process(const char * process_file) {
   return p;
 }
 
-void free_process(struct Process * process) {
-  if(process) {
-    free(process->be);
-    free(process->bd);
-    free(process);
-  }
+int run_process(int argc, char **argv, int debug) {
+  struct Process * pl = load_process(*argv);
+  if (!pl) return -1;
+
+  be = pl->be;
+  bd = pl->bd;
+  int r = run_c(argc, argv, debug, pl->main_addr);
+  free_process(pl);
+  return r;
 }
 
 

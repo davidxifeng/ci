@@ -149,11 +149,9 @@ int real_main(int argc, char **argv, int debug, enum Action action) {
 
   if ((i = parse()) == 0) {
     if (action == Compile) {
-      struct Process * p = create_process(e, be, data, bd, sym);
       char buf[128];
       snprintf(buf, 128, "%s.bin", *argv);
-      save_process(buf, p);
-      free_process(p);
+      save_process(buf, e, be, data, bd, sym);
       return 0;
     }
     if (src) return 0;
