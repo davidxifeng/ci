@@ -1,9 +1,10 @@
-# little C
+# Little C
 
 A little C interpreter/compiler suite inspired by
-[c4](https://github.com/rswier/c4).
+[c4](https://github.com/rswier/c4). It is write in C and Lua.
 
-**note** this project is mainly for learning, and is in very early stage.
+
+**note:** this project is mainly for learning, and is in very early stage.
 
 ## What's being worked on now
 

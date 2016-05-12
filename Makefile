@@ -10,3 +10,6 @@ debug_ci_bin:
 
 test_ci:
 	./ci test/test.c
+
+build_lua:
+	make -C lua/src linux MYCFLAGS='-g -ULUA_COMPAT_5_2'
