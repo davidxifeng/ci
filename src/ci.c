@@ -67,16 +67,16 @@ int main(int argc, char **argv) {
     printf("usage: ci [-s|b|c] [-d] file [...]\n");
     printf("example:\n");
 
-    printf(COLOR_GREEN "\tci -s test.c\n" COLOR_RESET);
+    printf(GREEN("\tci -s test.c\n"));
     printf("\t\tshow compile code\n\n");
 
-    printf(COLOR_GREEN "\tci -b [-d] test.c.bin\n\n" COLOR_RESET);
+    printf(GREEN("\tci -b [-d] test.c.bin\n\n"));
     printf("\t\trun bytecode\n");
 
-    printf(COLOR_GREEN "\tci [-c] test.c\n" COLOR_RESET);
+    printf(GREEN("\tci [-c] test.c\n"));
     printf("\t\tcompile and save c code\n\n");
 
-    printf(COLOR_GREEN "\tci [-d] test.c\n" COLOR_RESET);
+    printf(GREEN("\tci [-d] test.c\n"));
     printf("\t\tcompile and run c code\n\n");
     return 0;
   }

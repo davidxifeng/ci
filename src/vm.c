@@ -124,11 +124,11 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
       ci_case(MSET, a = (int)memset((char *)sp[2], sp[1], *sp);)
       ci_case(MCMP, a = memcmp((char *)sp[2], (char *)sp[1], *sp);)
       ci_case(EXIT,
-          printf(COLOR_BLUE "exit(%d) cycle = %d\n" COLOR_RESET, *sp, cycle);
+          printf(BLUE("exit(%d) cycle = %d\n"), *sp, cycle);
           return *sp;)
 
       ci_default(
-          printf(COLOR_RED "unknown instruction = %d! cycle = %d\n" COLOR_RESET, i, cycle);
+          printf(RED("unknown instruction = %d! cycle = %d\n"), i, cycle);
           return -1;)
     }
   }

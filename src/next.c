@@ -40,7 +40,7 @@ void dump_source() {
   ++line;
   if (!src) return;
 
-  printf(COLOR_GREEN "%d: %.*s" COLOR_RESET, line, (int)(p - lp), lp);
+  printf(GREEN("%d: %.*s"), line, (int)(p - lp), lp);
 
   lp = p;
   int lc = 1;

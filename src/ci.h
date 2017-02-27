@@ -6,6 +6,11 @@
 #define COLOR_BLUE    "\x1b[34m"
 #define COLOR_RESET   "\x1b[0m"
 
+#define RED(s)    (COLOR_RED    s COLOR_RESET)
+#define GREEN(s)  (COLOR_GREEN  s COLOR_RESET)
+#define YELLOW(s) (COLOR_YELLOW s COLOR_RESET)
+#define BLUE(s)   (COLOR_BLUE   s COLOR_RESET)
+
 // tokens and classes (operators last and in precedence order)
 enum Token {
   // " ~ ; ! { } ( ) ] , :

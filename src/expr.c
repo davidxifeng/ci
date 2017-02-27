@@ -27,7 +27,7 @@ void parse_expr() {
       while (tk == '"') next();
       // align data pointer by 4 and terminate string with zero
       // (memory block is init with zero)
-      data = (char *)((int)data + 4 & -4); ty = PTR;
+      data = (char *)((int)(data + 4) & -4); ty = PTR;
       break;
     case Id:
       d = id; next();
