@@ -88,6 +88,8 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
 			ci_case(BNZ, pc = a ? pc + *pc : pc + 1;)                    // branch if not zero
 			ci_case(ENT, *--sp = (int)bp; bp = sp; sp = sp - *pc++;)     // enter subroutine
 			ci_case(ADJ, sp = sp + *pc++;)                               // stack adjust
+
+			// global： 指针或者是一个int值，存入到栈上
 			ci_case(LGB, a = (int)(bd + *pc++);)                         // load global address
 			ci_case(LEV, sp = bp; bp = (int *)*sp++; pc = (int *)*sp++;) // leave subroutine
 

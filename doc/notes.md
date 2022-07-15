@@ -11,3 +11,23 @@ and querying compilerPath: "/usr/bin/cc"
 这个项目从发现到开始学习,已经过去8年了,8年!
 
 如今,当初的一些想法现在都还没有实现,不如就从这个周末开始,继续学习吧
+
+
+1> 1: ENT  0
+
+2> 3: LGB  0
+3> 5: PSH
+
+4> 6: IMM  1
+5> 8: PSH
+
+6> 9: PRTF
+hello 1
+7> 10: ADJ  2
+
+8> 12: IMM  0
+9> 14: LEV
+
+10> -400519362: PSH
+11> -400519361: EXIT
+exit(0) cycle = 11
