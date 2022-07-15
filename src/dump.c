@@ -1,21 +1,22 @@
+#include <assert.h>
+#include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 
 #include "ci.h"
 
 struct Process {
-	int * be;
-	char * bd;
+	int *be;  // 代码段基地址
+	char *bd; // 数据段基地址
 	int text_size;
 	int data_size;
 	int main_addr;
 };
 
-struct Process * create_process(int * e, int * be, char * data, char * bd, int * sym) {
-	struct Process * p = malloc(sizeof *p);
+struct Process *create_process(int *e, int *be, char *data, char *bd, int *sym) {
+	struct Process *p = malloc(sizeof *p);
 
-	int ts = (e - be + 1) * sizeof (int);
+	int ts = (e - be + 1) * sizeof(int);
 	p->text_size = ts;
 	p->be = malloc(ts);
 	memcpy(p->be, be, ts);
@@ -24,7 +25,6 @@ struct Process * create_process(int * e, int * be, char * data, char * bd, int *
 	p->data_size = ds;
 	p->bd = malloc(ds);
 	memcpy(p->bd, bd, ds);
-
 
 	int *id = sym;
 	while (id[Tk]) {
@@ -42,23 +42,23 @@ struct Process * create_process(int * e, int * be, char * data, char * bd, int *
 	return p;
 }
 
-extern char * bd;
+extern char *bd;
 extern int *be;
 
-void free_process(struct Process * process) {
-	if(process) {
+void free_process(struct Process *process) {
+	if (process) {
 		free(process->be);
 		free(process->bd);
 		free(process);
 	}
 }
 
-int save_process(const char * process_file,
-		int * e, int * be, char * data, char * bd, int * sym) {
-	struct Process * p = create_process(e, be, data, bd, sym);
-	if (p == NULL) return -1;
+int save_process(const char *process_file, int *e, int *be, char *data, char *bd, int *sym) {
+	struct Process *p = create_process(e, be, data, bd, sym);
+	if (p == NULL)
+		return -1;
 
-	FILE * f = fopen(process_file, "wb");
+	FILE *f = fopen(process_file, "wb");
 
 	fwrite(&p->main_addr, sizeof(p->main_addr), 1, f);
 	fwrite(&p->text_size, sizeof(p->text_size), 1, f);
@@ -73,28 +73,35 @@ int save_process(const char * process_file,
 	return 0;
 }
 
-struct Process * load_process(const char * process_file) {
-	FILE * f = fopen(process_file, "rb");
-	if (!f) return NULL;
+struct Process *load_process(const char *process_file) {
+	FILE *f = fopen(process_file, "rb");
+	if (!f)
+		return NULL;
 
-	struct Process * p = malloc(sizeof *p);
+	// 这些代码质量太差了，仅仅是可以跑通预期的正常流程，几乎没有考虑错误处理，资源释放
 
-	fread(&p->main_addr, sizeof(p->main_addr), 1, f);
-	fread(&p->text_size, sizeof(p->text_size), 1, f);
-	fread(&p->data_size, sizeof(p->data_size), 1, f);
+	struct Process *p = malloc(sizeof *p);
+
+	size_t rr;
+	// just for silent warning
+	rr = fread(&p->main_addr, sizeof(p->main_addr), 1, f);
+	assert(rr == sizeof(p->main_addr));
+	rr = fread(&p->text_size, sizeof(p->text_size), 1, f);
+	rr = fread(&p->data_size, sizeof(p->data_size), 1, f);
 	p->be = malloc(p->text_size);
-	fread(p->be, 1, p->text_size, f);
+	rr = fread(p->be, 1, p->text_size, f);
 
 	p->bd = malloc(p->data_size);
-	fread(p->bd, 1, p->data_size, f);
+	rr = fread(p->bd, 1, p->data_size, f);
 
 	fclose(f);
 	return p;
 }
 
 int run_process(int argc, char **argv, int debug) {
-	struct Process * pl = load_process(*argv);
-	if (!pl) return -1;
+	struct Process *pl = load_process(*argv);
+	if (!pl)
+		return -1;
 
 	be = pl->be;
 	bd = pl->bd;
@@ -102,5 +109,3 @@ int run_process(int argc, char **argv, int debug) {
 	free_process(pl);
 	return r;
 }
-
-// vim: tabstop=2 shiftwidth=2 softtabstop=2
