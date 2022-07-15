@@ -8,10 +8,10 @@
 
 
 char *p,
-   *lp, // current position in source code
-   *data;    // data/bss pointer
+    *lp, // current position in source code
+    *data,    // data/bss pointer
+    *bd;    // 数据段基地址
 
-char * bd;
 
 int *be;      // base address of text segment
 int *e, *le,  // current position in emitted code
