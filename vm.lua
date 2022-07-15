@@ -216,7 +216,7 @@ local function main()
   local fn = arg[1]
   if fn then
     local p = lc_load(fn)
-    --lc_dump(p)
+    -- lc_dump(p)
     lc_run(p)
   end
 end
