@@ -33,12 +33,8 @@ dump_instruction(int *pc, int i, int cycle) {
 	}
 }
 
-// 符号表
-extern int * sym;
-
-
-// 数据段基地址
-extern char * bd;
+extern int * sym; // 符号表
+extern char * bd; // 数据段基地址
 
 int run_c(int argc, char **argv, int debug, int main_addr) {
 	int *pc, *sp, *bp = NULL, a = 0, cycle; // vm registers

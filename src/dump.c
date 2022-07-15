@@ -81,18 +81,25 @@ struct Process *load_process(const char *process_file) {
 	// 这些代码质量太差了，仅仅是可以跑通预期的正常流程，几乎没有考虑错误处理，资源释放
 
 	struct Process *p = malloc(sizeof *p);
+	assert(p);
 
 	size_t rr;
 	// just for silent warning
 	rr = fread(&p->main_addr, sizeof(p->main_addr), 1, f);
-	assert(rr == sizeof(p->main_addr));
+	assert(rr == 1);
 	rr = fread(&p->text_size, sizeof(p->text_size), 1, f);
+	assert(rr == 1);
 	rr = fread(&p->data_size, sizeof(p->data_size), 1, f);
+	assert(rr == 1);
 	p->be = malloc(p->text_size);
+	assert(p->be);
 	rr = fread(p->be, 1, p->text_size, f);
+	assert(rr == p->text_size);
 
 	p->bd = malloc(p->data_size);
+	assert(p->bd);
 	rr = fread(p->bd, 1, p->data_size, f);
+	assert(rr == p->data_size);
 
 	fclose(f);
 	return p;
