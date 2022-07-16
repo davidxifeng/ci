@@ -37,13 +37,15 @@ extern int * sym; // 符号表
 extern char * bd; // 数据段基地址
 
 int run_c(int argc, char **argv, int debug, int main_addr) {
-	int *pc, *sp, *bp = NULL, a = 0, cycle; // vm registers
+	int *pc, *sp; // 栈地址
+	int *bp = NULL, a = 0, cycle = 0; // vm registers
 
+	// 解析运行时,从符号表中查找main函数的地址
 	if (main_addr == -1) {
 		int *id = sym;
 		while (id[Tk]) {
 			if (!memcmp((const void *)id[Name], "main", 4)) {
-	break;
+				break;
 			}
 			id = id + Idsz;
 		}
@@ -72,8 +74,6 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
 	*--sp = argc;
 	*--sp = (int)argv;
 	*--sp = (int)t;
-
-	cycle = 0;
 
 	while (1) {
 		i = *pc++; ++cycle;

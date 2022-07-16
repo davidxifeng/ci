@@ -1,49 +1,5 @@
 #!/usr/bin/env lua
 
-local LEA = 0
-local IMM = 1
-local JMP = 2
-local JSR = 3
-local BZ = 4
-local BNZ = 5
-local ENT = 6
-local ADJ = 7
-local LGB = 8
-local LEV = 9
-
-local LI = 10
-local LC = 11
-local SI = 12
-local SC = 13
-local PSH = 14
-
-local OR = 15
-local XOR = 16
-local AND = 17
-local EQ = 18
-local NE = 19
-local LT = 20
-local GT = 21
-local LE = 22
-local GE = 23
-
-local SHL = 24
-local SHR = 25
-local ADD = 26
-local SUB = 27
-local MUL = 28
-local DIV = 29
-local MOD = 30
-
-local OPEN = 31
-local READ = 32
-local CLOS = 33
-local PRTF = 34
-local MALC = 35
-local MSET = 36
-local MCMP = 37
-local EXIT = 38
-
 --- module vm
 -- Thu 19:11 May 12
 
@@ -217,4 +173,36 @@ local function main()
     end
 end
 
-return main()
+-- return main()
+
+local function run()
+	local codes = {
+		{'push', 'hello'},
+		{'print'},
+		-- {'adjust', 1},
+		-- {'push', 'hello'},
+		-- {'push', 'world'},
+		-- {'print'},
+		-- {'adjust', 1},
+		{'halt'},
+	}
+
+
+	local stack = {}
+	local pc = 0
+	while true do
+		pc = pc + 1
+		local opcode, operand = table.unpack(codes[pc])
+		if opcode == 'push' then
+			stack[#stack+1] = operand
+		elseif opcode == 'print' then
+			print(string.format(stack[#stack]))
+		elseif opcode == 'halt' then
+			break
+		else
+			-- print('TODO ', opcode)
+		end
+	end
+end
+
+run()
