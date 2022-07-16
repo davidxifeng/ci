@@ -5,6 +5,7 @@
 *.dSYM
 *.o
 a.out
+luac.out
 
 *.asm
 *.bin
@@ -13,3 +14,4 @@ a.out
 /todo.md
 
 /.vscode
+

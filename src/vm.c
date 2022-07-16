@@ -80,17 +80,25 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
 		if (debug) dump_instruction(pc, i, cycle);
 
 		ci_dispatch(i) {
+			////////
+			// 单操作数指令
 			ci_case(LEA, a = (int)(bp + *pc++);)                         // load local address
 			ci_case(IMM, a = *pc++;)                                     // load immediate
 			ci_case(JMP, pc = pc + *pc;)                                 // jump
+			// jump to sub routine
 			ci_case(JSR, *--sp = (int)(pc + 1); pc = be + *pc;)          // jump to subroutine
 			ci_case(BZ,  pc = a ? pc + 1 : pc + *pc;)                    // branch if zero
 			ci_case(BNZ, pc = a ? pc + *pc : pc + 1;)                    // branch if not zero
 			ci_case(ENT, *--sp = (int)bp; bp = sp; sp = sp - *pc++;)     // enter subroutine
+			// 调整栈 从栈上弹出N个值
 			ci_case(ADJ, sp = sp + *pc++;)                               // stack adjust
 
 			// global： 指针或者是一个int值，存入到栈上
 			ci_case(LGB, a = (int)(bd + *pc++);)                         // load global address
+
+
+			////////
+			// 无操作数指令
 			ci_case(LEV, sp = bp; bp = (int *)*sp++; pc = (int *)*sp++;) // leave subroutine
 
 			ci_case(LI,  a = *(int *)a;)          // load int
