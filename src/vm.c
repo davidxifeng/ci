@@ -87,6 +87,7 @@ int run_c(int argc, char **argv, int debug, int main_addr) {
 			ci_case(JMP, pc = pc + *pc;)                                 // jump
 			// jump to sub routine
 			ci_case(JSR, *--sp = (int)(pc + 1); pc = be + *pc;)          // jump to subroutine
+			// 寄存器A 值为0时跳转, 非0时继续执行
 			ci_case(BZ,  pc = a ? pc + 1 : pc + *pc;)                    // branch if zero
 			ci_case(BNZ, pc = a ? pc + *pc : pc + 1;)                    // branch if not zero
 			ci_case(ENT, *--sp = (int)bp; bp = sp; sp = sp - *pc++;)     // enter subroutine
