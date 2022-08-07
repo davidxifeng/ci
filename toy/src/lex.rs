@@ -61,6 +61,21 @@ struct TokenState<'a> {
 
 use itertools::Itertools;
 
+#[inline]
+fn is_digit(c: &char) -> bool {
+    *c >= '0' && *c <= '9'
+}
+
+#[inline]
+fn is_id_initial_char(c: &char) -> bool {
+    let c = *c;
+    c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
+}
+#[inline]
+fn is_id_char(c: &char) -> bool {
+    is_id_initial_char(c) || is_digit(c)
+}
+
 impl Iterator for TokenState<'_> {
     type Item = Token;
 
@@ -89,38 +104,20 @@ impl Iterator for TokenState<'_> {
                     '\n' => {
                         self.line += 1;
                     }
-		    // 这里的做法太缺乏思考和学习了. 应该所有的标识符一起处理
-		    // 然后根据 '符号表' 判断是关键字还是普通标识符
-                    'i' => {
-                        if let Some(_) = chars.peeking_take_while(|&x| x == 'f').next() {
-                            self.input = chars.as_str();
-                            return Some(Token::Keyword(Keyword::If));
-                        } else {
-                            self.input = chars.as_str();
-                            return Some(Token::Unknown(c));
+                    // 这里的做法太缺乏思考和学习了. 应该所有的标识符一起处理
+                    // 然后根据 '符号表' 判断是关键字还是普通标识符
+                    _ if is_id_initial_char(&c) => {
+                        let mut ids = String::from(c);
+                        while let Some(idc) = chars.peeking_take_while(is_id_char).next() {
+                            ids.push(idc);
                         }
+                        self.input = chars.as_str();
+                        return Some(Token::Id(ids));
                     }
-                    'e' => {
-                        // Monad的感觉
-                        if let Some(_) = chars
-                            .peeking_take_while(|&x| x == 'l')
-                            .next()
-                            .and_then(|_| chars.peeking_take_while(|&x| x == 's').next())
-                            .and_then(|_| chars.peeking_take_while(|&x| x == 'e').next())
-                        {
-                            self.input = chars.as_str();
-                            return Some(Token::Keyword(Keyword::Else));
-                        } else {
-                            self.input = chars.as_str();
-                            return Some(Token::Unknown(c));
-                        }
-                    }
-                    ch if ch > '0' && ch < '9' => {
+                    ch if is_digit(&c) => {
                         // as u8 or u32, which is better?
                         let mut iv = ch as u32 - '0' as u32;
-                        while let Some(nch) =
-                            chars.peeking_take_while(|&x| x >= '0' && x <= '9').next()
-                        {
+                        while let Some(nch) = chars.peeking_take_while(is_digit).next() {
                             iv = iv * 10 + (nch as u32) - ('0' as u32);
                         }
                         self.input = chars.as_str();
@@ -146,24 +143,24 @@ mod tests {
     fn run_lex_1() {
         assert_eq!(lex("123"), vec![Token::Num(123)]);
         assert_eq!(lex("1 23"), vec![Token::Num(1), Token::Num(23)]);
-        assert_eq!(lex("1x23"), vec![Token::Num(1), Token::Num(23)]);
+        assert_eq!(
+            lex("1x23"),
+            vec![Token::Num(1), Token::Id("x23".to_string())]
+        );
     }
 
     #[test]
     fn run_lex_2() {
-        assert_eq!(lex("if"), vec![Token::Keyword(Keyword::If)]);
-        assert_eq!(lex("ix"), vec![Token::Unknown('i')]);
+        assert_eq!(lex("if"), vec![Token::Id("if".to_string())]);
+        assert_eq!(lex("ix"), vec![Token::Id("ix".to_string())]);
         assert_eq!(
-            lex("ifix"),
-            vec![Token::Keyword(Keyword::If), Token::Unknown('i')]
+            lex("if ix"),
+            vec![Token::Id("if".to_string()), Token::Id("ix".to_string())]
         );
         assert_eq!(
-            lex("ifelse"),
-            vec![Token::Keyword(Keyword::If), Token::Keyword(Keyword::Else)]
+            lex("else 123"),
+            vec![Token::Id("else".to_string()), Token::Num(123)]
         );
-        assert_eq!(
-            lex("if123"),
-            vec![Token::Keyword(Keyword::If), Token::Num(123)]
-        );
+        assert_eq!(lex("if_123"), vec![Token::Id("if_123".to_string())]);
     }
 }
