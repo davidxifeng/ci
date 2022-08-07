@@ -89,6 +89,8 @@ impl Iterator for TokenState<'_> {
                     '\n' => {
                         self.line += 1;
                     }
+		    // 这里的做法太缺乏思考和学习了. 应该所有的标识符一起处理
+		    // 然后根据 '符号表' 判断是关键字还是普通标识符
                     'i' => {
                         if let Some(_) = chars.peeking_take_while(|&x| x == 'f').next() {
                             self.input = chars.as_str();
