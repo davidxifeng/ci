@@ -57,42 +57,42 @@ struct TokenState<'a> {
     line: isize,
 }
 
+use itertools::Itertools;
+
 impl Iterator for TokenState<'_> {
-    type Item = Result<Token, String>;
+    type Item = Token;
+
     fn next(&mut self) -> Option<Self::Item> {
         let mut chars = self.input.chars();
 
-        let tk: Token = Token::Num(1);
-
-        let r = match chars.next() {
-            None => None,
-            Some(c) => match c {
-                 c if c > '0' && c < '9' => {
-			Some(Ok(tk))
-		 }
-                _ => Some(Err("unknown".to_string())),
-            },
-        };
-
-	self.input = chars.as_str();
-	r
+        loop {
+            match chars.next() {
+                None => {
+                    self.input = chars.as_str();
+                    return None;
+                }
+                Some(c) => match c {
+                    ch if ch > '0' && ch < '9' => {
+                        // as u8 or u32, which is better?
+                        let mut iv = ch as u32 - '0' as u32;
+                        while let Some(nch) =
+                            chars.peeking_take_while(|&x| x >= '0' && x <= '9').next()
+                        {
+                            iv = iv * 10 + (nch as u32) - ('0' as u32);
+                        }
+                        self.input = chars.as_str();
+                        return Some(Token::Num(iv as i64));
+                    }
+                    _ => {}
+                },
+            };
+        }
     }
 }
 
 /// 对输入字符串进行词法解析,得到一组token list,或者错误信息
-fn lex(input: &str) -> Result<Vec<Token>, String> {
-    let mut tl = vec![];
-    let ts = TokenState {
-        input,
-        line: 1,
-    };
-    for r in ts {
-        match r {
-            Ok(tk) => tl.push(tk),
-            Err(err) => return Err(err),
-        }
-    }
-    Ok(tl)
+fn lex(input: &str) -> Vec<Token> {
+    TokenState { input, line: 1 }.collect()
 }
 
 #[cfg(test)]
@@ -101,6 +101,8 @@ mod tests {
 
     #[test]
     fn run_demo_lex() {
-        assert_eq!(lex("12"), Ok(vec![Token::Num(1), Token::Num(1)]));
+        assert_eq!(lex("123"), vec![Token::Num(123)]);
+        assert_eq!(lex("1 23"), vec![Token::Num(1), Token::Num(23)]);
+        assert_eq!(lex("1x23"), vec![Token::Num(1), Token::Num(23)]);
     }
 }

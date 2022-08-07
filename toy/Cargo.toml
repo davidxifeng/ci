@@ -12,6 +12,7 @@ clap = { version = "3.2.16", features = ["derive"] }
 console = "0.15.1"
 dialoguer = "0.10.2"
 indicatif = { version = "0.17.0", features = ["in_memory", "improved_unicode"] }
+itertools = "0.10.3"
 tokio = { version = "1.20.1", features = ["time"] }
 # dioxus-tui = "0.2.2"
 
