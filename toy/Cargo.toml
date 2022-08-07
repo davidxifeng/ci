@@ -1,8 +1,17 @@
 [package]
 name = "toy"
 version = "0.1.0"
+description = "玩具语言,用来学习rust和系统编程."
+readme = "readme.md"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# See more https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+dioxus-tui = "0.2.2"
+
+# toml中,{}是inline table,故意不支持换行. 但可以使用这种方式
+[dependencies.dioxus]
+version = "0.2.4"
+default-features = false
+features = ["macro", "hooks", "html", "tui"]
