@@ -25,6 +25,7 @@ enum SubCommand {
     Term,
     Lex,
     Parse,
+    Http,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -143,6 +144,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         SubCommand::Parse => {
             println!("parse");
+        }
+        SubCommand::Http => {
+            use http::Request;
+            use serde::ser;
+
+            fn serialize<T>(req: Request<T>) -> serde_json::Result<Request<Vec<u8>>>
+            where
+                T: ser::Serialize,
+            {
+                let (parts, body) = req.into_parts();
+                let body = serde_json::to_vec(&body)?;
+                Ok(Request::from_parts(parts, body))
+            }
+
+            let req = Request::builder()
+                .uri("http://zhoushen929.com?q=love#id")
+                .header("User-Agent", "rust rocks!")
+                .body(())
+                .unwrap();
+            println!(
+                "{:#?}\n {:?}\n{:#?}, {:#?}, {:#?}, {:#?}",
+                req,
+                req.headers(),
+                req.uri().host(),
+                req.uri().scheme(),
+                req.uri().path(),
+                req.uri().query(),
+            );
+            let r = serialize(req).unwrap();
+            // ghci> map fromEnum "null"
+            // [110,117,108,108]
+            println!("serialize: {:#?}", r);
         }
     }
 
