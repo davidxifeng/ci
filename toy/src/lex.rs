@@ -51,10 +51,9 @@ enum Token {
 }
 
 /// 词法分析状态
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 struct TokenState<'a> {
-    /// 未处理的字符串
-    input: &'a str,
+    chars_iter: std::str::Chars<'a>,
     /// 当前行号
     line: isize,
 }
@@ -88,12 +87,10 @@ impl Iterator for TokenState<'_> {
     /// 文档上看到说go语言解析可以不用符号表,不知道是什么意思.
     /// 只有25个关键字, 不知是不是和词法解析有关系. 关键字和预定义标识符等内在关系上面
     fn next(&mut self) -> Option<Self::Item> {
-        let mut chars = self.input.chars();
-
+        let chars = &mut self.chars_iter;
         loop {
             match chars.next() {
                 None => {
-                    self.input = chars.as_str();
                     return None;
                 }
                 Some(c) => match c {
@@ -111,7 +108,6 @@ impl Iterator for TokenState<'_> {
                         while let Some(idc) = chars.peeking_take_while(is_id_char).next() {
                             ids.push(idc);
                         }
-                        self.input = chars.as_str();
                         return Some(Token::Id(ids));
                     }
                     ch if is_digit(&c) => {
@@ -120,7 +116,6 @@ impl Iterator for TokenState<'_> {
                         while let Some(nch) = chars.peeking_take_while(is_digit).next() {
                             iv = iv * 10 + (nch as u32) - ('0' as u32);
                         }
-                        self.input = chars.as_str();
                         return Some(Token::Num(iv as i64));
                     }
                     _ => {}
@@ -132,7 +127,11 @@ impl Iterator for TokenState<'_> {
 
 /// 对输入字符串进行词法解析,得到一组token list,或者错误信息
 fn lex(input: &str) -> Vec<Token> {
-    TokenState { input, line: 1 }.collect()
+    TokenState {
+        chars_iter: input.chars(),
+        line: 1,
+    }
+    .collect()
 }
 
 #[cfg(test)]
