@@ -90,10 +90,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .interact_text()
                     .unwrap_or("if".into())
             } else {
-                cli_text.unwrap_or("if".into())
+                cli_text.unwrap_or("\n\nif 123\n".into())
             };
 
-            println!("lex {} :\n{:#?}", input, lex::lex(input.as_str()));
+            println!(
+                "lex {} :\n{:#?}",
+                input,
+                lex::TokenApi::parse(input.as_str())
+            );
         }
         SubCommand::Parse => {
             println!("parse");
