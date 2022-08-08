@@ -22,10 +22,16 @@ enum SubCommand {
         #[clap(short, long, default_value_t = 1)]
         count: u16,
     },
-    Term,
-    Lex,
+    Lex {
+        #[clap(value_parser)]
+        cli_text: Option<String>,
+
+        #[clap(short, long, action)]
+        interactive: bool,
+    },
     Parse,
     Http,
+    Term,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -72,75 +78,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             term.move_cursor_up(1)?;
             term.clear_line()?;
         }
-        SubCommand::Lex => {
-            use dialoguer::{theme::ColorfulTheme, Confirm};
-
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt("Do you want to continue?")
-                .interact()
-                .unwrap()
-            {
-                println!("Looks like you want to continue");
+        SubCommand::Lex {
+            interactive,
+            cli_text,
+        } => {
+            use dialoguer::Input;
+            let input: String = if interactive {
+                Input::new()
+                    .with_prompt("please enter your input")
+                    .with_initial_text("if")
+                    .interact_text()
+                    .unwrap_or("if".into())
             } else {
-                println!("nevermind then :(");
-            }
+                cli_text.unwrap_or("if".into())
+            };
 
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt("Do you really want to continue?")
-                .default(true)
-                .interact()
-                .unwrap()
-            {
-                println!("Looks like you want to continue");
-            } else {
-                println!("nevermind then :(");
-            }
-
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt("Do you really really want to continue?")
-                .default(true)
-                .show_default(false)
-                .wait_for_newline(true)
-                .interact()
-                .unwrap()
-            {
-                println!("Looks like you want to continue");
-            } else {
-                println!("nevermind then :(");
-            }
-
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt("Do you really really really want to continue?")
-                .wait_for_newline(true)
-                .interact()
-                .unwrap()
-            {
-                println!("Looks like you want to continue");
-            } else {
-                println!("nevermind then :(");
-            }
-
-            match Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt("Do you really really really really want to continue?")
-                .interact_opt()
-                .unwrap()
-            {
-                Some(true) => println!("Looks like you want to continue"),
-                Some(false) => println!("nevermind then :("),
-                None => println!("Ok, we can start over later"),
-            }
-
-            match Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt("Do you really really really really really want to continue?")
-                .default(true)
-                .wait_for_newline(true)
-                .interact_opt()
-                .unwrap()
-            {
-                Some(true) => println!("Looks like you want to continue"),
-                Some(false) => println!("nevermind then :("),
-                None => println!("Ok, we can start over later"),
-            }
+            println!("lex {} :\n{:#?}", input, lex::lex(input.as_str()));
         }
         SubCommand::Parse => {
             println!("parse");

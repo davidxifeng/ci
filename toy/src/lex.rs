@@ -37,7 +37,7 @@ enum Operator {
 }
 
 #[derive(Debug, PartialEq)]
-enum Token {
+pub enum Token {
     Num(i64),
     /// 或许需要调整一下
     Keyword(Keyword),
@@ -126,7 +126,7 @@ impl Iterator for TokenState<'_> {
 }
 
 /// 对输入字符串进行词法解析,得到一组token list,或者错误信息
-fn lex(input: &str) -> Vec<Token> {
+pub fn lex(input: &str) -> Vec<Token> {
     TokenState {
         chars_iter: input.chars(),
         line: 1,
