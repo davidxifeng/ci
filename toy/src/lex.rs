@@ -162,4 +162,25 @@ mod tests {
         );
         assert_eq!(lex("if_123"), vec![Token::Id("if_123".to_string())]);
     }
+
+    #[test]
+    fn test_put_back() {
+	let mut c = itertools::put_back("hello".chars());
+	c.put_back('X');
+	c.put_back('Y'); // 会覆盖上一次,因为内部只有一个空间
+	for v in c {
+		println!("{}", v);
+	}
+    }
+
+    #[test]
+    fn test_put_back_n() {
+	let mut c = itertools::put_back_n("hello".chars());
+	c.put_back('Z');
+	c.put_back('Y');
+	c.put_back('X');
+	for v in c {
+		println!("{}", v);
+	}
+    }
 }
