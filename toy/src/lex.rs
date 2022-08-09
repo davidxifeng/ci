@@ -55,7 +55,7 @@ enum Punct {
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    IntegerConst(i64),
+    IntegerConst(i64), // 应该改成字符串类型，后续步骤才需要根据类型转换
     CharacterConst(char),
     StringLiteral(String),
     Keyword(Keyword),
