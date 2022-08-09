@@ -141,8 +141,30 @@ void next() {
 		} else if (tk == '\'' || tk == '"') {
 			pp = data;
 			while (*p != 0 && *p != tk) {
+				// 2022/8/10
+				// 8年前看过一次之后的今天晚上,看到这里有一些不理解
+				// 再看还是不明白既然代码没有处理转义, 如果出现了\"
+				// c4是如何显示正确的,(虽然\t等确实没有正确处理)
+				// 但实际运行又是正常的, 就想调试一下, ... 配置vs
+				// 环境,cmake工程... 前后居然折腾了一个多小时
+				// 后来弄明白之后,隐约想起来当年看的时候有点印象!
+				// 8年前被迷惑过一次,现在又被迷惑了一次!
+				// C语言代码可读性真的不高,不够直观~
 				if ((ival = *p++) == '\\') {
-					if ((ival = *p++) == 'n') ival = '\n';
+					// 原来的代码
+					// if ((ival = *p++) == 'n') ival = '\n';
+					ival = *p++;
+					switch(ival) {
+						case 'n': ival = '\n'; break;
+						case 't': ival = '\t'; break;
+						case 'r': ival = '\r'; break;
+						case 'v': ival = '\v'; break;
+						case 'a': ival = '\a'; break;
+						case 'b': ival = '\b'; break;
+						case '\\': ival = '\\'; break;
+						// TODO see: 6.4.4.4 Character constants
+					}
+
 				}
 				if (tk == '"') *data++ = ival;
 			}
