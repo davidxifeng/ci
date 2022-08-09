@@ -55,10 +55,9 @@ enum Punct {
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    Num(i64),
-    Str(String),
-    Char(char),
-    Boolean(bool),
+    IntegerConst(i64),
+    CharacterConst(char),
+    StringLiteral(String),
     Keyword(Keyword),
     Id(String),
     Punct(Punct),
@@ -86,11 +85,20 @@ impl TokenApi {
     ) -> Option<Result<Token, LexError>> {
         // 不可以使用for in, into iter 会move走迭代器,就不能手动控制了
         loop {
+            // 6.4 Lexical elements
+            // token:
+            //      keyword
+            //      identifier
+            //      constant: int, float, enum, char
+            //      string-literal
+            //      punctuator
+
             match iter.next() {
                 None => {
                     return None;
                 }
                 Some(c) => match c {
+                    // 处理换行和空白
                     '\r' => {
                         iter.peeking_take_while(|&x| x == '\n').next();
                         ts.line += 1;
@@ -98,8 +106,9 @@ impl TokenApi {
                     '\n' => {
                         ts.line += 1;
                     }
-                    // 这里的做法太缺乏思考和学习了. 应该所有的标识符一起处理
-                    // 然后根据 '符号表' 判断是关键字还是普通标识符
+                    ' ' | '\t' => {} // skip
+
+                    // 处理广义上的标识符, 应该包括关键字和enum 常量
                     _ if is_id_initial_char(&c) => {
                         let mut ids = String::from(c);
                         while let Some(idc) = iter.peeking_take_while(is_id_char).next() {
@@ -108,21 +117,33 @@ impl TokenApi {
                         ts.token_count += 1;
                         return Some(Ok(Token::Id(ids)));
                     }
+                    // const处理, 应该包含int, float, char
                     ch if is_digit(&c) => {
-                        // as u8 or u32, which is better?
-                        let mut iv = ch as u32 - '0' as u32;
+                        let mut iv = (ch as u8 - '0' as u8) as i64;
                         while let Some(nch) = iter.peeking_take_while(is_digit).next() {
-                            iv = iv * 10 + (nch as u32) - ('0' as u32);
+                            iv = iv * 10 + ((nch as u8) - ('0' as u8)) as i64;
                         }
                         ts.token_count += 1;
-                        return Some(Ok(Token::Num(iv as i64)));
+                        return Some(Ok(Token::IntegerConst(iv)));
                     }
-                    ' ' | '\t' => {} // skip
+                    // string literal
+                    '"' => {
+                        return Self::try_string_literal(iter);
+                    }
+
+                    // punctuators
                     // report error for unknown & unexpected input
                     _ => return Some(Err(LexError::InvalidChar(c))),
                 },
             };
         }
+    }
+
+    fn try_string_literal(iter: &mut std::str::Chars) -> Option<Result<Token, LexError>> {
+	// 找到匹配的 " 之前, 匹配任何内容,并放入字符串常量; 需要处理转义,和 输入提前结束的异常
+
+
+        None
     }
 
     /// 对输入字符串进行词法解析,得到一组token list,或者错误信息
@@ -133,7 +154,7 @@ impl TokenApi {
             token_count: 0,
         };
         let mut chars_iter = input.chars();
-        while let Some(r) = TokenApi::try_next_token(&mut chars_iter, &mut ts) {
+        while let Some(r) = Self::try_next_token(&mut chars_iter, &mut ts) {
             match r {
                 Ok(tk) => vt.push(tk),
                 Err(e) => return Err(e),
@@ -159,10 +180,10 @@ mod tests {
 
     #[test]
     fn run_lex_1() {
-        assert_eq!(TokenApi::parse("123"), Ok(vec![Token::Num(123)]));
+        assert_eq!(TokenApi::parse("123"), Ok(vec![Token::IntegerConst(123)]));
         assert_eq!(
             TokenApi::parse("1 23"),
-            Ok(vec![Token::Num(1), Token::Num(23)])
+            Ok(vec![Token::IntegerConst(1), Token::IntegerConst(23)])
         );
         // assert_eq!(
         //     TokenApi::parse("1x23"),
@@ -196,15 +217,11 @@ mod tests {
         for v in c {
             println!("{}", v);
         }
-    }
-
-    #[test]
-    fn test_put_back_n() {
-        let mut c = itertools::put_back_n("hello".chars());
-        c.put_back('Z');
-        c.put_back('Y');
-        c.put_back('X');
-        for v in c {
+        let mut pn = itertools::put_back_n("hello".chars());
+        pn.put_back('Z');
+        pn.put_back('Y');
+        pn.put_back('X');
+        for v in pn {
             println!("{}", v);
         }
     }
