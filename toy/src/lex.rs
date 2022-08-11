@@ -69,8 +69,8 @@ pub enum Token {
 #[derive(Debug, PartialEq)]
 pub enum LexError {
 	InvalidChar(char),
-	UnexpectedEofAt,
-	ExpectingCh(char),
+	UnexpectedEof,
+	ExpectingCh(char, char),
 	UnknownEscape(char),
 }
 
@@ -175,27 +175,27 @@ impl TokenApi {
 						}
 					}
 				} else {
-					return Some(Err(LexError::UnexpectedEofAt));
+					return Some(Err(LexError::UnexpectedEof));
 				}
 			}
 			val.push(v);
 		}
 		// better here?
-		if let Some(err) = self.expect_next(iter, '"') {
+		if let Some(err) = self.skip_next(iter, '"') {
 			return Some(Err(err));
 		}
 		return Some(Ok(Token::StringLiteral(val)));
 	}
 
-	fn expect_next(self: &mut Self, iter: &mut std::str::Chars, c: char) -> Option<LexError> {
+	fn skip_next(self: &mut Self, iter: &mut std::str::Chars, c: char) -> Option<LexError> {
 		if let Some(nnc) = iter.next() {
 			if nnc == c {
 				return None;
 			} else {
-				return Some(LexError::ExpectingCh(c));
+				return Some(LexError::ExpectingCh(c, nnc));
 			}
 		} else {
-			return Some(LexError::UnexpectedEofAt);
+			return Some(LexError::UnexpectedEof);
 		}
 	}
 
@@ -244,6 +244,13 @@ mod tests {
 			TokenApi::parse(r##""I am a C string""##),
 			Ok(vec![Token::StringLiteral("I am a C string".to_string())])
 		);
+		assert_eq!(
+			TokenApi::parse(r##""I am a C string\nline 2""##),
+			Ok(vec![Token::StringLiteral("I am a C string\nline 2".to_string())])
+		);
+		assert_eq!(TokenApi::parse(r##""I am a C string"##), Err(LexError::UnexpectedEof));
+		assert_eq!(TokenApi::parse(r##""I am a \C string"##), Err(LexError::UnknownEscape('C')));
+
 		// assert_eq!(TokenApi::parse("ix"), vec![Token::Id("ix".to_string())]);
 		// assert_eq!(
 		//     TokenApi::parse("if ix"),
