@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!(
                 "lex {} :\n{:#?}",
                 input,
-                lex::TokenApi::parse(input.as_str())
+                lex::TokenApi::parse_all(input.as_str())
             );
         }
         SubCommand::Parse => {
