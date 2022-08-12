@@ -55,8 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 			);
 
 			for i in (0..total).step_by(count as usize) {
-				std::thread::sleep(Duration::from_millis(50));
-				// if i % 50 == 0 { pb.println(format!("[+] #{}", i)); }
+				std::thread::sleep(Duration::from_millis(100));
 				pb.set_position(i);
 			}
 			pb.finish_with_message("done");
@@ -77,6 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 			std::thread::sleep(Duration::from_secs(3));
 			term.move_cursor_up(1)?;
 			term.clear_line()?;
+			term.move_cursor_down(3)?;
 		}
 		SubCommand::Lex { file, cli_text } => {
 			let input = if let Some(f) = file { fs::read_to_string(f)? } else { cli_text.ok_or("input is empty")? };

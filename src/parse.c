@@ -10,6 +10,9 @@ extern int *be, loc;
 extern int line, *e, ival, *id, *sym;
 extern enum Token tk;
 
+/**
+编译
+*/
 int parse() {
 	int bt, ty;
 	int i;
