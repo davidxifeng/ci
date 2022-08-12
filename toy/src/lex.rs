@@ -10,9 +10,15 @@ fn is_id_initial_char(c: &char) -> bool {
 	let c = *c;
 	c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
 }
+
 #[inline]
 fn is_id_char(c: &char) -> bool {
 	is_id_initial_char(c) || is_digit(c)
+}
+
+#[inline]
+fn is_not_new_line(c: &char) -> bool {
+	*c != '\r' && *c != '\n'
 }
 
 /*
@@ -174,7 +180,13 @@ impl TokenApi {
 						self.line += 1;
 					}
 					// 跳过 # 和换行之间的内容,预处理.
-					'#' => while let Some(_) = iter.peeking_take_while(|&x| x != '\r' && x != '\n').next() {},
+					'#' => while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {},
+					// 跳过 // 注释
+					'/' => {
+						if let Some(_) = iter.peeking_take_while(|&x| x == '/').next() {
+							while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {}
+						}
+					}
 					' ' | '\t' => {} // skip
 
 					// 处理广义上的标识符, 应该包括关键字和enum 常量
@@ -272,6 +284,16 @@ mod tests {
 		);
 		assert_eq!(TokenApi::parse_all(r##"#include <stdio.h>"##), Ok(vec![]));
 		assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::IntegerConst("1".into())]));
+		assert_eq!(TokenApi::parse_all(r##"// hi"##), Ok(vec![]));
+		assert_eq!(TokenApi::parse_all(r##"1// hi"##), Ok(vec![Token::IntegerConst("1".into())]));
+		assert_eq!(
+			TokenApi::parse_all(
+				r##"1// hi
+		2
+		"##
+			),
+			Ok(vec![Token::IntegerConst("1".into()), Token::IntegerConst("2".into())])
+		);
 	}
 
 	#[test]
