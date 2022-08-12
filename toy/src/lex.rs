@@ -315,9 +315,8 @@ impl TokenApi {
 					'"' => {
 						return self.try_string_literal(iter);
 					}
-
-					// punctuators
-					// report error for unknown & unexpected input
+					// TODO punctuators
+					'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => {}
 					_ => return Some(Err(LexError::InvalidChar(c))),
 				},
 			};
