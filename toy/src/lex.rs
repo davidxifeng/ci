@@ -21,9 +21,8 @@ fn is_not_new_line(c: &char) -> bool {
 	*c != '\r' && *c != '\n'
 }
 
-/*
 #[derive(Debug, PartialEq)]
-enum Keyword {
+pub enum Keyword {
 	Char,
 	Int,
 	Enum,
@@ -32,8 +31,6 @@ enum Keyword {
 	While,
 	Return,
 }
-
-*/
 
 #[derive(Debug, PartialEq)]
 pub enum Punct {
@@ -67,7 +64,7 @@ pub enum Token {
 	IntegerConst(String),
 	// CharacterConst(char),
 	StringLiteral(String),
-	// Keyword(Keyword),
+	Keyword(Keyword),
 	Id(String),
 	Punct(Punct),
 }
@@ -96,7 +93,16 @@ impl TokenApi {
 		while let Some(idc) = iter.peeking_take_while(is_id_char).next() {
 			ids.push(idc);
 		}
-		return Some(Ok(Token::Id(ids)));
+		Some(Ok(match ids.as_str() {
+			"if" => Token::Keyword(Keyword::If),
+			"else" => Token::Keyword(Keyword::Else),
+			"char" => Token::Keyword(Keyword::Char),
+			"int" => Token::Keyword(Keyword::Int),
+			"enum" => Token::Keyword(Keyword::Enum),
+			"return" => Token::Keyword(Keyword::Return),
+			"while" => Token::Keyword(Keyword::While),
+			_ => Token::Id(ids),
+		}))
 	}
 
 	fn try_decimal(&mut self, iter: &mut std::str::Chars, c: char) -> LexResult {
@@ -348,6 +354,15 @@ mod tests {
 
 	#[test]
 	fn run_lex_1() {
+		assert_eq!(TokenApi::parse_all("char"), Ok(vec![Token::Keyword(Keyword::Char)]));
+		assert_eq!(TokenApi::parse_all("int"), Ok(vec![Token::Keyword(Keyword::Int)]));
+		assert_eq!(TokenApi::parse_all("enum"), Ok(vec![Token::Keyword(Keyword::Enum)]));
+		assert_eq!(TokenApi::parse_all("if"), Ok(vec![Token::Keyword(Keyword::If)]));
+		assert_eq!(TokenApi::parse_all("else"), Ok(vec![Token::Keyword(Keyword::Else)]));
+		assert_eq!(TokenApi::parse_all("while"), Ok(vec![Token::Keyword(Keyword::While)]));
+		assert_eq!(TokenApi::parse_all("return"), Ok(vec![Token::Keyword(Keyword::Return)]));
+		assert_eq!(TokenApi::parse_all("fn"), Ok(vec![Token::Id("fn".into())]));
+
 		assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::IntegerConst("123".into())]));
 		assert_eq!(
 			TokenApi::parse_all("1 23"),
@@ -355,11 +370,11 @@ mod tests {
 		);
 		assert_eq!(
 			TokenApi::parse_all(r##""I am a C string""##),
-			Ok(vec![Token::StringLiteral("I am a C string".to_string())])
+			Ok(vec![Token::StringLiteral("I am a C string".into())])
 		);
 		assert_eq!(
 			TokenApi::parse_all(r##""I am a C string\nline 2""##),
-			Ok(vec![Token::StringLiteral("I am a C string\nline 2".to_string())])
+			Ok(vec![Token::StringLiteral("I am a C string\nline 2".into())])
 		);
 		assert_eq!(TokenApi::parse_all(r##""I am a C string"##), Err(LexError::UnexpectedEof));
 		assert_eq!(TokenApi::parse_all(r##""I am a \C string"##), Err(LexError::UnknownEscape('C')));
@@ -368,7 +383,7 @@ mod tests {
 			Ok(vec![
 				Token::IntegerConst("123".into()),
 				Token::Id("fn".into()),
-				Token::StringLiteral("I am a C string".to_string())
+				Token::StringLiteral("I am a C string".into())
 			])
 		);
 	}
