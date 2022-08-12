@@ -356,6 +356,7 @@ impl TokenApi {
 	}
 
 	/// 对输入字符串进行词法解析,得到一组token list,或者错误信息
+	/// TODO 修改接口,把迭代器放到结构体中
 	pub fn parse_all(input: &str) -> Result<Vec<Token>, LexError> {
 		println!("now parsing: {}", input);
 
@@ -384,7 +385,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn run_lex_keyword() {
+	fn test_lex_keyword() {
 		assert_eq!(TokenApi::parse_all("char"), Ok(vec![Token::Keyword(Keyword::Char)]));
 		assert_eq!(TokenApi::parse_all("int"), Ok(vec![Token::Keyword(Keyword::Int)]));
 		assert_eq!(TokenApi::parse_all("enum"), Ok(vec![Token::Keyword(Keyword::Enum)]));

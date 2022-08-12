@@ -1,11 +1,14 @@
 mod lex;
+mod parse;
 
 use std::error::Error;
 use std::fs;
 use std::time::Duration;
 
 use clap::Parser;
+
 use lex::*;
+use parse::*;
 
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -32,7 +35,10 @@ enum SubCommand {
 		#[clap(value_parser)]
 		cli_text: Option<String>,
 	},
-	Parse,
+	Parse {
+		#[clap(short, long, action, default_value = "data/simple.c")]
+		file: String,
+	},
 	Http,
 	Term,
 }
@@ -82,8 +88,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 			let input = if let Some(f) = file { fs::read_to_string(f)? } else { cli_text.ok_or("input is empty")? };
 			println!("lex: {}\n{:#?}", input, TokenApi::parse_all(input.as_str()));
 		}
-		SubCommand::Parse => {
-			println!("parse");
+		SubCommand::Parse { file } => {
+			let src = fs::read_to_string(file)?;
+			println!("{}\n{:#?}", src, SyntaxTree::compile(src.as_str()));
 		}
 		SubCommand::Http => {
 			use http::Request;
