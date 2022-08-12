@@ -36,7 +36,7 @@ enum Keyword {
 */
 
 #[derive(Debug, PartialEq)]
-enum Punct {
+pub enum Punct {
 	Assign,
 	Cond,
 	Lor,
@@ -74,6 +74,7 @@ pub enum Token {
 
 #[derive(Debug, PartialEq)]
 pub enum LexError {
+	GenericError,
 	InvalidChar(char),
 	UnexpectedEof,
 	ExpectingCh(char, char),
@@ -90,6 +91,14 @@ pub struct TokenApi {
 type LexResult = Option<Result<Token, LexError>>;
 
 impl TokenApi {
+	fn try_id(&mut self, iter: &mut std::str::Chars, c: char) -> LexResult {
+		let mut ids = String::from(c);
+		while let Some(idc) = iter.peeking_take_while(is_id_char).next() {
+			ids.push(idc);
+		}
+		return Some(Ok(Token::Id(ids)));
+	}
+
 	fn try_decimal(&mut self, iter: &mut std::str::Chars, c: char) -> LexResult {
 		let mut str = String::from(c);
 		while let Some(nc) = iter.peeking_take_while(is_digit).next() {
@@ -197,6 +206,13 @@ impl TokenApi {
 							return Some(Ok(Token::Punct(Punct::Assign)));
 						}
 					}
+					'!' => {
+						if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
+							return Some(Ok(Token::Punct(Punct::Ne)));
+						} else {
+							return Some(Err(LexError::GenericError));
+						}
+					}
 					'+' => {
 						if let Some(_) = iter.peeking_take_while(|&x| x == '+').next() {
 							return Some(Ok(Token::Punct(Punct::Inc)));
@@ -212,14 +228,78 @@ impl TokenApi {
 						}
 					}
 
-
+					'<' => {
+						if let Some(nc) = iter.peekable().peek() {
+							if *nc == '=' {
+								iter.next();
+								return Some(Ok(Token::Punct(Punct::Le)));
+							} else if *nc == '<' {
+								iter.next();
+								return Some(Ok(Token::Punct(Punct::Shl)));
+							} else {
+								return Some(Ok(Token::Punct(Punct::Lt)));
+							}
+						} else {
+							return Some(Ok(Token::Punct(Punct::Lt)));
+						}
+					}
+					'>' => {
+						if let Some(nc) = iter.peekable().peek() {
+							if *nc == '=' {
+								iter.next();
+								return Some(Ok(Token::Punct(Punct::Ge)));
+							} else if *nc == '>' {
+								iter.next();
+								return Some(Ok(Token::Punct(Punct::Shr)));
+							} else {
+								return Some(Ok(Token::Punct(Punct::Gt)));
+							}
+						} else {
+							return Some(Ok(Token::Punct(Punct::Gt)));
+						}
+					}
+					'|' => {
+						if let Some(nc) = iter.peekable().peek() {
+							if *nc == '|' {
+								iter.next();
+								return Some(Ok(Token::Punct(Punct::Lor)));
+							} else {
+								return Some(Ok(Token::Punct(Punct::Or)));
+							}
+						} else {
+							return Some(Ok(Token::Punct(Punct::Or)));
+						}
+					}
+					'&' => {
+						if let Some(nc) = iter.peekable().peek() {
+							if *nc == '&' {
+								iter.next();
+								return Some(Ok(Token::Punct(Punct::Lan)));
+							} else {
+								return Some(Ok(Token::Punct(Punct::And)));
+							}
+						} else {
+							return Some(Ok(Token::Punct(Punct::And)));
+						}
+					}
+					'^' => {
+						return Some(Ok(Token::Punct(Punct::Xor)));
+					}
+					'%' => {
+						return Some(Ok(Token::Punct(Punct::Mod)));
+					}
+					'*' => {
+						return Some(Ok(Token::Punct(Punct::Mul)));
+					}
+					'[' => {
+						return Some(Ok(Token::Punct(Punct::Brak)));
+					}
+					'?' => {
+						return Some(Ok(Token::Punct(Punct::Cond)));
+					}
 					// 处理广义上的标识符, 应该包括关键字和enum 常量
 					_ if is_id_initial_char(&c) => {
-						let mut ids = String::from(c);
-						while let Some(idc) = iter.peeking_take_while(is_id_char).next() {
-							ids.push(idc);
-						}
-						return Some(Ok(Token::Id(ids)));
+						return self.try_id(iter, c);
 					}
 					// const处理, 应该包含int, float, char
 					_ if is_digit(&c) => {
@@ -339,5 +419,29 @@ mod tests {
 
 		assert_eq!(TokenApi::parse_all("-"), Ok(vec![Token::Punct(Punct::Sub)]));
 		assert_eq!(TokenApi::parse_all("--"), Ok(vec![Token::Punct(Punct::Dec)]));
+
+		assert_eq!(TokenApi::parse_all("!"), Err(LexError::GenericError));
+		assert_eq!(TokenApi::parse_all("!="), Ok(vec![Token::Punct(Punct::Ne)]));
+
+		assert_eq!(TokenApi::parse_all("<"), Ok(vec![Token::Punct(Punct::Lt)]));
+		assert_eq!(TokenApi::parse_all("< "), Ok(vec![Token::Punct(Punct::Lt)]));
+		assert_eq!(TokenApi::parse_all("<="), Ok(vec![Token::Punct(Punct::Le)]));
+		assert_eq!(TokenApi::parse_all("<<"), Ok(vec![Token::Punct(Punct::Shl)]));
+
+		assert_eq!(TokenApi::parse_all(">"), Ok(vec![Token::Punct(Punct::Gt)]));
+		assert_eq!(TokenApi::parse_all("> "), Ok(vec![Token::Punct(Punct::Gt)]));
+		assert_eq!(TokenApi::parse_all(">="), Ok(vec![Token::Punct(Punct::Ge)]));
+		assert_eq!(TokenApi::parse_all(">>"), Ok(vec![Token::Punct(Punct::Shr)]));
+
+		assert_eq!(TokenApi::parse_all("|"), Ok(vec![Token::Punct(Punct::Or)]));
+		assert_eq!(TokenApi::parse_all("||"), Ok(vec![Token::Punct(Punct::Lor)]));
+		assert_eq!(TokenApi::parse_all("&"), Ok(vec![Token::Punct(Punct::And)]));
+		assert_eq!(TokenApi::parse_all("&&"), Ok(vec![Token::Punct(Punct::Lan)]));
+		assert_eq!(TokenApi::parse_all("^"), Ok(vec![Token::Punct(Punct::Xor)]));
+
+		assert_eq!(TokenApi::parse_all("%"), Ok(vec![Token::Punct(Punct::Mod)]));
+		assert_eq!(TokenApi::parse_all("*"), Ok(vec![Token::Punct(Punct::Mul)]));
+		assert_eq!(TokenApi::parse_all("["), Ok(vec![Token::Punct(Punct::Brak)]));
+		assert_eq!(TokenApi::parse_all("?"), Ok(vec![Token::Punct(Punct::Cond)]));
 	}
 }
