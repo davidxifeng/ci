@@ -33,6 +33,8 @@ enum Keyword {
 	Return,
 }
 
+*/
+
 #[derive(Debug, PartialEq)]
 enum Punct {
 	Assign,
@@ -60,8 +62,6 @@ enum Punct {
 	Brak,
 }
 
-*/
-
 #[derive(Debug, PartialEq)]
 pub enum Token {
 	IntegerConst(String),
@@ -69,7 +69,7 @@ pub enum Token {
 	StringLiteral(String),
 	// Keyword(Keyword),
 	Id(String),
-	// Punct(Punct),
+	Punct(Punct),
 }
 
 #[derive(Debug, PartialEq)]
@@ -171,8 +171,9 @@ impl TokenApi {
 					return None;
 				}
 				Some(c) => match c {
-					// 处理换行和空白
+					' ' | '\t' => {} // skip 空白
 					'\r' => {
+						// 处理换行
 						iter.peeking_take_while(|&x| x == '\n').next();
 						self.line += 1;
 					}
@@ -181,13 +182,36 @@ impl TokenApi {
 					}
 					// 跳过 # 和换行之间的内容,预处理.
 					'#' => while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {},
-					// 跳过 // 注释
 					'/' => {
 						if let Some(_) = iter.peeking_take_while(|&x| x == '/').next() {
+							// 跳过 // 注释
 							while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {}
+						} else {
+							return Some(Ok(Token::Punct(Punct::Div)));
 						}
 					}
-					' ' | '\t' => {} // skip
+					'=' => {
+						if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
+							return Some(Ok(Token::Punct(Punct::Eq)));
+						} else {
+							return Some(Ok(Token::Punct(Punct::Assign)));
+						}
+					}
+					'+' => {
+						if let Some(_) = iter.peeking_take_while(|&x| x == '+').next() {
+							return Some(Ok(Token::Punct(Punct::Inc)));
+						} else {
+							return Some(Ok(Token::Punct(Punct::Add)));
+						}
+					}
+					'-' => {
+						if let Some(_) = iter.peeking_take_while(|&x| x == '-').next() {
+							return Some(Ok(Token::Punct(Punct::Dec)));
+						} else {
+							return Some(Ok(Token::Punct(Punct::Sub)));
+						}
+					}
+
 
 					// 处理广义上的标识符, 应该包括关键字和enum 常量
 					_ if is_id_initial_char(&c) => {
@@ -297,19 +321,23 @@ mod tests {
 	}
 
 	#[test]
-	fn test_put_back() {
-		let mut c = itertools::put_back("hello".chars());
-		c.put_back('X');
-		c.put_back('Y'); // 会覆盖上一次,因为内部只有一个空间
-		for v in c {
-			println!("{}", v);
-		}
-		let mut pn = itertools::put_back_n("hello".chars());
-		pn.put_back('Z');
-		pn.put_back('Y');
-		pn.put_back('X');
-		for v in pn {
-			println!("{}", v);
-		}
+	fn run_lex_3() {
+		assert_eq!(
+			TokenApi::parse_all(r##"1/2"##),
+			Ok(vec![Token::IntegerConst("1".into()), Token::Punct(Punct::Div), Token::IntegerConst("2".into())])
+		);
+		assert_eq!(TokenApi::parse_all(r##"1//2"##), Ok(vec![Token::IntegerConst("1".into())]));
+		assert_eq!(TokenApi::parse_all("="), Ok(vec![Token::Punct(Punct::Assign)]));
+		assert_eq!(TokenApi::parse_all("=="), Ok(vec![Token::Punct(Punct::Eq)]));
+		assert_eq!(TokenApi::parse_all("==="), Ok(vec![Token::Punct(Punct::Eq), Token::Punct(Punct::Assign)]));
+		assert_eq!(TokenApi::parse_all("===="), Ok(vec![Token::Punct(Punct::Eq), Token::Punct(Punct::Eq)]));
+
+		assert_eq!(TokenApi::parse_all("+"), Ok(vec![Token::Punct(Punct::Add)]));
+		assert_eq!(TokenApi::parse_all("++"), Ok(vec![Token::Punct(Punct::Inc)]));
+		assert_eq!(TokenApi::parse_all("+++"), Ok(vec![Token::Punct(Punct::Inc), Token::Punct(Punct::Add)]));
+		assert_eq!(TokenApi::parse_all("++++"), Ok(vec![Token::Punct(Punct::Inc), Token::Punct(Punct::Inc)]));
+
+		assert_eq!(TokenApi::parse_all("-"), Ok(vec![Token::Punct(Punct::Sub)]));
+		assert_eq!(TokenApi::parse_all("--"), Ok(vec![Token::Punct(Punct::Dec)]));
 	}
 }
