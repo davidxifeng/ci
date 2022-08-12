@@ -64,7 +64,7 @@ pub enum Punct {
 #[derive(Debug, PartialEq)]
 pub enum Token {
 	IntegerConst(String),
-	// CharacterConst(char),
+	CharacterConst(String),
 	StringLiteral(String),
 	Keyword(Keyword),
 	Id(String),
@@ -76,7 +76,8 @@ pub enum Token {
 pub enum LexError {
 	InvalidChar(char),
 	UnexpectedEof,
-	ExpectingCh(char, char),
+	NotOneChar,
+	ExpectingBut(char, char),
 	UnknownEscape(char),
 }
 
@@ -90,6 +91,7 @@ pub struct TokenApi {
 type LexResult = Option<Result<Token, LexError>>;
 
 impl TokenApi {
+	/// 处理广义上的标识符, 应该包括关键字和enum 常量
 	fn try_id(&mut self, iter: &mut std::str::Chars, c: char) -> LexResult {
 		let mut ids = String::from(c);
 		while let Some(idc) = iter.peeking_take_while(is_id_char).next() {
@@ -107,6 +109,7 @@ impl TokenApi {
 		}))
 	}
 
+	/// const处理, 应该包含int, float, char
 	fn try_decimal(&mut self, iter: &mut std::str::Chars, c: char) -> LexResult {
 		let mut str = String::from(c);
 		while let Some(nc) = iter.peeking_take_while(is_digit).next() {
@@ -115,65 +118,88 @@ impl TokenApi {
 		return Some(Ok(Token::IntegerConst(str)));
 	}
 
+	fn simple_escape_seq(c: char) -> Option<char> {
+		// Rust中的转义:
+		// https://doc.rust-lang.org/reference/tokens.html
+		// (6.4.4.4) simple-escape-sequence:
+		// one of \' \" \? \\ \a \b \f \n \r \t \v
+		match c {
+			'\'' => Some('\''),
+			'"' => Some('"'),
+			'?' => Some('\x3F'),
+			'\\' => Some('\\'),
+			'a' => Some('\x07'), // aleat, bell
+			'b' => Some('\x08'), // backspace
+			'f' => Some('\x0C'), // formfeed page break
+			'n' => Some('\n'),   // 0a
+			'r' => Some('\r'),   // 0d
+			't' => Some('\t'),   // 09 horizontal Tab
+			'v' => Some('\x0b'), // vertical tab
+			_ => None,
+		}
+	}
+
+	fn escape(iter: &mut std::str::Chars) -> Result<char, LexError> {
+		if let Some(c) = iter.next() {
+			if let Some(r) = Self::simple_escape_seq(c) {
+				Ok(r)
+			} else {
+				// TODO 八进制 十六进制 转义
+				Err(LexError::UnknownEscape(c))
+			}
+		} else {
+			Err(LexError::UnexpectedEof)
+		}
+	}
+
 	fn try_string_literal(&mut self, iter: &mut std::str::Chars) -> LexResult {
 		// 找到匹配的 " 之前, 匹配任何内容,并放入字符串常量; 需要处理转义,和 输入提前结束的异常
 		let mut val = String::new();
-		while let Some(nc) = iter.peeking_take_while(|c| *c != '"').next() {
-			let mut v = nc;
+		while let Some(nc) = iter.peeking_take_while(|&c| c != '"' && is_not_new_line(&c)).next() {
 			if nc == '\\' {
-				if let Some(nnc) = iter.next() {
-					// Rust中的转义:
-					// https://doc.rust-lang.org/reference/tokens.html
-					// (6.4.4.4) simple-escape-sequence:
-					// one of \' \" \? \\ \a \b \f \n \r \t \v
-					match nnc {
-						'\'' => {
-							v = '\'';
-						}
-						'"' => {
-							v = '"';
-						}
-						'?' => {
-							v = '\x3F';
-						}
-						'\\' => (), // no need to assign
-						'a' => {
-							v = '\x07'; // aleat, bell
-						}
-						'b' => {
-							v = '\x08'; // backspace
-						}
-						'f' => {
-							v = '\x0C'; // formfeed page break
-						}
-						'n' => {
-							v = '\n'; // 0a
-						}
-						'r' => {
-							v = '\r'; // 0d
-						}
-						't' => {
-							v = '\t'; // 09 horizontal Tab
-						}
-						'v' => {
-							v = '\x0b'; // vertical tab
-						}
-						uc => {
-							// TODO 八进制 十六进制 转义
-							return Some(Err(LexError::UnknownEscape(uc)));
-						}
+				match Self::escape(iter) {
+					Ok(ec) => {
+						val.push(ec);
 					}
-				} else {
-					return Some(Err(LexError::UnexpectedEof));
+					Err(e) => {
+						return Some(Err(e));
+					}
 				}
+			} else {
+				val.push(nc);
 			}
-			val.push(v);
 		}
-		// better here?
 		if let Some(err) = self.skip_next(iter, '"') {
 			return Some(Err(err));
 		}
 		return Some(Ok(Token::StringLiteral(val)));
+	}
+
+	fn try_char(&mut self, iter: &mut std::str::Chars) -> LexResult {
+		let mut val = String::new();
+		// C标准规定字符串字面量中不能有换行
+		while let Some(nc) = iter.peeking_take_while(|&c| c != '\'' && is_not_new_line(&c)).next() {
+			if nc == '\\' {
+				match Self::escape(iter) {
+					Ok(ec) => {
+						val.push(ec);
+					}
+					Err(e) => {
+						return Some(Err(e));
+					}
+				}
+			} else {
+				val.push(nc);
+			}
+		}
+		if let Some(err) = self.skip_next(iter, '\'') {
+			return Some(Err(err));
+		}
+		if val.len() == 1 {
+			return Some(Ok(Token::CharacterConst(val)));
+		} else {
+			return Some(Err(LexError::NotOneChar));
+		}
 	}
 
 	fn skip_next(&mut self, iter: &mut std::str::Chars, c: char) -> Option<LexError> {
@@ -181,7 +207,7 @@ impl TokenApi {
 			if nnc == c {
 				return None;
 			} else {
-				return Some(LexError::ExpectingCh(c, nnc));
+				return Some(LexError::ExpectingBut(c, nnc));
 			}
 		} else {
 			return Some(LexError::UnexpectedEof);
@@ -217,9 +243,7 @@ impl TokenApi {
 						iter.peeking_take_while(|&x| x == '\n').next();
 						self.line += 1;
 					}
-					'\n' => {
-						self.line += 1;
-					}
+					'\n' => self.line += 1,
 					// 跳过 # 和换行之间的内容,预处理.
 					'#' => while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {},
 					'/' => {
@@ -313,37 +337,18 @@ impl TokenApi {
 							return Some(Ok(Token::Punct(Punct::And)));
 						}
 					}
-					'^' => {
-						return Some(Ok(Token::Punct(Punct::Xor)));
-					}
-					'%' => {
-						return Some(Ok(Token::Punct(Punct::Mod)));
-					}
-					'*' => {
-						return Some(Ok(Token::Punct(Punct::Mul)));
-					}
-					'[' => {
-						return Some(Ok(Token::Punct(Punct::Brak)));
-					}
-					'?' => {
-						return Some(Ok(Token::Punct(Punct::Cond)));
-					}
-					// 处理广义上的标识符, 应该包括关键字和enum 常量
-					_ if is_id_initial_char(&c) => {
-						return self.try_id(iter, c);
-					}
-					// const处理, 应该包含int, float, char
-					_ if is_digit(&c) => {
-						return self.try_decimal(iter, c);
-					}
-					// string literal
-					'"' => {
-						return self.try_string_literal(iter);
-					}
-					'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => {
-						// TODO punctuators
-						return Some(Ok(Token::Todo(c.into())));
-					}
+					'^' => return Some(Ok(Token::Punct(Punct::Xor))),
+					'%' => return Some(Ok(Token::Punct(Punct::Mod))),
+					'*' => return Some(Ok(Token::Punct(Punct::Mul))),
+					'[' => return Some(Ok(Token::Punct(Punct::Brak))),
+					'?' => return Some(Ok(Token::Punct(Punct::Cond))),
+					'"' => return self.try_string_literal(iter),
+					'\'' => return self.try_char(iter),
+					_ if is_id_initial_char(&c) => return self.try_id(iter, c),
+					_ if is_digit(&c) => return self.try_decimal(iter, c),
+					// TODO punctuators
+					'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => return Some(Ok(Token::Todo(c.into()))),
+
 					_ => return Some(Err(LexError::InvalidChar(c))),
 				},
 			};
@@ -379,7 +384,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn run_lex_1() {
+	fn run_lex_keyword() {
 		assert_eq!(TokenApi::parse_all("char"), Ok(vec![Token::Keyword(Keyword::Char)]));
 		assert_eq!(TokenApi::parse_all("int"), Ok(vec![Token::Keyword(Keyword::Int)]));
 		assert_eq!(TokenApi::parse_all("enum"), Ok(vec![Token::Keyword(Keyword::Enum)]));
@@ -387,13 +392,23 @@ mod tests {
 		assert_eq!(TokenApi::parse_all("else"), Ok(vec![Token::Keyword(Keyword::Else)]));
 		assert_eq!(TokenApi::parse_all("while"), Ok(vec![Token::Keyword(Keyword::While)]));
 		assert_eq!(TokenApi::parse_all("return"), Ok(vec![Token::Keyword(Keyword::Return)]));
-		assert_eq!(TokenApi::parse_all("fn"), Ok(vec![Token::Id("fn".into())]));
+	}
 
+	#[test]
+	fn test_identifier() {
+		assert_eq!(TokenApi::parse_all("fn"), Ok(vec![Token::Id("fn".into())]));
+	}
+
+	#[test]
+	fn test_const() {
 		assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::IntegerConst("123".into())]));
 		assert_eq!(
 			TokenApi::parse_all("1 23"),
 			Ok(vec![Token::IntegerConst("1".into()), Token::IntegerConst("23".into())])
 		);
+	}
+	#[test]
+	fn test_string_char() {
 		assert_eq!(
 			TokenApi::parse_all(r##""I am a C string""##),
 			Ok(vec![Token::StringLiteral("I am a C string".into())])
@@ -412,10 +427,17 @@ mod tests {
 				Token::StringLiteral("I am a C string".into())
 			])
 		);
+
+		assert_eq!(TokenApi::parse_all("\"abc\n\""), Err(LexError::ExpectingBut('\"', '\n')));
+		assert_eq!(TokenApi::parse_all("\'abc\'"), Err(LexError::NotOneChar));
+		assert_eq!(TokenApi::parse_all("\'\'"), Err(LexError::NotOneChar));
+
+		assert_eq!(TokenApi::parse_all("\'a\'"), Ok(vec![Token::CharacterConst("a".into())]));
+		assert_eq!(TokenApi::parse_all("\'\\n\'"), Ok(vec![Token::CharacterConst("\n".into())]));
 	}
 
 	#[test]
-	fn run_lex_2() {
+	fn test_comment_preprocessor() {
 		assert_eq!(
 			TokenApi::parse_all(
 				r##"#include <stdio.h>
@@ -442,7 +464,7 @@ mod tests {
 	}
 
 	#[test]
-	fn run_lex_3() {
+	fn test_punct() {
 		assert_eq!(
 			TokenApi::parse_all(r##"1/2"##),
 			Ok(vec![Token::IntegerConst("1".into()), Token::Punct(Punct::Div), Token::IntegerConst("2".into())])
