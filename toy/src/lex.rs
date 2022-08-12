@@ -173,6 +173,8 @@ impl TokenApi {
 					'\n' => {
 						self.line += 1;
 					}
+					// 跳过 # 和换行之间的内容,预处理.
+					'#' => while let Some(_) = iter.peeking_take_while(|&x| x != '\r' && x != '\n').next() {},
 					' ' | '\t' => {} // skip
 
 					// 处理广义上的标识符, 应该包括关键字和enum 常量
@@ -203,6 +205,7 @@ impl TokenApi {
 	/// 对输入字符串进行词法解析,得到一组token list,或者错误信息
 	pub fn parse_all(input: &str) -> Result<Vec<Token>, LexError> {
 		println!("now parsing: {}", input);
+
 		let mut token_list = vec![];
 		let mut lex_state = TokenApi { line: 1, token_count: 0 };
 		let mut iter = input.chars();
@@ -222,6 +225,7 @@ impl TokenApi {
 	}
 }
 
+// 只在test的时候编译,build时候不编译
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -233,14 +237,6 @@ mod tests {
 			TokenApi::parse_all("1 23"),
 			Ok(vec![Token::IntegerConst("1".into()), Token::IntegerConst("23".into())])
 		);
-		// assert_eq!(
-		//     TokenApi::parse("1x23"),
-		//     vec![Token::Num(1), Token::Id("x23".to_string())]
-		// );
-	}
-
-	#[test]
-	fn run_lex_2() {
 		assert_eq!(
 			TokenApi::parse_all(r##""I am a C string""##),
 			Ok(vec![Token::StringLiteral("I am a C string".to_string())])
@@ -251,20 +247,31 @@ mod tests {
 		);
 		assert_eq!(TokenApi::parse_all(r##""I am a C string"##), Err(LexError::UnexpectedEof));
 		assert_eq!(TokenApi::parse_all(r##""I am a \C string"##), Err(LexError::UnknownEscape('C')));
+		assert_eq!(
+			TokenApi::parse_all(r##"123 fn "I am a C string""##),
+			Ok(vec![
+				Token::IntegerConst("123".into()),
+				Token::Id("fn".into()),
+				Token::StringLiteral("I am a C string".to_string())
+			])
+		);
+	}
 
-		// assert_eq!(TokenApi::parse("ix"), vec![Token::Id("ix".to_string())]);
-		// assert_eq!(
-		//     TokenApi::parse("if ix"),
-		//     vec![Token::Id("if".to_string()), Token::Id("ix".to_string())]
-		// );
-		// assert_eq!(
-		//     TokenApi::parse("else 123"),
-		//     vec![Token::Id("else".to_string()), Token::Num(123)]
-		// );
-		// assert_eq!(
-		//     TokenApi::parse("if_123"),
-		//     vec![Token::Id("if_123".to_string())]
-		// );
+	#[test]
+	fn run_lex_2() {
+		assert_eq!(
+			TokenApi::parse_all(
+				r##"#include <stdio.h>
+		x 123
+		#if 1
+		#endif
+		c
+		"##
+			),
+			Ok(vec![Token::Id("x".into()), Token::IntegerConst("123".into()), Token::Id("c".into()),])
+		);
+		assert_eq!(TokenApi::parse_all(r##"#include <stdio.h>"##), Ok(vec![]));
+		assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::IntegerConst("1".into())]));
 	}
 
 	#[test]
