@@ -67,6 +67,7 @@ pub enum Token {
 	Keyword(Keyword),
 	Id(String),
 	Punct(Punct),
+	Todo(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -120,21 +121,44 @@ impl TokenApi {
 			let mut v = nc;
 			if nc == '\\' {
 				if let Some(nnc) = iter.next() {
+					// Rust中的转义:
+					// https://doc.rust-lang.org/reference/tokens.html
+					// (6.4.4.4) simple-escape-sequence:
+					// one of \' \" \? \\ \a \b \f \n \r \t \v
 					match nnc {
-						'\\' => (), // just skip
-						'r' => {
-							v = '\r';
-						}
-						'n' => {
-							v = '\n';
-						}
-						't' => {
-							v = '\t';
+						'\'' => {
+							v = '\'';
 						}
 						'"' => {
 							v = '"';
 						}
+						'?' => {
+							v = '\x3F';
+						}
+						'\\' => (), // no need to assign
+						'a' => {
+							v = '\x07'; // aleat, bell
+						}
+						'b' => {
+							v = '\x08'; // backspace
+						}
+						'f' => {
+							v = '\x0C'; // formfeed page break
+						}
+						'n' => {
+							v = '\n'; // 0a
+						}
+						'r' => {
+							v = '\r'; // 0d
+						}
+						't' => {
+							v = '\t'; // 09 horizontal Tab
+						}
+						'v' => {
+							v = '\x0b'; // vertical tab
+						}
 						uc => {
+							// TODO 八进制 十六进制 转义
 							return Some(Err(LexError::UnknownEscape(uc)));
 						}
 					}
@@ -315,8 +339,10 @@ impl TokenApi {
 					'"' => {
 						return self.try_string_literal(iter);
 					}
-					// TODO punctuators
-					'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => {}
+					'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => {
+						// TODO punctuators
+						return Some(Ok(Token::Todo(c.into())));
+					}
 					_ => return Some(Err(LexError::InvalidChar(c))),
 				},
 			};
