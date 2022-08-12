@@ -57,6 +57,8 @@ pub enum Punct {
 	Inc,
 	Dec,
 	Brak,
+
+	Not,
 }
 
 #[derive(Debug, PartialEq)]
@@ -72,7 +74,6 @@ pub enum Token {
 
 #[derive(Debug, PartialEq)]
 pub enum LexError {
-	GenericError,
 	InvalidChar(char),
 	UnexpectedEof,
 	ExpectingCh(char, char),
@@ -240,7 +241,7 @@ impl TokenApi {
 						if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
 							return Some(Ok(Token::Punct(Punct::Ne)));
 						} else {
-							return Some(Err(LexError::GenericError));
+							return Some(Ok(Token::Punct(Punct::Not)));
 						}
 					}
 					'+' => {
@@ -460,7 +461,7 @@ mod tests {
 		assert_eq!(TokenApi::parse_all("-"), Ok(vec![Token::Punct(Punct::Sub)]));
 		assert_eq!(TokenApi::parse_all("--"), Ok(vec![Token::Punct(Punct::Dec)]));
 
-		assert_eq!(TokenApi::parse_all("!"), Err(LexError::GenericError));
+		assert_eq!(TokenApi::parse_all("!"), Ok(vec![Token::Punct(Punct::Not)]));
 		assert_eq!(TokenApi::parse_all("!="), Ok(vec![Token::Punct(Punct::Ne)]));
 
 		assert_eq!(TokenApi::parse_all("<"), Ok(vec![Token::Punct(Punct::Lt)]));
