@@ -64,6 +64,55 @@ pub enum Punct {
 	Comma,
 }
 
+impl std::str::FromStr for Punct {
+	type Err = ();
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"+" => Ok(Self::Add),
+			"-" => Ok(Self::Sub),
+			"*" => Ok(Self::Mul),
+			"/" => Ok(Self::Div),
+			"%" => Ok(Self::Mod),
+			"==" => Ok(Self::Eq),
+			"!=" => Ok(Self::Ne),
+			_ => Err(()),
+		}
+	}
+}
+
+impl std::fmt::Display for Punct {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str(match self {
+			Self::Add => "+",
+			Self::Assign => "=",
+			Self::Comma => ",",
+			Self::Semicolon => ";",
+			Self::Not => "!",
+			Self::Cond => "?",
+			Self::Lor => "||",
+			Self::Lan => "&&",
+			Self::Or => "|",
+			Self::Xor => "^",
+			Self::And => "&",
+			Self::Eq => "==",
+			Self::Ne => "!=",
+			Self::Lt => "<",
+			Self::Gt => ">",
+			Self::Le => "<=",
+			Self::Ge => ">=",
+			Self::Shl => ">>",
+			Self::Shr => "<<",
+			Self::Sub => "-",
+			Self::Mul => "*",
+			Self::Div => "/",
+			Self::Mod => "%",
+			Self::Inc => "++",
+			Self::Dec => "--",
+			Self::Brak => "[",
+		})
+	}
+}
+
 // 6.4 Lexical elements
 // token:
 //      keyword

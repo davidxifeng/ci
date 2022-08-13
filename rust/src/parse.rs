@@ -38,6 +38,14 @@ pub enum ParseError {
 	TokenNotPunct,
 }
 
+impl ParseError {
+	pub fn expecting_but(es: &[&str], g: &str) -> ParseError {
+		let mut ds = es.to_vec();
+		ds.sort();
+		ParseError::UnexpectedToken(format!("expecting: {} got: {}", ds.join(" "), g))
+	}
+}
+
 #[derive(Debug, PartialEq)]
 pub struct SyntaxTree {
 	token_list: Vec<Token>,
@@ -149,7 +157,7 @@ impl SyntaxTree {
 							iter.next();
 							break;
 						} else {
-							return Err(ParseError::UnexpectedToken("expecting: ,;".into()));
+							return Err(ParseError::expecting_but(&[",", ";"], next_punct.to_string().as_str()));
 						}
 					} else if *next_punct == Punct::Comma {
 						iter.next();
@@ -240,10 +248,7 @@ mod tests {
 		);
 		assert_eq!(SyntaxTree::compile(r###"char c = 'a'"###), Err(ParseError::EndOfToken));
 		assert_eq!(SyntaxTree::compile(r###"char c = 'a' y "###), Err(ParseError::TokenNotPunct));
-		assert_eq!(
-			SyntaxTree::compile(r###"char c = 'a' = "###),
-			Err(ParseError::UnexpectedToken("expecting: ,;".into()))
-		);
+		assert_eq!(SyntaxTree::compile(r###"char c = 'a' = "###), Err(ParseError::expecting_but(&[",", ";"], "=")));
 		assert_eq!(SyntaxTree::compile(r###"char c "###), Err(ParseError::EndOfToken));
 		assert_eq!(SyntaxTree::compile(r###"int i = 'c';"###), Err(ParseError::TypeMismatch));
 		assert_eq!(SyntaxTree::compile(r###"int i = "int";"###), Err(ParseError::TypeMismatch));
