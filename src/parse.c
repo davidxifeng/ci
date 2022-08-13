@@ -20,6 +20,7 @@ int parse() {
 	line = 1;
 	next();
 	while (tk) {
+		// 解析声明的类型
 		bt = INT; // basetype
 		if (tk == Int) {
 			next();
@@ -31,7 +32,7 @@ int parse() {
 			if (tk != '{') next();
 			if (tk == '{') {
 				next();
-				i = 0;
+				int enum_value = 0;
 				while (tk != '}') {
 					if (tk != Id) {
 						printf("%d: bad enum identifier %d\n", line, tk);
@@ -44,16 +45,17 @@ int parse() {
 							printf("%d: bad enum initializer\n", line);
 							return -1;
 						}
-						i = ival;
+						enum_value = ival;
 						next();
 					}
-					id[Class] = Num; id[Type] = INT; id[Val] = i++;
+					id[Class] = Num; id[Type] = INT; id[Val] = enum_value++;
 					if (tk == ',') next();
 				}
 				next();
 			}
 		}
 
+		// 解析函数 或变量声明
 		while (tk != ';' && tk != '}') {
 			ty = bt;
 			while (tk == Mul) {

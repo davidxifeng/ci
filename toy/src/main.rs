@@ -36,7 +36,7 @@ enum SubCommand {
 		cli_text: Option<String>,
 	},
 	Parse {
-		#[clap(short, long, action, default_value = "data/simple.c")]
+		#[clap(short, long, action, default_value = "data/t0.c")]
 		file: String,
 	},
 	Http,

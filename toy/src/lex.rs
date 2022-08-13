@@ -26,6 +26,7 @@ pub enum Keyword {
 	Char,
 	Int,
 	Enum,
+
 	If,
 	Else,
 	While,
@@ -64,19 +65,20 @@ pub enum Punct {
 #[derive(Debug, PartialEq)]
 pub enum Token {
 	IntegerConst(String),
-	CharacterConst(String),
+	CharacterConst(char),
 	StringLiteral(String),
 	Keyword(Keyword),
 	Id(String),
 	Punct(Punct),
-	Todo(String),
+	Todo(char),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum LexError {
 	InvalidChar(char),
 	UnexpectedEof,
-	NotOneChar,
+	EmptyChar,
+	MoreThanOneChar,
 	ExpectingBut(char, char),
 	UnknownEscape(char),
 }
@@ -195,10 +197,15 @@ impl TokenApi {
 		if let Some(err) = self.skip_next(iter, '\'') {
 			return Some(Err(err));
 		}
-		if val.len() == 1 {
-			return Some(Ok(Token::CharacterConst(val)));
+		let mut cs = val.chars();
+		if let Some(c) = cs.next() {
+			if let None = cs.next() {
+				return Some(Ok(Token::CharacterConst(c)));
+			} else {
+				return Some(Err(LexError::MoreThanOneChar));
+			}
 		} else {
-			return Some(Err(LexError::NotOneChar));
+			return Some(Err(LexError::EmptyChar));
 		}
 	}
 
@@ -215,6 +222,14 @@ impl TokenApi {
 	}
 }
 
+// 6.4 Lexical elements
+// token:
+//      keyword
+//      identifier
+//      constant: int, float, enum, char
+//      string-literal
+//      punctuator
+
 impl TokenApi {
 	/// 标识符
 	/// c4中的做法: 提前准备好符号表,把关键字 还有库函数添加到符号表中,
@@ -223,143 +238,129 @@ impl TokenApi {
 	/// 只有25个关键字, 不知是不是和词法解析有关系. 关键字和预定义标识符等内在关系上面
 	fn try_next_token(&mut self, iter: &mut std::str::Chars) -> LexResult {
 		// 不可以使用for in, into iter 会move走迭代器,就不能手动控制了
-		loop {
-			// 6.4 Lexical elements
-			// token:
-			//      keyword
-			//      identifier
-			//      constant: int, float, enum, char
-			//      string-literal
-			//      punctuator
-
-			match iter.next() {
-				None => {
-					return None;
+		while let Some(c) = iter.next() {
+			match c {
+				' ' | '\t' => {} // skip 空白
+				'\r' => {
+					// 处理换行
+					iter.peeking_take_while(|&x| x == '\n').next();
+					self.line += 1;
 				}
-				Some(c) => match c {
-					' ' | '\t' => {} // skip 空白
-					'\r' => {
-						// 处理换行
-						iter.peeking_take_while(|&x| x == '\n').next();
-						self.line += 1;
+				'\n' => self.line += 1,
+				// 跳过 # 和换行之间的内容,预处理.
+				'#' => while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {},
+				'/' => {
+					if let Some(_) = iter.peeking_take_while(|&x| x == '/').next() {
+						// 跳过 // 注释
+						while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {}
+					} else {
+						return Some(Ok(Token::Punct(Punct::Div)));
 					}
-					'\n' => self.line += 1,
-					// 跳过 # 和换行之间的内容,预处理.
-					'#' => while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {},
-					'/' => {
-						if let Some(_) = iter.peeking_take_while(|&x| x == '/').next() {
-							// 跳过 // 注释
-							while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {}
-						} else {
-							return Some(Ok(Token::Punct(Punct::Div)));
-						}
+				}
+				'=' => {
+					if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
+						return Some(Ok(Token::Punct(Punct::Eq)));
+					} else {
+						return Some(Ok(Token::Punct(Punct::Assign)));
 					}
-					'=' => {
-						if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
-							return Some(Ok(Token::Punct(Punct::Eq)));
-						} else {
-							return Some(Ok(Token::Punct(Punct::Assign)));
-						}
+				}
+				'!' => {
+					if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
+						return Some(Ok(Token::Punct(Punct::Ne)));
+					} else {
+						return Some(Ok(Token::Punct(Punct::Not)));
 					}
-					'!' => {
-						if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
-							return Some(Ok(Token::Punct(Punct::Ne)));
-						} else {
-							return Some(Ok(Token::Punct(Punct::Not)));
-						}
+				}
+				'+' => {
+					if let Some(_) = iter.peeking_take_while(|&x| x == '+').next() {
+						return Some(Ok(Token::Punct(Punct::Inc)));
+					} else {
+						return Some(Ok(Token::Punct(Punct::Add)));
 					}
-					'+' => {
-						if let Some(_) = iter.peeking_take_while(|&x| x == '+').next() {
-							return Some(Ok(Token::Punct(Punct::Inc)));
-						} else {
-							return Some(Ok(Token::Punct(Punct::Add)));
-						}
+				}
+				'-' => {
+					if let Some(_) = iter.peeking_take_while(|&x| x == '-').next() {
+						return Some(Ok(Token::Punct(Punct::Dec)));
+					} else {
+						return Some(Ok(Token::Punct(Punct::Sub)));
 					}
-					'-' => {
-						if let Some(_) = iter.peeking_take_while(|&x| x == '-').next() {
-							return Some(Ok(Token::Punct(Punct::Dec)));
-						} else {
-							return Some(Ok(Token::Punct(Punct::Sub)));
-						}
-					}
+				}
 
-					'<' => {
-						if let Some(nc) = iter.peekable().peek() {
-							if *nc == '=' {
-								iter.next();
-								return Some(Ok(Token::Punct(Punct::Le)));
-							} else if *nc == '<' {
-								iter.next();
-								return Some(Ok(Token::Punct(Punct::Shl)));
-							} else {
-								return Some(Ok(Token::Punct(Punct::Lt)));
-							}
+				'<' => {
+					if let Some(nc) = iter.peekable().peek() {
+						if *nc == '=' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::Le)));
+						} else if *nc == '<' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::Shl)));
 						} else {
 							return Some(Ok(Token::Punct(Punct::Lt)));
 						}
+					} else {
+						return Some(Ok(Token::Punct(Punct::Lt)));
 					}
-					'>' => {
-						if let Some(nc) = iter.peekable().peek() {
-							if *nc == '=' {
-								iter.next();
-								return Some(Ok(Token::Punct(Punct::Ge)));
-							} else if *nc == '>' {
-								iter.next();
-								return Some(Ok(Token::Punct(Punct::Shr)));
-							} else {
-								return Some(Ok(Token::Punct(Punct::Gt)));
-							}
+				}
+				'>' => {
+					if let Some(nc) = iter.peekable().peek() {
+						if *nc == '=' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::Ge)));
+						} else if *nc == '>' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::Shr)));
 						} else {
 							return Some(Ok(Token::Punct(Punct::Gt)));
 						}
+					} else {
+						return Some(Ok(Token::Punct(Punct::Gt)));
 					}
-					'|' => {
-						if let Some(nc) = iter.peekable().peek() {
-							if *nc == '|' {
-								iter.next();
-								return Some(Ok(Token::Punct(Punct::Lor)));
-							} else {
-								return Some(Ok(Token::Punct(Punct::Or)));
-							}
+				}
+				'|' => {
+					if let Some(nc) = iter.peekable().peek() {
+						if *nc == '|' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::Lor)));
 						} else {
 							return Some(Ok(Token::Punct(Punct::Or)));
 						}
+					} else {
+						return Some(Ok(Token::Punct(Punct::Or)));
 					}
-					'&' => {
-						if let Some(nc) = iter.peekable().peek() {
-							if *nc == '&' {
-								iter.next();
-								return Some(Ok(Token::Punct(Punct::Lan)));
-							} else {
-								return Some(Ok(Token::Punct(Punct::And)));
-							}
+				}
+				'&' => {
+					if let Some(nc) = iter.peekable().peek() {
+						if *nc == '&' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::Lan)));
 						} else {
 							return Some(Ok(Token::Punct(Punct::And)));
 						}
+					} else {
+						return Some(Ok(Token::Punct(Punct::And)));
 					}
-					'^' => return Some(Ok(Token::Punct(Punct::Xor))),
-					'%' => return Some(Ok(Token::Punct(Punct::Mod))),
-					'*' => return Some(Ok(Token::Punct(Punct::Mul))),
-					'[' => return Some(Ok(Token::Punct(Punct::Brak))),
-					'?' => return Some(Ok(Token::Punct(Punct::Cond))),
-					'"' => return self.try_string_literal(iter),
-					'\'' => return self.try_char(iter),
-					_ if is_id_initial_char(&c) => return self.try_id(iter, c),
-					_ if is_digit(&c) => return self.try_decimal(iter, c),
-					// TODO punctuators
-					'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => return Some(Ok(Token::Todo(c.into()))),
+				}
+				'^' => return Some(Ok(Token::Punct(Punct::Xor))),
+				'%' => return Some(Ok(Token::Punct(Punct::Mod))),
+				'*' => return Some(Ok(Token::Punct(Punct::Mul))),
+				'[' => return Some(Ok(Token::Punct(Punct::Brak))),
+				'?' => return Some(Ok(Token::Punct(Punct::Cond))),
+				'"' => return self.try_string_literal(iter),
+				'\'' => return self.try_char(iter),
+				_ if is_id_initial_char(&c) => return self.try_id(iter, c),
+				_ if is_digit(&c) => return self.try_decimal(iter, c),
+				// TODO punctuators
+				'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => return Some(Ok(Token::Todo(c))),
 
-					_ => return Some(Err(LexError::InvalidChar(c))),
-				},
-			};
+				_ => return Some(Err(LexError::InvalidChar(c))),
+			}
 		}
+		return None;
 	}
 
 	/// 对输入字符串进行词法解析,得到一组token list,或者错误信息
 	/// TODO 修改接口,把迭代器放到结构体中
 	pub fn parse_all(input: &str) -> Result<Vec<Token>, LexError> {
-		println!("now parsing: {}", input);
-
 		let mut token_list = vec![];
 		let mut lex_state = TokenApi { line: 1, token_count: 0 };
 		let mut iter = input.chars();
@@ -372,9 +373,6 @@ impl TokenApi {
 				Err(err) => return Err(err),
 			}
 		}
-
-		println!("state: {:#?}", lex_state);
-
 		Ok(token_list)
 	}
 }
@@ -430,11 +428,11 @@ mod tests {
 		);
 
 		assert_eq!(TokenApi::parse_all("\"abc\n\""), Err(LexError::ExpectingBut('\"', '\n')));
-		assert_eq!(TokenApi::parse_all("\'abc\'"), Err(LexError::NotOneChar));
-		assert_eq!(TokenApi::parse_all("\'\'"), Err(LexError::NotOneChar));
+		assert_eq!(TokenApi::parse_all("\'abc\'"), Err(LexError::MoreThanOneChar));
+		assert_eq!(TokenApi::parse_all("\'\'"), Err(LexError::EmptyChar));
 
-		assert_eq!(TokenApi::parse_all("\'a\'"), Ok(vec![Token::CharacterConst("a".into())]));
-		assert_eq!(TokenApi::parse_all("\'\\n\'"), Ok(vec![Token::CharacterConst("\n".into())]));
+		assert_eq!(TokenApi::parse_all("\'a\'"), Ok(vec![Token::CharacterConst('a')]));
+		assert_eq!(TokenApi::parse_all("\'\\n\'"), Ok(vec![Token::CharacterConst('\n')]));
 	}
 
 	#[test]
