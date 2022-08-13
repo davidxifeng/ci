@@ -289,11 +289,11 @@ impl TokenApi {
 				}
 
 				'<' => {
-					if let Some(nc) = iter.peekable().peek() {
-						if *nc == '=' {
+					if let Some(nc) = iter.clone().next() {
+						if nc == '=' {
 							iter.next();
 							return Some(Ok(Token::Punct(Punct::Le)));
-						} else if *nc == '<' {
+						} else if nc == '<' {
 							iter.next();
 							return Some(Ok(Token::Punct(Punct::Shl)));
 						} else {
@@ -304,11 +304,11 @@ impl TokenApi {
 					}
 				}
 				'>' => {
-					if let Some(nc) = iter.peekable().peek() {
-						if *nc == '=' {
+					if let Some(nc) = iter.clone().next() {
+						if nc == '=' {
 							iter.next();
 							return Some(Ok(Token::Punct(Punct::Ge)));
-						} else if *nc == '>' {
+						} else if nc == '>' {
 							iter.next();
 							return Some(Ok(Token::Punct(Punct::Shr)));
 						} else {
@@ -319,8 +319,8 @@ impl TokenApi {
 					}
 				}
 				'|' => {
-					if let Some(nc) = iter.peekable().peek() {
-						if *nc == '|' {
+					if let Some(nc) = iter.clone().next() {
+						if nc == '|' {
 							iter.next();
 							return Some(Ok(Token::Punct(Punct::Lor)));
 						} else {
@@ -331,8 +331,8 @@ impl TokenApi {
 					}
 				}
 				'&' => {
-					if let Some(nc) = iter.peekable().peek() {
-						if *nc == '&' {
+					if let Some(nc) = iter.clone().next() {
+						if nc == '&' {
 							iter.next();
 							return Some(Ok(Token::Punct(Punct::Lan)));
 						} else {
@@ -493,12 +493,19 @@ mod tests {
 		assert_eq!(TokenApi::parse_all("<"), Ok(vec![Token::Punct(Punct::Lt)]));
 		assert_eq!(TokenApi::parse_all("< "), Ok(vec![Token::Punct(Punct::Lt)]));
 		assert_eq!(TokenApi::parse_all("<="), Ok(vec![Token::Punct(Punct::Le)]));
+		assert_eq!(TokenApi::parse_all("<=<="), Ok(vec![Token::Punct(Punct::Le), Token::Punct(Punct::Le)]));
+		assert_eq!(TokenApi::parse_all("<= <="), Ok(vec![Token::Punct(Punct::Le), Token::Punct(Punct::Le)]));
 		assert_eq!(TokenApi::parse_all("<<"), Ok(vec![Token::Punct(Punct::Shl)]));
 
 		assert_eq!(TokenApi::parse_all(">"), Ok(vec![Token::Punct(Punct::Gt)]));
 		assert_eq!(TokenApi::parse_all("> "), Ok(vec![Token::Punct(Punct::Gt)]));
 		assert_eq!(TokenApi::parse_all(">="), Ok(vec![Token::Punct(Punct::Ge)]));
+		assert_eq!(TokenApi::parse_all(">=>="), Ok(vec![Token::Punct(Punct::Ge), Token::Punct(Punct::Ge)]));
 		assert_eq!(TokenApi::parse_all(">>"), Ok(vec![Token::Punct(Punct::Shr)]));
+
+		assert_eq!(TokenApi::parse_all(">=<="), Ok(vec![Token::Punct(Punct::Ge), Token::Punct(Punct::Le)]));
+		assert_eq!(TokenApi::parse_all(">=1"), Ok(vec![Token::Punct(Punct::Ge), Token::IntegerConst("1".into())]));
+		assert_eq!(TokenApi::parse_all(">1"), Ok(vec![Token::Punct(Punct::Gt), Token::IntegerConst("1".into())]));
 
 		assert_eq!(TokenApi::parse_all("|"), Ok(vec![Token::Punct(Punct::Or)]));
 		assert_eq!(TokenApi::parse_all("||"), Ok(vec![Token::Punct(Punct::Lor)]));

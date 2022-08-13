@@ -33,7 +33,7 @@ pub type DeclarationList = Vec<Declaration>;
 pub enum ParseError {
 	LexError(LexError),
 	EndOfToken,
-	UnexpectedToken,
+	UnexpectedToken(String),
 	TypeMismatch,
 	TokenNotPunct,
 }
@@ -44,11 +44,6 @@ pub struct SyntaxTree {
 }
 
 impl Token {
-	pub fn tk_assign() -> &'static Token {
-		static ASSIGN: Token = Token::Punct(Punct::Assign);
-		&ASSIGN
-	}
-
 	pub fn is_int_type(&self) -> bool {
 		match self {
 			Token::Keyword(Keyword::Int) => true,
@@ -69,7 +64,7 @@ impl Token {
 		}
 	}
 
-	pub fn is_char_type(&self) -> bool {
+	pub fn is_keyword_char(&self) -> bool {
 		match self {
 			Token::Keyword(Keyword::Char) => true,
 			_ => false,
@@ -96,17 +91,17 @@ impl SyntaxTree {
 		let tk = Self::next_token(iter)?;
 		match tk {
 			Token::Id(id) => Ok(id.clone()),
-			_ => Err(ParseError::UnexpectedToken),
+			_ => Err(ParseError::UnexpectedToken("not id".into())),
 		}
 	}
 
 	fn next_int_const(iter: &mut core::slice::Iter<Token>) -> Result<i32, ParseError> {
 		let tk = Self::next_token(iter)?;
 		match tk {
-			Token::IntegerConst(id) => Ok(id.parse().expect("error in lex")),
+			Token::IntegerConst(id) => Ok(id.parse().unwrap()),
 			Token::CharacterConst(_) => Err(ParseError::TypeMismatch),
 			Token::StringLiteral(_) => Err(ParseError::TypeMismatch),
-			_ => Err(ParseError::UnexpectedToken),
+			_ => Err(ParseError::UnexpectedToken("not int const".into())),
 		}
 	}
 
@@ -114,24 +109,21 @@ impl SyntaxTree {
 		let tk = Self::next_token(iter)?;
 		match tk {
 			Token::CharacterConst(id) => Ok(*id),
-			_ => Err(ParseError::UnexpectedToken),
+			Token::IntegerConst(_) => Err(ParseError::TypeMismatch),
+			Token::StringLiteral(_) => Err(ParseError::TypeMismatch),
+			_ => Err(ParseError::UnexpectedToken("not char const".into())),
 		}
 	}
 
-	fn expect_token(iter: &mut core::slice::Iter<Token>, etk: &Token) -> Result<(), ParseError> {
-		let tk = Self::next_token(iter)?;
-		if tk == etk {
-			Ok(())
+	fn peek_next_token<'a>(iter: &'a mut std::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
+		// 会advance 迭代器的写法, 这样的话这个peekable很有问题呀
+		// if let Some(nt) = iter.peekable().peek() {
+		// 这样迭代可以,去掉clone之后,就会advance迭代器了
+		// if let Some(nt) = iter.clone().peekable().peek() {
+		if let Some(nt) = iter.clone().next() {
+			Ok(nt)
 		} else {
-			Err(ParseError::UnexpectedToken)
-		}
-	}
-
-	fn peek_next_token<'a>(iter: &'a mut core::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
-		let mnt = iter.peekable().next();
-		match mnt {
-			None => Err(ParseError::EndOfToken),
-			Some(nt) => Ok(nt),
+			Err(ParseError::EndOfToken)
 		}
 	}
 
@@ -140,38 +132,67 @@ impl SyntaxTree {
 
 		let mut iter = self.token_list.iter();
 		while let Some(tk) = iter.next() {
-			if tk.is_char_type() {
-				// char b = 'B', c, d = 'D';
+			if tk.is_keyword_char() {
+				let mut il = vec![];
 				while Self::peek_next_token(&mut iter)?.is_not_semicolon() {
 					let id_name = Self::next_id(&mut iter)?;
 					let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
 					if *next_punct == Punct::Assign {
 						iter.next();
 						let val = Self::next_char_const(&mut iter)?;
-						dl.push(Declaration::Variable {
-							ci_type: (CiType::CiChar),
-							list: (vec![Declarator { name: id_name, value: CiValue::CiChar(val) }]),
-						})
+						il.push(Declarator { name: id_name, value: CiValue::CiChar(val) });
+
+						let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
+						if *next_punct == Punct::Comma {
+							iter.next();
+						} else if *next_punct == Punct::Semicolon {
+							iter.next();
+							break;
+						} else {
+							return Err(ParseError::UnexpectedToken("expecting: ,;".into()));
+						}
 					} else if *next_punct == Punct::Comma {
 						iter.next();
-						dl.push(Declaration::Variable {
-							ci_type: (CiType::CiChar),
-							list: (vec![Declarator { name: id_name, value: CiValue::CiChar('\0') }]),
-						})
+						il.push(Declarator { name: id_name, value: CiValue::CiChar('\0') });
 					} else if *next_punct == Punct::Semicolon {
+						iter.next();
+						break;
 					} else {
-						return Err(ParseError::UnexpectedToken);
+						return Err(ParseError::UnexpectedToken("only = , ; allowed after id".into()));
 					}
 				}
+				dl.push(Declaration::Variable { ci_type: (CiType::CiChar), list: (il) });
 			} else if tk.is_int_type() {
-				let id_name = Self::next_id(&mut iter)?;
-				Self::expect_token(&mut iter, Token::tk_assign())?;
-				let val = Self::next_int_const(&mut iter)?;
-				Self::expect_token(&mut iter, &Token::Todo(';'))?;
-				dl.push(Declaration::Variable {
-					ci_type: (CiType::CiChar),
-					list: (vec![Declarator { name: id_name, value: CiValue::CiInt(val) }]),
-				})
+				let mut il = vec![];
+
+				while Self::peek_next_token(&mut iter)?.is_not_semicolon() {
+					let id_name = Self::next_id(&mut iter)?;
+					let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
+					if *next_punct == Punct::Assign {
+						iter.next();
+						let val = Self::next_int_const(&mut iter)?;
+						il.push(Declarator { name: id_name, value: CiValue::CiInt(val) });
+
+						let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
+						if *next_punct == Punct::Comma {
+							iter.next();
+						} else if *next_punct == Punct::Semicolon {
+							iter.next();
+							break;
+						} else {
+							return Err(ParseError::UnexpectedToken("expecting: ,;".into()));
+						}
+					} else if *next_punct == Punct::Comma {
+						il.push(Declarator { name: id_name, value: CiValue::CiInt(0) });
+						iter.next();
+					} else if *next_punct == Punct::Semicolon {
+						iter.next();
+						break;
+					} else {
+						return Err(ParseError::UnexpectedToken("only = , ; allowed after id".into()));
+					}
+				}
+				dl.push(Declaration::Variable { ci_type: (CiType::CiInt), list: (il) });
 			} else if tk.is_enum_type() {
 			}
 		}
@@ -193,13 +214,23 @@ mod tests {
 
 	#[test]
 	fn test_t0() {
-		let src = include_str!("../data/t0.c");
 		assert_eq!(
-			SyntaxTree::compile(src),
+			SyntaxTree::compile("char ; int ;"),
+			Ok(vec![
+				Declaration::Variable { ci_type: (CiType::CiChar), list: vec![] },
+				Declaration::Variable { ci_type: (CiType::CiInt), list: vec![] },
+			])
+		);
+		assert_eq!(
+			SyntaxTree::compile("char a = 'A', b, c = 'C'; int i = 1;"),
 			Ok(vec![
 				Declaration::Variable {
 					ci_type: (CiType::CiChar),
-					list: vec![Declarator { name: "c".into(), value: CiValue::CiChar('A') }]
+					list: vec![
+						Declarator { name: "a".into(), value: CiValue::CiChar('A') },
+						Declarator { name: "b".into(), value: CiValue::CiChar('\0') },
+						Declarator { name: "c".into(), value: CiValue::CiChar('C') },
+					]
 				},
 				Declaration::Variable {
 					ci_type: (CiType::CiInt),
@@ -208,33 +239,16 @@ mod tests {
 			])
 		);
 		assert_eq!(SyntaxTree::compile(r###"char c = 'a'"###), Err(ParseError::EndOfToken));
-		assert_eq!(SyntaxTree::compile(r###"char c = 'a' y "###), Err(ParseError::UnexpectedToken));
-		assert_eq!(SyntaxTree::compile(r###"char c "###), Err(ParseError::UnexpectedToken));
+		assert_eq!(SyntaxTree::compile(r###"char c = 'a' y "###), Err(ParseError::TokenNotPunct));
+		assert_eq!(
+			SyntaxTree::compile(r###"char c = 'a' = "###),
+			Err(ParseError::UnexpectedToken("expecting: ,;".into()))
+		);
+		assert_eq!(SyntaxTree::compile(r###"char c "###), Err(ParseError::EndOfToken));
 		assert_eq!(SyntaxTree::compile(r###"int i = 'c';"###), Err(ParseError::TypeMismatch));
 		assert_eq!(SyntaxTree::compile(r###"int i = "int";"###), Err(ParseError::TypeMismatch));
 	}
 
 	#[test]
-	fn test_t1() {
-		let src = r###"char; int;"###;
-		assert_eq!(
-			SyntaxTree::compile(src),
-			Ok(vec![
-				Declaration::Variable { ci_type: (CiType::CiChar), list: vec![] },
-				Declaration::Variable { ci_type: (CiType::CiInt), list: vec![] },
-			])
-		);
-		let src = r###"char b = 'B', c, d = 'D';"###;
-		assert_eq!(
-			SyntaxTree::compile(src),
-			Ok(vec![Declaration::Variable {
-				ci_type: (CiType::CiChar),
-				list: vec![
-					Declarator { name: "b".into(), value: CiValue::CiChar('B') },
-					Declarator { name: "c".into(), value: CiValue::CiChar('\0') },
-					Declarator { name: "d".into(), value: CiValue::CiChar('D') },
-				]
-			},])
-		);
-	}
+	fn test_t1() {}
 }
