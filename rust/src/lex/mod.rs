@@ -24,7 +24,7 @@ fn is_not_new_line(c: &char) -> bool {
 	*c != '\r' && *c != '\n'
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Keyword {
 	Char,
 	Int,
@@ -124,10 +124,17 @@ impl std::fmt::Display for Punct {
 //      string-literal
 //      punctuator
 
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub enum Const {
+	#[default]
+	Empty,
+	Integer(i128),
+	Character(char),
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
-	IntegerConst(String),
-	CharacterConst(char),
+	Const(Const),
 	StringLiteral(String),
 	Keyword(Keyword),
 	Id(String),
@@ -142,10 +149,18 @@ impl Token {
 			_ => false,
 		}
 	}
+
 	pub fn get_punct(&self) -> Result<&Punct, ParseError> {
 		match self {
 			Token::Punct(p) => Ok(p),
 			_ => Err(ParseError::TokenNotPunct),
+		}
+	}
+
+	pub fn get_keyword(&self) -> Result<Keyword, ParseError> {
+		match self {
+			Token::Keyword(p) => Ok(*p),
+			_ => Err(ParseError::TokenNotBaseType),
 		}
 	}
 
@@ -175,6 +190,7 @@ pub enum LexError {
 	InvalidChar(char),
 	UnexpectedEof,
 	EmptyChar,
+	ConstOverflow,
 	MoreThanOneChar,
 	ExpectingBut(char, char),
 	UnknownEscape(char),
@@ -214,7 +230,11 @@ impl TokenApi {
 		while let Some(nc) = iter.peeking_take_while(is_digit).next() {
 			str.push(nc);
 		}
-		return Some(Ok(Token::IntegerConst(str)));
+		if let Ok(n) = str.parse() {
+			Some(Ok(Token::Const(Const::Integer(n))))
+		} else {
+			Some(Err(LexError::ConstOverflow))
+		}
 	}
 
 	fn simple_escape_seq(c: char) -> Option<char> {
@@ -297,7 +317,7 @@ impl TokenApi {
 		let mut cs = val.chars();
 		if let Some(c) = cs.next() {
 			if let None = cs.next() {
-				return Some(Ok(Token::CharacterConst(c)));
+				return Some(Ok(Token::Const(Const::Character(c))));
 			} else {
 				return Some(Err(LexError::MoreThanOneChar));
 			}

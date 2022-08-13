@@ -4,22 +4,14 @@ use crate::*;
 
 #[derive(Debug, PartialEq)]
 pub enum CiType {
-	CiInt,
-	CiChar,
+	BaseType(Keyword),
 	// CiEnum(String),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum CiValue {
-	CiInt(i32),
-	CiChar(char),
-	// CiEnum(i32),
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Declarator {
 	name: String,
-	value: CiValue,
+	value: Const,
 	// idr: i32,
 }
 
@@ -38,6 +30,7 @@ pub enum ParseError {
 	UnexpectedToken(String),
 	TypeMismatch,
 	TokenNotPunct,
+	TokenNotBaseType,
 }
 
 impl ParseError {
@@ -52,7 +45,6 @@ impl ParseError {
 pub struct SyntaxTree {
 	token_list: Vec<Token>,
 }
-
 
 impl SyntaxTree {
 	fn peek_next_token<'a>(iter: &'a mut std::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
@@ -79,21 +71,10 @@ impl SyntaxTree {
 		}
 	}
 
-	fn next_int_const(iter: &mut core::slice::Iter<Token>) -> Result<i32, ParseError> {
+	fn next_const(iter: &mut core::slice::Iter<Token>) -> Result<Const, ParseError> {
 		let tk = Self::take_next_token(iter)?;
 		match tk {
-			Token::IntegerConst(id) => Ok(id.parse().unwrap()),
-			Token::CharacterConst(_) => Err(ParseError::TypeMismatch),
-			Token::StringLiteral(_) => Err(ParseError::TypeMismatch),
-			_ => Err(ParseError::UnexpectedToken("not int const".into())),
-		}
-	}
-
-	fn next_char_const(iter: &mut core::slice::Iter<Token>) -> Result<char, ParseError> {
-		let tk = Self::take_next_token(iter)?;
-		match tk {
-			Token::CharacterConst(id) => Ok(*id),
-			Token::IntegerConst(_) => Err(ParseError::TypeMismatch),
+			Token::Const(c) => Ok(*c),
 			Token::StringLiteral(_) => Err(ParseError::TypeMismatch),
 			_ => Err(ParseError::UnexpectedToken("not char const".into())),
 		}
@@ -106,14 +87,14 @@ impl SyntaxTree {
 		let mut iter = self.token_list.iter();
 
 		while let Some(tk) = iter.next() {
-			if tk.is_keyword_char() {
+			if tk.is_keyword_char() || tk.is_int_type() {
 				let mut il = vec![];
 				while Self::peek_next_token(&mut iter)?.is_not_semicolon() {
 					let id_name = Self::next_id(&mut iter)?;
 					let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
 					if *next_punct == Punct::Assign {
-						let val = Self::next_char_const(&mut iter)?;
-						il.push(Declarator { name: id_name, value: CiValue::CiChar(val) });
+						let val = Self::next_const(&mut iter)?;
+						il.push(Declarator { name: id_name, value: val });
 
 						let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
 						if *next_punct == Punct::Comma {
@@ -123,40 +104,14 @@ impl SyntaxTree {
 							return Err(ParseError::expecting_but(&[",", ";"], next_punct.to_string().as_str()));
 						}
 					} else if *next_punct == Punct::Comma {
-						il.push(Declarator { name: id_name, value: CiValue::CiChar('\0') });
+						il.push(Declarator { name: id_name, value: Default::default() });
 					} else if *next_punct == Punct::Semicolon {
 						break;
 					} else {
-						return Err(ParseError::UnexpectedToken("only = , ; allowed after id".into()));
+						return Err(ParseError::expecting_but(&[",", ";", "="], next_punct.to_string().as_str()));
 					}
 				}
-				dl.push(Declaration::Variable { ci_type: (CiType::CiChar), list: (il) });
-			} else if tk.is_int_type() {
-				let mut il = vec![];
-
-				while Self::peek_next_token(&mut iter)?.is_not_semicolon() {
-					let id_name = Self::next_id(&mut iter)?;
-					let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
-					if *next_punct == Punct::Assign {
-						let val = Self::next_int_const(&mut iter)?;
-						il.push(Declarator { name: id_name, value: CiValue::CiInt(val) });
-
-						let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
-						if *next_punct == Punct::Comma {
-						} else if *next_punct == Punct::Semicolon {
-							break;
-						} else {
-							return Err(ParseError::UnexpectedToken("expecting: ,;".into()));
-						}
-					} else if *next_punct == Punct::Comma {
-						il.push(Declarator { name: id_name, value: CiValue::CiInt(0) });
-					} else if *next_punct == Punct::Semicolon {
-						break;
-					} else {
-						return Err(ParseError::UnexpectedToken("only = , ; allowed after id".into()));
-					}
-				}
-				dl.push(Declaration::Variable { ci_type: (CiType::CiInt), list: (il) });
+				dl.push(Declaration::Variable { ci_type: (CiType::BaseType(tk.get_keyword()?)), list: (il) });
 			} else if tk.is_enum_type() {
 			}
 		}

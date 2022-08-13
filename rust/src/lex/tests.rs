@@ -19,10 +19,10 @@ fn test_identifier() {
 
 #[test]
 fn test_const() {
-	assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::IntegerConst("123".into())]));
+	assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::Const("123".into())]));
 	assert_eq!(
 		TokenApi::parse_all("1 23"),
-		Ok(vec![Token::IntegerConst("1".into()), Token::IntegerConst("23".into())])
+		Ok(vec![Token::Const("1".into()), Token::Const("23".into())])
 	);
 }
 #[test]
@@ -37,7 +37,7 @@ fn test_string_char() {
 	assert_eq!(
 		TokenApi::parse_all(r##"123 fn "I am a C string""##),
 		Ok(vec![
-			Token::IntegerConst("123".into()),
+			Token::Const(Const::Integer(123)),
 			Token::Id("fn".into()),
 			Token::StringLiteral("I am a C string".into())
 		])
@@ -47,8 +47,8 @@ fn test_string_char() {
 	assert_eq!(TokenApi::parse_all("\'abc\'"), Err(LexError::MoreThanOneChar));
 	assert_eq!(TokenApi::parse_all("\'\'"), Err(LexError::EmptyChar));
 
-	assert_eq!(TokenApi::parse_all("\'a\'"), Ok(vec![Token::CharacterConst('a')]));
-	assert_eq!(TokenApi::parse_all("\'\\n\'"), Ok(vec![Token::CharacterConst('\n')]));
+	assert_eq!(TokenApi::parse_all("\'a\'"), Ok(vec![Token::Const(Const::Character('a'))]));
+	assert_eq!(TokenApi::parse_all("\'\\n\'"), Ok(vec![Token::Const(Const::Character('\n'))]));
 }
 
 #[test]
@@ -62,19 +62,19 @@ fn test_comment_preprocessor() {
 		c
 		"##
 		),
-		Ok(vec![Token::Id("x".into()), Token::IntegerConst("123".into()), Token::Id("c".into()),])
+		Ok(vec![Token::Id("x".into()), Token::Const("123".into()), Token::Id("c".into()),])
 	);
 	assert_eq!(TokenApi::parse_all(r##"#include <stdio.h>"##), Ok(vec![]));
-	assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::IntegerConst("1".into())]));
+	assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::Const("1".into())]));
 	assert_eq!(TokenApi::parse_all(r##"// hi"##), Ok(vec![]));
-	assert_eq!(TokenApi::parse_all(r##"1// hi"##), Ok(vec![Token::IntegerConst("1".into())]));
+	assert_eq!(TokenApi::parse_all(r##"1// hi"##), Ok(vec![Token::Const("1".into())]));
 	assert_eq!(
 		TokenApi::parse_all(
 			r##"1// hi
 		2
 		"##
 		),
-		Ok(vec![Token::IntegerConst("1".into()), Token::IntegerConst("2".into())])
+		Ok(vec![Token::Const("1".into()), Token::Const("2".into())])
 	);
 }
 
@@ -82,9 +82,9 @@ fn test_comment_preprocessor() {
 fn test_punct() {
 	assert_eq!(
 		TokenApi::parse_all(r##"1/2"##),
-		Ok(vec![Token::IntegerConst("1".into()), Token::Punct(Punct::Div), Token::IntegerConst("2".into())])
+		Ok(vec![Token::Const("1".into()), Token::Punct(Punct::Div), Token::Const("2".into())])
 	);
-	assert_eq!(TokenApi::parse_all(r##"1//2"##), Ok(vec![Token::IntegerConst("1".into())]));
+	assert_eq!(TokenApi::parse_all(r##"1//2"##), Ok(vec![Token::Const("1".into())]));
 	assert_eq!(TokenApi::parse_all("="), Ok(vec![Token::Punct(Punct::Assign)]));
 	assert_eq!(TokenApi::parse_all("=="), Ok(vec![Token::Punct(Punct::Eq)]));
 	assert_eq!(TokenApi::parse_all("==="), Ok(vec![Token::Punct(Punct::Eq), Token::Punct(Punct::Assign)]));
@@ -115,8 +115,8 @@ fn test_punct() {
 	assert_eq!(TokenApi::parse_all(">>"), Ok(vec![Token::Punct(Punct::Shr)]));
 
 	assert_eq!(TokenApi::parse_all(">=<="), Ok(vec![Token::Punct(Punct::Ge), Token::Punct(Punct::Le)]));
-	assert_eq!(TokenApi::parse_all(">=1"), Ok(vec![Token::Punct(Punct::Ge), Token::IntegerConst("1".into())]));
-	assert_eq!(TokenApi::parse_all(">1"), Ok(vec![Token::Punct(Punct::Gt), Token::IntegerConst("1".into())]));
+	assert_eq!(TokenApi::parse_all(">=1"), Ok(vec![Token::Punct(Punct::Ge), Token::Const("1".into())]));
+	assert_eq!(TokenApi::parse_all(">1"), Ok(vec![Token::Punct(Punct::Gt), Token::Const("1".into())]));
 
 	assert_eq!(TokenApi::parse_all("|"), Ok(vec![Token::Punct(Punct::Or)]));
 	assert_eq!(TokenApi::parse_all("||"), Ok(vec![Token::Punct(Punct::Lor)]));
