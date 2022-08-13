@@ -8,7 +8,6 @@
       "type": "lldb",
       "request": "launch",
       "name": "Debug executable 'toy'",
-      "program": "${workspaceFolder}/target/debug/toy",
       "cargo": {
         "args": [
           "build",
@@ -20,7 +19,6 @@
           "kind": "bin"
         }
       },
-      "stopOnEntry": true,
       "args": ["parse"],
       "cwd": "${workspaceFolder}"
     },
