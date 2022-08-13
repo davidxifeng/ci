@@ -46,10 +46,12 @@ enum SubCommand {
 fn main() -> Result<(), Box<dyn Error>> {
 	let args = Args::parse();
 
+
 	match args.command {
 		SubCommand::Dev { name: _, count } => {
 			let total = 64 << 10;
 			let pb = indicatif::ProgressBar::new(total);
+			dbg!(total);
 			let tmpl = " {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})";
 			pb.set_style(
 				indicatif::ProgressStyle::with_template(tmpl)
@@ -90,6 +92,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 		}
 		SubCommand::Parse { file } => {
 			let src = fs::read_to_string(file)?;
+			dbg!(src.as_bytes());
 			println!("{}\n{:#?}", src, SyntaxTree::compile(src.as_str()));
 		}
 		SubCommand::Http => {
