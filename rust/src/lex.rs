@@ -60,7 +60,17 @@ pub enum Punct {
 	Brak,
 
 	Not,
+	Semicolon,
+	Comma,
 }
+
+// 6.4 Lexical elements
+// token:
+//      keyword
+//      identifier
+//      constant: int, float, enum, char
+//      string-literal
+//      punctuator
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -222,14 +232,6 @@ impl TokenApi {
 	}
 }
 
-// 6.4 Lexical elements
-// token:
-//      keyword
-//      identifier
-//      constant: int, float, enum, char
-//      string-literal
-//      punctuator
-
 impl TokenApi {
 	/// 标识符
 	/// c4中的做法: 提前准备好符号表,把关键字 还有库函数添加到符号表中,
@@ -345,12 +347,15 @@ impl TokenApi {
 				'*' => return Some(Ok(Token::Punct(Punct::Mul))),
 				'[' => return Some(Ok(Token::Punct(Punct::Brak))),
 				'?' => return Some(Ok(Token::Punct(Punct::Cond))),
+				';' => return Some(Ok(Token::Punct(Punct::Semicolon))),
+				',' => return Some(Ok(Token::Punct(Punct::Comma))),
+
 				'"' => return self.try_string_literal(iter),
 				'\'' => return self.try_char(iter),
 				_ if is_id_initial_char(&c) => return self.try_id(iter, c),
 				_ if is_digit(&c) => return self.try_decimal(iter, c),
 				// TODO punctuators
-				'~' | ';' | '{' | '}' | '(' | ')' | ']' | ',' | ':' => return Some(Ok(Token::Todo(c))),
+				'~' | '{' | '}' | '(' | ')' | ']' | ':' => return Some(Ok(Token::Todo(c))),
 
 				_ => return Some(Err(LexError::InvalidChar(c))),
 			}
@@ -505,5 +510,6 @@ mod tests {
 		assert_eq!(TokenApi::parse_all("*"), Ok(vec![Token::Punct(Punct::Mul)]));
 		assert_eq!(TokenApi::parse_all("["), Ok(vec![Token::Punct(Punct::Brak)]));
 		assert_eq!(TokenApi::parse_all("?"), Ok(vec![Token::Punct(Punct::Cond)]));
+		assert_eq!(TokenApi::parse_all(";"), Ok(vec![Token::Punct(Punct::Semicolon)]));
 	}
 }

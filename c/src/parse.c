@@ -155,6 +155,7 @@ int parse() {
 					id = id + Idsz;
 				}
 			} else {
+				// 给全局变量在 数据段分配空间.
 				id[Class] = Glo;
 				id[Val] = data - bd;
 				data = data + 4;

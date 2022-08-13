@@ -1,6 +1,7 @@
-/c4
-/ci
-/oci
+/c/c4
+/c/ci
+
+target
 
 *.dSYM
 *.o
@@ -12,8 +13,3 @@ luac.out
 *.log
 
 /todo.md
-
-/.vscode
-
-
-/*.lua
