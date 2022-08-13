@@ -1,5 +1,6 @@
 mod tests;
 
+use crate::*;
 use itertools::Itertools;
 
 #[inline]
@@ -134,6 +135,41 @@ pub enum Token {
 	Todo(char),
 }
 
+impl Token {
+	pub fn is_int_type(&self) -> bool {
+		match self {
+			Token::Keyword(Keyword::Int) => true,
+			_ => false,
+		}
+	}
+	pub fn get_punct(&self) -> Result<&Punct, ParseError> {
+		match self {
+			Token::Punct(p) => Ok(p),
+			_ => Err(ParseError::TokenNotPunct),
+		}
+	}
+
+	pub fn is_not_semicolon(&self) -> bool {
+		match self {
+			Token::Punct(Punct::Semicolon) => false,
+			_ => true,
+		}
+	}
+
+	pub fn is_keyword_char(&self) -> bool {
+		match self {
+			Token::Keyword(Keyword::Char) => true,
+			_ => false,
+		}
+	}
+
+	pub fn is_enum_type(&self) -> bool {
+		match self {
+			Token::Keyword(kw) => *kw == Keyword::Enum,
+			_ => false,
+		}
+	}
+}
 #[derive(Debug, PartialEq)]
 pub enum LexError {
 	InvalidChar(char),
@@ -432,5 +468,3 @@ impl TokenApi {
 		Ok(token_list)
 	}
 }
-
-// 只在test的时候编译,build时候不编译

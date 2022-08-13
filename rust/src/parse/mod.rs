@@ -53,52 +53,26 @@ pub struct SyntaxTree {
 	token_list: Vec<Token>,
 }
 
-impl Token {
-	pub fn is_int_type(&self) -> bool {
-		match self {
-			Token::Keyword(Keyword::Int) => true,
-			_ => false,
-		}
-	}
-	pub fn get_punct(&self) -> Result<&Punct, ParseError> {
-		match self {
-			Token::Punct(p) => Ok(p),
-			_ => Err(ParseError::TokenNotPunct),
-		}
-	}
-
-	pub fn is_not_semicolon(&self) -> bool {
-		match self {
-			Token::Punct(Punct::Semicolon) => false,
-			_ => true,
-		}
-	}
-
-	pub fn is_keyword_char(&self) -> bool {
-		match self {
-			Token::Keyword(Keyword::Char) => true,
-			_ => false,
-		}
-	}
-
-	pub fn is_enum_type(&self) -> bool {
-		match self {
-			Token::Keyword(kw) => *kw == Keyword::Enum,
-			_ => false,
-		}
-	}
-}
 
 impl SyntaxTree {
-	fn next_token<'a>(iter: &'a mut core::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
-		match iter.next() {
-			None => Err(ParseError::EndOfToken),
-			Some(tk) => Ok(tk),
+	fn peek_next_token<'a>(iter: &'a mut std::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
+		if let Some(nt) = iter.clone().next() {
+			Ok(nt)
+		} else {
+			Err(ParseError::EndOfToken)
+		}
+	}
+
+	fn take_next_token<'a>(iter: &'a mut core::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
+		if let Some(tk) = iter.next() {
+			Ok(tk)
+		} else {
+			Err(ParseError::EndOfToken)
 		}
 	}
 
 	fn next_id(iter: &mut core::slice::Iter<Token>) -> Result<String, ParseError> {
-		let tk = Self::next_token(iter)?;
+		let tk = Self::take_next_token(iter)?;
 		match tk {
 			Token::Id(id) => Ok(id.clone()),
 			_ => Err(ParseError::UnexpectedToken("not id".into())),
@@ -106,7 +80,7 @@ impl SyntaxTree {
 	}
 
 	fn next_int_const(iter: &mut core::slice::Iter<Token>) -> Result<i32, ParseError> {
-		let tk = Self::next_token(iter)?;
+		let tk = Self::take_next_token(iter)?;
 		match tk {
 			Token::IntegerConst(id) => Ok(id.parse().unwrap()),
 			Token::CharacterConst(_) => Err(ParseError::TypeMismatch),
@@ -116,7 +90,7 @@ impl SyntaxTree {
 	}
 
 	fn next_char_const(iter: &mut core::slice::Iter<Token>) -> Result<char, ParseError> {
-		let tk = Self::next_token(iter)?;
+		let tk = Self::take_next_token(iter)?;
 		match tk {
 			Token::CharacterConst(id) => Ok(*id),
 			Token::IntegerConst(_) => Err(ParseError::TypeMismatch),
@@ -124,48 +98,33 @@ impl SyntaxTree {
 			_ => Err(ParseError::UnexpectedToken("not char const".into())),
 		}
 	}
+}
 
-	fn peek_next_token<'a>(iter: &'a mut std::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
-		// 会advance 迭代器的写法, 这样的话这个peekable很有问题呀
-		// if let Some(nt) = iter.peekable().peek() {
-		// 这样迭代可以,去掉clone之后,就会advance迭代器了
-		// if let Some(nt) = iter.clone().peekable().peek() {
-		if let Some(nt) = iter.clone().next() {
-			Ok(nt)
-		} else {
-			Err(ParseError::EndOfToken)
-		}
-	}
-
+impl SyntaxTree {
 	pub fn parse(&mut self) -> Result<DeclarationList, ParseError> {
 		let mut dl = vec![];
-
 		let mut iter = self.token_list.iter();
+
 		while let Some(tk) = iter.next() {
 			if tk.is_keyword_char() {
 				let mut il = vec![];
 				while Self::peek_next_token(&mut iter)?.is_not_semicolon() {
 					let id_name = Self::next_id(&mut iter)?;
-					let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
+					let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
 					if *next_punct == Punct::Assign {
-						iter.next();
 						let val = Self::next_char_const(&mut iter)?;
 						il.push(Declarator { name: id_name, value: CiValue::CiChar(val) });
 
-						let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
+						let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
 						if *next_punct == Punct::Comma {
-							iter.next();
 						} else if *next_punct == Punct::Semicolon {
-							iter.next();
 							break;
 						} else {
 							return Err(ParseError::expecting_but(&[",", ";"], next_punct.to_string().as_str()));
 						}
 					} else if *next_punct == Punct::Comma {
-						iter.next();
 						il.push(Declarator { name: id_name, value: CiValue::CiChar('\0') });
 					} else if *next_punct == Punct::Semicolon {
-						iter.next();
 						break;
 					} else {
 						return Err(ParseError::UnexpectedToken("only = , ; allowed after id".into()));
@@ -177,26 +136,21 @@ impl SyntaxTree {
 
 				while Self::peek_next_token(&mut iter)?.is_not_semicolon() {
 					let id_name = Self::next_id(&mut iter)?;
-					let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
+					let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
 					if *next_punct == Punct::Assign {
-						iter.next();
 						let val = Self::next_int_const(&mut iter)?;
 						il.push(Declarator { name: id_name, value: CiValue::CiInt(val) });
 
-						let next_punct = Self::peek_next_token(&mut iter)?.get_punct()?;
+						let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
 						if *next_punct == Punct::Comma {
-							iter.next();
 						} else if *next_punct == Punct::Semicolon {
-							iter.next();
 							break;
 						} else {
 							return Err(ParseError::UnexpectedToken("expecting: ,;".into()));
 						}
 					} else if *next_punct == Punct::Comma {
 						il.push(Declarator { name: id_name, value: CiValue::CiInt(0) });
-						iter.next();
 					} else if *next_punct == Punct::Semicolon {
-						iter.next();
 						break;
 					} else {
 						return Err(ParseError::UnexpectedToken("only = , ; allowed after id".into()));
@@ -206,6 +160,7 @@ impl SyntaxTree {
 			} else if tk.is_enum_type() {
 			}
 		}
+
 		Ok(dl)
 	}
 
