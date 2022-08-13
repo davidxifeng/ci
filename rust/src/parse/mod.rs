@@ -8,11 +8,29 @@ pub enum CiType {
 	// CiEnum(String),
 }
 
+impl std::fmt::Display for CiType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str(match self {
+			Self::BaseType(kw) => match kw {
+				Keyword::Char => "char ",
+				Keyword::Int => "int ",
+				_ => "<error>",
+			},
+		})
+	}
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Declarator {
 	name: String,
 	value: Const,
 	// idr: i32,
+}
+
+impl std::fmt::Display for Declarator {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_fmt(format_args!("{} = {}, ", self.name, self.value))
+	}
 }
 
 #[derive(Debug, PartialEq)]
@@ -21,7 +39,47 @@ pub enum Declaration {
 	// Function { ci_type: CiType, name: String },
 }
 
-pub type DeclarationList = Vec<Declaration>;
+impl std::fmt::Display for Declaration {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Variable { ci_type, list } => {
+				f.write_fmt(format_args!("{}", ci_type));
+
+				if list.len() > 0 {
+					let v = &list[0];
+					if v.value == Const::Empty {
+						f.write_fmt(format_args!("{} ", v.name));
+					} else {
+						f.write_fmt(format_args!("{} = {}", v.name, v.value));
+					}
+				}
+				for v in list.iter().skip(1) {
+					if v.value == Const::Empty {
+						f.write_fmt(format_args!(", {} ", v.name));
+					} else {
+						f.write_fmt(format_args!(", {} = {}", v.name, v.value));
+					}
+				}
+				Ok(())
+			}
+		}
+	}
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DeclarationList {
+	list: Vec<Declaration>,
+}
+
+impl std::fmt::Display for DeclarationList {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		for v in &self.list {
+			f.write_fmt(format_args!("{}", v));
+			f.write_str(";\n");
+		}
+		Ok(())
+	}
+}
 
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
@@ -30,7 +88,6 @@ pub enum ParseError {
 	UnexpectedToken(String),
 	TypeMismatch,
 	TokenNotPunct,
-	TokenNotBaseType,
 }
 
 impl ParseError {
@@ -46,8 +103,10 @@ pub struct SyntaxTree {
 	token_list: Vec<Token>,
 }
 
+type ParseResult = Result<DeclarationList, ParseError>;
+
 impl SyntaxTree {
-	fn peek_next_token<'a>(iter: &'a mut std::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
+	fn peek_next_token<'a>(iter: &'a std::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
 		if let Some(nt) = iter.clone().next() {
 			Ok(nt)
 		} else {
@@ -82,41 +141,49 @@ impl SyntaxTree {
 }
 
 impl SyntaxTree {
-	pub fn parse(&mut self) -> Result<DeclarationList, ParseError> {
+	fn parse_declaration(keyword: Keyword, iter: &mut core::slice::Iter<Token>) -> Result<Declaration, ParseError> {
+		let mut il = vec![];
+
+		while Self::peek_next_token(iter)?.is_not_semicolon() {
+			let id_name = Self::next_id(iter)?;
+			let next_punct = Self::take_next_token(iter)?.get_punct()?;
+			if *next_punct == Punct::Assign {
+				let val = Self::next_const(iter)?;
+				il.push(Declarator { name: id_name, value: val });
+
+				let next_punct = Self::take_next_token(iter)?.get_punct()?;
+				if *next_punct == Punct::Comma {
+				} else if *next_punct == Punct::Semicolon {
+					break;
+				} else {
+					return Err(ParseError::expecting_but(&[",", ";"], next_punct.to_string().as_str()));
+				}
+			} else if *next_punct == Punct::Comma {
+				il.push(Declarator { name: id_name, value: Default::default() });
+			} else if *next_punct == Punct::Semicolon {
+				break;
+			} else {
+				return Err(ParseError::expecting_but(&[",", ";", "="], next_punct.to_string().as_str()));
+			}
+		}
+
+		Ok(Declaration::Variable { ci_type: (CiType::BaseType(keyword)), list: (il) })
+	}
+}
+
+impl SyntaxTree {
+	pub fn parse(&mut self) -> ParseResult {
 		let mut dl = vec![];
 		let mut iter = self.token_list.iter();
 
 		while let Some(tk) = iter.next() {
-			if tk.is_keyword_char() || tk.is_int_type() {
-				let mut il = vec![];
-				while Self::peek_next_token(&mut iter)?.is_not_semicolon() {
-					let id_name = Self::next_id(&mut iter)?;
-					let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
-					if *next_punct == Punct::Assign {
-						let val = Self::next_const(&mut iter)?;
-						il.push(Declarator { name: id_name, value: val });
-
-						let next_punct = Self::take_next_token(&mut iter)?.get_punct()?;
-						if *next_punct == Punct::Comma {
-						} else if *next_punct == Punct::Semicolon {
-							break;
-						} else {
-							return Err(ParseError::expecting_but(&[",", ";"], next_punct.to_string().as_str()));
-						}
-					} else if *next_punct == Punct::Comma {
-						il.push(Declarator { name: id_name, value: Default::default() });
-					} else if *next_punct == Punct::Semicolon {
-						break;
-					} else {
-						return Err(ParseError::expecting_but(&[",", ";", "="], next_punct.to_string().as_str()));
-					}
-				}
-				dl.push(Declaration::Variable { ci_type: (CiType::BaseType(tk.get_keyword()?)), list: (il) });
+			if let Some(kw) = tk.try_basetype_keyword() {
+				dl.push(Self::parse_declaration(kw, &mut iter)?);
 			} else if tk.is_enum_type() {
 			}
 		}
 
-		Ok(dl)
+		Ok(DeclarationList { list: dl })
 	}
 
 	pub fn compile(input: &str) -> Result<DeclarationList, ParseError> {

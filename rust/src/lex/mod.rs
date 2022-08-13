@@ -1,5 +1,7 @@
 mod tests;
 
+use std::fmt::Write;
+
 use crate::*;
 use itertools::Itertools;
 
@@ -132,6 +134,20 @@ pub enum Const {
 	Character(char),
 }
 
+impl std::fmt::Display for Const {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Empty => Ok(()),
+			Self::Character(c) => {
+				f.write_char('\'');
+				f.write_char(*c);
+				f.write_char('\'')
+			}
+			Self::Integer(i) => f.write_str(i.to_string().as_str()),
+		}
+	}
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
 	Const(Const),
@@ -143,10 +159,13 @@ pub enum Token {
 }
 
 impl Token {
-	pub fn is_int_type(&self) -> bool {
+	pub fn try_basetype_keyword(&self) -> Option<Keyword> {
 		match self {
-			Token::Keyword(Keyword::Int) => true,
-			_ => false,
+			Token::Keyword(kw) => match kw {
+				Keyword::Char | Keyword::Int => Some(*kw),
+				_ => None,
+			},
+			_ => None,
 		}
 	}
 
@@ -157,24 +176,10 @@ impl Token {
 		}
 	}
 
-	pub fn get_keyword(&self) -> Result<Keyword, ParseError> {
-		match self {
-			Token::Keyword(p) => Ok(*p),
-			_ => Err(ParseError::TokenNotBaseType),
-		}
-	}
-
 	pub fn is_not_semicolon(&self) -> bool {
 		match self {
 			Token::Punct(Punct::Semicolon) => false,
 			_ => true,
-		}
-	}
-
-	pub fn is_keyword_char(&self) -> bool {
-		match self {
-			Token::Keyword(Keyword::Char) => true,
-			_ => false,
 		}
 	}
 

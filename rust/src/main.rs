@@ -91,7 +91,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 		SubCommand::Parse { file } => {
 			let src = fs::read_to_string(file)?;
 			println!("{}\n\n\n", src);
-			println!("{:#?}", SyntaxTree::compile(src.as_str()));
+			let r = SyntaxTree::compile(src.as_str());
+			match r {
+				Ok(r) => println!("{}", r),
+				Err(e) => println!("error: {:#?}", e),
+			}
 		}
 		SubCommand::Http => {
 			use http::Request;
