@@ -2,32 +2,32 @@
 #[test]
 fn t0() {
 	use crate::{
-		lex::*,
 		compile::{errors::*, parse::*, types::*},
+		lex::*,
 	};
 	assert_eq!(
 		compile("char ; int ;"),
 		Ok(vec![
-			Declaration::Variable { ci_type: (CiType::BaseType(Keyword::Char)), list: vec![] },
-			Declaration::Variable { ci_type: (CiType::BaseType(Keyword::Int)), list: vec![] },
+			Declaration::Variable(VariableDeclaration { ctype: CType::BaseType(Keyword::Char), list: vec![] }),
+			Declaration::Variable(VariableDeclaration { ctype: CType::BaseType(Keyword::Int), list: vec![] }),
 		]
 		.into())
 	);
 	assert_eq!(
 		compile("char a = 'A', b, c = 'C'; int i = 1;"),
 		Ok(vec![
-			Declaration::Variable {
-				ci_type: (CiType::BaseType(Keyword::Char)),
+			Declaration::Variable(VariableDeclaration {
+				ctype: CType::BaseType(Keyword::Char),
 				list: vec![
 					Declarator { name: "a".into(), value: ("A").into() },
 					Declarator { name: "b".into(), value: ("").into() },
 					Declarator { name: "c".into(), value: ("C").into() },
 				]
-			},
-			Declaration::Variable {
-				ci_type: (CiType::BaseType(Keyword::Int)),
+			}),
+			Declaration::Variable(VariableDeclaration {
+				ctype: CType::BaseType(Keyword::Int),
 				list: vec![Declarator { name: "i".into(), value: "1".into() }]
-			},
+			}),
 		]
 		.into())
 	);

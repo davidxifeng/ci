@@ -1,7 +1,7 @@
 use crate::lex::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CiType {
+pub enum CType {
 	BaseType(Keyword),
 	// CiEnum(String),
 }
@@ -14,8 +14,14 @@ pub struct Declarator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VariableDeclaration {
+	pub ctype: CType,
+	pub list: Vec<Declarator>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Declaration {
-	Variable { ci_type: CiType, list: Vec<Declarator> },
+	Variable(VariableDeclaration),
 	// Function { ci_type: CiType, name: String },
 }
 

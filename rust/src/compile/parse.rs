@@ -59,7 +59,7 @@ fn parse_declaration(keyword: Keyword, iter: &mut core::slice::Iter<Token>) -> R
 		}
 	}
 
-	Ok(Declaration::Variable { ci_type: (CiType::BaseType(keyword)), list: (il) })
+	Ok(Declaration::Variable(VariableDeclaration { ctype: (CType::BaseType(keyword)), list: (il) }))
 }
 
 pub fn parse(token_list: Vec<Token>) -> ParseResult {

@@ -2,7 +2,7 @@ use crate::lex::*;
 
 use super::types::*;
 
-impl std::fmt::Display for CiType {
+impl std::fmt::Display for CType {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.write_str(match self {
 			Self::BaseType(kw) => match kw {
@@ -26,13 +26,13 @@ impl std::fmt::Display for Declarator {
 impl std::fmt::Display for Declaration {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::Variable { ci_type, list } => {
-				write!(f, "{}", ci_type)?;
+			Self::Variable(v) => {
+				write!(f, "{}", v.ctype)?;
 
-				if !list.is_empty() {
-					write!(f, " {}", list[0])?;
+				if !v.list.is_empty() {
+					write!(f, " {}", v.list[0])?;
 				}
-				for v in list.iter().skip(1) {
+				for v in v.list.iter().skip(1) {
 					write!(f, ", ")?;
 					write!(f, "{}", v)?;
 				}
@@ -42,17 +42,17 @@ impl std::fmt::Display for Declaration {
 	}
 }
 
-impl std::convert::From<Vec<Declaration>> for DeclarationList {
-	fn from(l: Vec<Declaration>) -> Self {
-		DeclarationList { list: (l) }
-	}
-}
-
 impl std::fmt::Display for DeclarationList {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for v in &self.list {
 			writeln!(f, "{};", v)?;
 		}
 		Ok(())
+	}
+}
+
+impl std::convert::From<Vec<Declaration>> for DeclarationList {
+	fn from(l: Vec<Declaration>) -> Self {
+		DeclarationList { list: (l) }
 	}
 }
