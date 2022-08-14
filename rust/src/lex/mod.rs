@@ -106,11 +106,23 @@ pub enum Punct {
 	Mod,
 	Inc,
 	Dec,
-	Brak,
-
 	Not,
+	/// ;
 	Semicolon,
+	/// ,
 	Comma,
+	/// (
+	ParentheseL,
+	/// )
+	ParentheseR,
+	BrakL,
+	BrakR,
+	/// }
+	BracesR,
+	/// {
+	BracesL,
+	Colon,
+	Tilde,
 }
 
 impl std::str::FromStr for Punct {
@@ -157,7 +169,14 @@ impl std::fmt::Display for Punct {
 			Self::Mod => "%",
 			Self::Inc => "++",
 			Self::Dec => "--",
-			Self::Brak => "[",
+			Self::BrakL => "[",
+			Self::BrakR => "]",
+			Self::BracesL => "{",
+			Self::BracesR => "}",
+			Self::ParentheseL => "(",
+			Self::ParentheseR => ")",
+			Self::Tilde => "~",
+			Self::Colon => ":",
 		})
 	}
 }
@@ -231,14 +250,13 @@ impl std::convert::From<&str> for Const {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
 	Const(Const),
 	StringLiteral(String),
 	Keyword(Keyword),
 	Id(String),
 	Punct(Punct),
-	Todo(char),
 }
 
 impl Token {
@@ -252,31 +270,12 @@ impl Token {
 		}
 	}
 
-	pub fn get_punct(&self) -> Result<&Punct, ParseError> {
-		match self {
-			Token::Punct(p) => Ok(p),
-			_ => Err(ParseError::TokenNotPunct),
-		}
+	pub fn is_semicolon(&self) -> bool {
+		matches!(self, Token::Punct(Punct::Semicolon))
 	}
 
-	pub fn expect_punct(&self, l: &[Punct]) -> Result<&Punct, ParseError> {
-		match self {
-			Token::Punct(p) => {
-				if l.contains(p) {
-					Ok(p)
-				} else {
-					Err(ParseError::expecting_str_but(
-						&mut l.iter().map(|&x| x.to_string()).collect_vec(),
-						self.get_punct()?.to_string().as_str(),
-					))
-				}
-			}
-			_ => Err(ParseError::TokenNotPunct),
-		}
-	}
-
-	pub fn is_not_semicolon(&self) -> bool {
-		!matches!(self, Token::Punct(Punct::Semicolon))
+	pub fn is_not_braces_r(&self) -> bool {
+		!matches!(self, Token::Punct(Punct::BracesR))
 	}
 
 	pub fn is_enum_type(&self) -> bool {
@@ -534,17 +533,22 @@ impl TokenApi {
 				'^' => return Some(Ok(Token::Punct(Punct::Xor))),
 				'%' => return Some(Ok(Token::Punct(Punct::Mod))),
 				'*' => return Some(Ok(Token::Punct(Punct::Mul))),
-				'[' => return Some(Ok(Token::Punct(Punct::Brak))),
+				'[' => return Some(Ok(Token::Punct(Punct::BrakL))),
 				'?' => return Some(Ok(Token::Punct(Punct::Cond))),
 				';' => return Some(Ok(Token::Punct(Punct::Semicolon))),
 				',' => return Some(Ok(Token::Punct(Punct::Comma))),
+				'{' => return Some(Ok(Token::Punct(Punct::BracesL))),
+				'}' => return Some(Ok(Token::Punct(Punct::BracesR))),
+				']' => return Some(Ok(Token::Punct(Punct::BrakR))),
+				'(' => return Some(Ok(Token::Punct(Punct::ParentheseL))),
+				')' => return Some(Ok(Token::Punct(Punct::ParentheseR))),
+				':' => return Some(Ok(Token::Punct(Punct::Colon))),
+				'~' => return Some(Ok(Token::Punct(Punct::Tilde))),
 
 				'"' => return self.try_string_literal(iter),
 				'\'' => return self.try_char(iter),
 				_ if is_id_initial_char(&c) => return self.try_id(iter, c),
 				_ if is_digit(&c) => return self.try_decimal(iter, c),
-				// TODO punctuators
-				'~' | '{' | '}' | '(' | ')' | ']' | ':' => return Some(Ok(Token::Todo(c))),
 
 				_ => return Some(Err(LexError::InvalidChar(c))),
 			}

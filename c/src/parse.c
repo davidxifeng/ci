@@ -3,7 +3,6 @@
 
 #include "ci.h"
 
-
 extern char *data, *bd;
 
 extern int *be, loc;
@@ -29,7 +28,8 @@ int parse() {
 			bt = CHAR;
 		} else if (tk == Enum) {
 			next();
-			if (tk != '{') next();
+			if (tk != '{')
+				next();
 			if (tk == '{') {
 				next();
 				int enum_value = 0;
@@ -48,8 +48,11 @@ int parse() {
 						enum_value = ival;
 						next();
 					}
-					id[Class] = Num; id[Type] = INT; id[Val] = enum_value++;
-					if (tk == ',') next();
+					id[Class] = Num;
+					id[Type] = INT;
+					id[Val] = enum_value++;
+					if (tk == ',')
+						next();
 				}
 				next();
 			}
@@ -75,7 +78,11 @@ int parse() {
 			if (tk == '(') { // function
 				id[Class] = Fun;
 				id[Val] = (int)(e + 1 - be); //(int)(e + 1);
-				next(); i = 0;
+				next();			     // skip (
+
+				i = 0; // param & local count
+
+				// parse parameters
 				while (tk != ')') {
 					ty = INT;
 					if (tk == Int) {
@@ -93,25 +100,34 @@ int parse() {
 						return -1;
 					}
 					if (id[Class] == Loc) {
-						printf("%d: duplicate parameter definition\n", line);
+						printf("%d: duplicate parameter definition\n",
+						       line);
 						return -1;
 					}
 					id[HClass] = id[Class];
-					id[Class]  = Loc;
-					id[HType]  = id[Type];
-					id[Type]   = ty;
-					id[HVal]   = id[Val];
-					id[Val]    = i++;
+					id[Class] = Loc;
+					id[HType] = id[Type];
+					id[Type] = ty;
+					id[HVal] = id[Val];
+					id[Val] = i++;
 					next();
-					if (tk == ',') next();
+					if (tk == ',')
+						next();
 				}
-				next();
+
+				next(); // skip )
+
+				// 错误检查 函数体开始的 {
 				if (tk != '{') {
 					printf("%d: bad function definition\n", line);
 					return -1;
 				}
 				loc = ++i;
 				next();
+
+				// parse function body
+
+				// 解析局部变量声明区
 				while (tk == Int || tk == Char) {
 					bt = (tk == Int) ? INT : CHAR;
 					next();
@@ -126,22 +142,28 @@ int parse() {
 							return -1;
 						}
 						if (id[Class] == Loc) {
-							printf("%d: duplicate local definition\n", line);
+							printf("%d: duplicate local definition\n",
+							       line);
 							return -1;
 						}
 						id[HClass] = id[Class];
-						id[Class]  = Loc;
-						id[HType]  = id[Type];
-						id[Type]   = ty;
-						id[HVal]   = id[Val];
-						id[Val]    = ++i;
+						id[Class] = Loc;
+						id[HType] = id[Type];
+						id[Type] = ty;
+						id[HVal] = id[Val];
+						id[Val] = ++i;
 						next();
-						if (tk == ',') next();
+						if (tk == ',')
+							next();
 					}
 					next();
 				}
-				*++e = ENT; *++e = i - loc;
-				while (tk != '}') stmt();
+				*++e = ENT;
+				*++e = i - loc;
+				// 解析函数语句, c4中语句区不能定义局部变量,做法类似
+				// Pascal?, 或者早期C语言?
+				while (tk != '}')
+					stmt();
 				if (*e != LEV) {
 					*++e = LEV;
 				}
@@ -159,13 +181,13 @@ int parse() {
 				id[Class] = Glo;
 				id[Val] = data - bd;
 				data = data + 4;
-				if (tk == ',') next();
+				if (tk == ',')
+					next();
 			}
 		}
 		next();
 	}
 	return 0;
 }
-
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2

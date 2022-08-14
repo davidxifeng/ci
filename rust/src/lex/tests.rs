@@ -128,7 +128,7 @@ fn punct() {
 
 	assert_eq!(TokenApi::parse_all("%"), Ok(vec![Token::Punct(Punct::Mod)]));
 	assert_eq!(TokenApi::parse_all("*"), Ok(vec![Token::Punct(Punct::Mul)]));
-	assert_eq!(TokenApi::parse_all("["), Ok(vec![Token::Punct(Punct::Brak)]));
+	assert_eq!(TokenApi::parse_all("["), Ok(vec![Token::Punct(Punct::BrakL)]));
 	assert_eq!(TokenApi::parse_all("?"), Ok(vec![Token::Punct(Punct::Cond)]));
 	assert_eq!(TokenApi::parse_all(";"), Ok(vec![Token::Punct(Punct::Semicolon)]));
 	assert_eq!(TokenApi::parse_all(","), Ok(vec![Token::Punct(Punct::Comma)]));
