@@ -1,5 +1,5 @@
 mod lex;
-mod parse;
+mod compile;
 
 use std::error::Error;
 use std::fs;
@@ -8,7 +8,7 @@ use std::time::Duration;
 use clap::Parser;
 
 use lex::*;
-use parse::*;
+use compile::parse::*;
 
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -91,11 +91,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 		SubCommand::Parse { file } => {
 			let src = fs::read_to_string(file)?;
 			println!("{}\n\n\n", src);
-			let r = SyntaxTree::compile(src.as_str());
-			match r {
-				Ok(r) => println!("{}", r),
-				Err(e) => println!("error: {:#?}", e),
-			}
+			let r = compile(src.as_str())?;
+			println!("{}", r);
 		}
 		SubCommand::Http => {
 			use http::Request;

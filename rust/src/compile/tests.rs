@@ -1,10 +1,12 @@
 #[cfg(test)]
-use crate::*;
-
 #[test]
-fn test_t0() {
+fn t0() {
+	use crate::{
+		lex::*,
+		compile::{errors::*, parse::*, types::*},
+	};
 	assert_eq!(
-		SyntaxTree::compile("char ; int ;"),
+		compile("char ; int ;"),
 		Ok(vec![
 			Declaration::Variable { ci_type: (CiType::BaseType(Keyword::Char)), list: vec![] },
 			Declaration::Variable { ci_type: (CiType::BaseType(Keyword::Int)), list: vec![] },
@@ -12,7 +14,7 @@ fn test_t0() {
 		.into())
 	);
 	assert_eq!(
-		SyntaxTree::compile("char a = 'A', b, c = 'C'; int i = 1;"),
+		compile("char a = 'A', b, c = 'C'; int i = 1;"),
 		Ok(vec![
 			Declaration::Variable {
 				ci_type: (CiType::BaseType(Keyword::Char)),
@@ -29,13 +31,16 @@ fn test_t0() {
 		]
 		.into())
 	);
-	assert_eq!(SyntaxTree::compile(r###"char c = 'a'"###), Err(ParseError::EndOfToken));
-	assert_eq!(SyntaxTree::compile(r###"char c = 'a' y "###), Err(ParseError::TokenNotPunct));
-	assert_eq!(SyntaxTree::compile(r###"char c = 'a' = "###), Err(ParseError::expecting_but(&[",", ";"], "=")));
-	assert_eq!(SyntaxTree::compile(r###"char c "###), Err(ParseError::EndOfToken));
-	assert_eq!(SyntaxTree::compile(r###"int i = 'c';"###), Err(ParseError::TypeMismatch));
-	assert_eq!(SyntaxTree::compile(r###"int i = "int";"###), Err(ParseError::TypeMismatch));
+	assert_eq!(compile(r###"char c = 'a'"###), Err(ParseError::EndOfToken));
+	assert_eq!(compile(r###"char c = 'a' y "###), Err(ParseError::TokenNotPunct));
+	assert_eq!(
+		compile(r###"char c = 'a' = "###),
+		Err(ParseError::expecting_str_but(&mut [Punct::Comma.to_string(), Punct::Semicolon.to_string()], "="))
+	);
+	assert_eq!(compile(r###"char c "###), Err(ParseError::EndOfToken));
+	assert_eq!(compile(r###"int i = 'c';"###), Err(ParseError::TypeMismatch));
+	assert_eq!(compile(r###"int i = "int";"###), Err(ParseError::TypeMismatch));
 }
 
 #[test]
-fn test_t1() {}
+fn t1() {}

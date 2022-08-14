@@ -2,7 +2,7 @@
 use super::*;
 
 #[test]
-fn test_lex_keyword() {
+fn lex_keyword() {
 	assert_eq!(TokenApi::parse_all("char"), Ok(vec![Token::Keyword(Keyword::Char)]));
 	assert_eq!(TokenApi::parse_all("int"), Ok(vec![Token::Keyword(Keyword::Int)]));
 	assert_eq!(TokenApi::parse_all("enum"), Ok(vec![Token::Keyword(Keyword::Enum)]));
@@ -13,7 +13,7 @@ fn test_lex_keyword() {
 }
 
 #[test]
-fn test_identifier() {
+fn identifier() {
 	assert_eq!(TokenApi::parse_all("fn"), Ok(vec![Token::Id("fn".into())]));
 	assert_eq!(TokenApi::parse_all("fn id2"), Ok(vec![Token::Id("fn".into()), Token::Id("id2".into())]));
 	assert_eq!(
@@ -23,12 +23,12 @@ fn test_identifier() {
 }
 
 #[test]
-fn test_const() {
+fn const_value() {
 	assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::Const(Const::Integer(123))]));
 	assert_eq!(TokenApi::parse_all("1 23"), Ok(vec![Token::Const(Const::Integer(1)), Token::Const(Const::Integer(23))]));
 }
 #[test]
-fn test_string_char() {
+fn string_char() {
 	assert_eq!(TokenApi::parse_all(r##""I am a C string""##), Ok(vec![Token::StringLiteral("I am a C string".into())]));
 	assert_eq!(
 		TokenApi::parse_all(r##""I am a C string\nline 2""##),
@@ -54,7 +54,7 @@ fn test_string_char() {
 }
 
 #[test]
-fn test_comment_preprocessor() {
+fn comment_preprocessor() {
 	assert_eq!(
 		TokenApi::parse_all(
 			r##"#include <stdio.h>
@@ -81,7 +81,7 @@ fn test_comment_preprocessor() {
 }
 
 #[test]
-fn test_punct() {
+fn punct() {
 	assert_eq!(
 		TokenApi::parse_all(r##"1/2"##),
 		Ok(vec![Token::Const("1".into()), Token::Punct(Punct::Div), Token::Const("2".into())])
@@ -131,4 +131,5 @@ fn test_punct() {
 	assert_eq!(TokenApi::parse_all("["), Ok(vec![Token::Punct(Punct::Brak)]));
 	assert_eq!(TokenApi::parse_all("?"), Ok(vec![Token::Punct(Punct::Cond)]));
 	assert_eq!(TokenApi::parse_all(";"), Ok(vec![Token::Punct(Punct::Semicolon)]));
+	assert_eq!(TokenApi::parse_all(","), Ok(vec![Token::Punct(Punct::Comma)]));
 }

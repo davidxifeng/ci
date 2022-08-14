@@ -2,18 +2,17 @@ mod tests;
 
 use std::fmt::Write;
 
-use crate::*;
+use crate::compile::errors::*;
 use itertools::Itertools;
 
 #[inline]
 fn is_digit(c: &char) -> bool {
-	*c >= '0' && *c <= '9'
+	('0'..='9').contains(c)
 }
 
 #[inline]
 fn is_id_initial_char(c: &char) -> bool {
-	let c = *c;
-	c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
+	('a'..='z').contains(c) || ('A'..='Z').contains(c) || *c == '_'
 }
 
 #[inline]
@@ -71,7 +70,7 @@ fn simple_unescape(c: &char) -> Option<&'static str> {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Keyword {
 	Char,
 	Int,
@@ -83,7 +82,7 @@ pub enum Keyword {
 	Return,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Punct {
 	Assign,
 	Cond,
@@ -171,7 +170,7 @@ impl std::fmt::Display for Punct {
 //      string-literal
 //      punctuator
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Const {
 	#[default]
 	Empty,
@@ -221,18 +220,18 @@ impl std::fmt::Display for Const {
 
 impl std::convert::From<&str> for Const {
 	fn from(str: &str) -> Self {
-		if str == "" {
+		if str.is_empty() {
 			Self::Empty
 		} else {
-			match str::parse(&str) {
+			match str::parse(str) {
 				Ok(i) => Self::Integer(i),
-				Err(_) => Self::Character(str.chars().nth(0).unwrap_or('\0')),
+				Err(_) => Self::Character(str.chars().next().unwrap_or('\0')),
 			}
 		}
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
 	Const(Const),
 	StringLiteral(String),
@@ -260,11 +259,24 @@ impl Token {
 		}
 	}
 
-	pub fn is_not_semicolon(&self) -> bool {
+	pub fn expect_punct(&self, l: &[Punct]) -> Result<&Punct, ParseError> {
 		match self {
-			Token::Punct(Punct::Semicolon) => false,
-			_ => true,
+			Token::Punct(p) => {
+				if l.contains(p) {
+					Ok(p)
+				} else {
+					Err(ParseError::expecting_str_but(
+						&mut l.iter().map(|&x| x.to_string()).collect_vec(),
+						self.get_punct()?.to_string().as_str(),
+					))
+				}
+			}
+			_ => Err(ParseError::TokenNotPunct),
 		}
+	}
+
+	pub fn is_not_semicolon(&self) -> bool {
+		!matches!(self, Token::Punct(Punct::Semicolon))
 	}
 
 	pub fn is_enum_type(&self) -> bool {
@@ -274,7 +286,7 @@ impl Token {
 		}
 	}
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum LexError {
 	InvalidChar(char),
 	UnexpectedEof,
@@ -357,9 +369,10 @@ impl TokenApi {
 			}
 		}
 		if let Some(err) = self.skip_next(iter, '"') {
-			return Some(Err(err));
+			Some(Err(err))
+		} else {
+			Some(Ok(Token::StringLiteral(val)))
 		}
-		return Some(Ok(Token::StringLiteral(val)));
 	}
 
 	fn try_char(&mut self, iter: &mut std::str::Chars) -> LexResult {
@@ -382,27 +395,28 @@ impl TokenApi {
 		if let Some(err) = self.skip_next(iter, '\'') {
 			return Some(Err(err));
 		}
+
 		let mut cs = val.chars();
 		if let Some(c) = cs.next() {
-			if let None = cs.next() {
-				return Some(Ok(Token::Const(Const::Character(c))));
+			if cs.next().is_none() {
+				Some(Ok(Token::Const(Const::Character(c))))
 			} else {
-				return Some(Err(LexError::MoreThanOneChar));
+				Some(Err(LexError::MoreThanOneChar))
 			}
 		} else {
-			return Some(Err(LexError::EmptyChar));
+			Some(Err(LexError::EmptyChar))
 		}
 	}
 
 	fn skip_next(&mut self, iter: &mut std::str::Chars, c: char) -> Option<LexError> {
 		if let Some(nnc) = iter.next() {
 			if nnc == c {
-				return None;
+				None
 			} else {
-				return Some(LexError::ExpectingBut(c, nnc));
+				Some(LexError::ExpectingBut(c, nnc))
 			}
 		} else {
-			return Some(LexError::UnexpectedEof);
+			Some(LexError::UnexpectedEof)
 		}
 	}
 }
@@ -425,38 +439,38 @@ impl TokenApi {
 				}
 				'\n' => self.line += 1,
 				// 跳过 # 和换行之间的内容,预处理.
-				'#' => while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {},
+				'#' => while iter.peeking_take_while(is_not_new_line).next().is_some() {},
 				'/' => {
-					if let Some(_) = iter.peeking_take_while(|&x| x == '/').next() {
+					if iter.peeking_take_while(|&x| x == '/').next().is_some() {
 						// 跳过 // 注释
-						while let Some(_) = iter.peeking_take_while(is_not_new_line).next() {}
+						while iter.peeking_take_while(is_not_new_line).next().is_some() {}
 					} else {
 						return Some(Ok(Token::Punct(Punct::Div)));
 					}
 				}
 				'=' => {
-					if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
+					if iter.peeking_take_while(|&x| x == '=').next().is_some() {
 						return Some(Ok(Token::Punct(Punct::Eq)));
 					} else {
 						return Some(Ok(Token::Punct(Punct::Assign)));
 					}
 				}
 				'!' => {
-					if let Some(_) = iter.peeking_take_while(|&x| x == '=').next() {
+					if iter.peeking_take_while(|&x| x == '=').next().is_some() {
 						return Some(Ok(Token::Punct(Punct::Ne)));
 					} else {
 						return Some(Ok(Token::Punct(Punct::Not)));
 					}
 				}
 				'+' => {
-					if let Some(_) = iter.peeking_take_while(|&x| x == '+').next() {
+					if iter.peeking_take_while(|&x| x == '+').next().is_some() {
 						return Some(Ok(Token::Punct(Punct::Inc)));
 					} else {
 						return Some(Ok(Token::Punct(Punct::Add)));
 					}
 				}
 				'-' => {
-					if let Some(_) = iter.peeking_take_while(|&x| x == '-').next() {
+					if iter.peeking_take_while(|&x| x == '-').next().is_some() {
 						return Some(Ok(Token::Punct(Punct::Dec)));
 					} else {
 						return Some(Ok(Token::Punct(Punct::Sub)));
@@ -535,7 +549,7 @@ impl TokenApi {
 				_ => return Some(Err(LexError::InvalidChar(c))),
 			}
 		}
-		return None;
+		None
 	}
 
 	/// 对输入字符串进行词法解析,得到一组token list,或者错误信息
