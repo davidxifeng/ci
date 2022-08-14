@@ -4,17 +4,9 @@ use crate::*;
 
 use super::{errors::*, types::*};
 
-fn peek_next_token(iter: &std::slice::Iter<Token>) -> Result<Token, ParseError> {
-	if let Some(nt) = iter.clone().next() {
-		Ok(nt.clone())
-	} else {
-		Err(ParseError::EndOfToken)
-	}
-}
-
-fn take_next_token<'a>(iter: &'a mut core::slice::Iter<Token>) -> Result<&'a Token, ParseError> {
+fn take_next_token(iter: &mut core::slice::Iter<Token>) -> Result<Token, ParseError> {
 	if let Some(tk) = iter.next() {
-		Ok(tk)
+		Ok(tk.clone())
 	} else {
 		Err(ParseError::EndOfToken)
 	}
@@ -22,16 +14,16 @@ fn take_next_token<'a>(iter: &'a mut core::slice::Iter<Token>) -> Result<&'a Tok
 
 fn expect_identifier(iter: &mut core::slice::Iter<Token>) -> Result<String, ParseError> {
 	if let Token::Id(id) = take_next_token(iter)? {
-		Ok(id.clone())
+		Ok(id)
 	} else {
-		Err(ParseError::UnexpectedToken("not identifier".into()))
+		Err(ParseError::TokenNotIdentifier)
 	}
 }
 
 fn expect_punct(iter: &mut core::slice::Iter<Token>, l: &[Punct]) -> Result<Punct, ParseError> {
 	if let Token::Punct(punct) = take_next_token(iter)? {
-		if l.contains(punct) {
-			Ok(*punct)
+		if l.contains(&punct) {
+			Ok(punct)
 		} else {
 			Err(ParseError::expecting_str_but(
 				&mut l.iter().map(|&x| x.to_string()).collect_vec(),
@@ -45,9 +37,21 @@ fn expect_punct(iter: &mut core::slice::Iter<Token>, l: &[Punct]) -> Result<Punc
 
 fn expect_const(iter: &mut core::slice::Iter<Token>) -> Result<Const, ParseError> {
 	match take_next_token(iter)? {
-		Token::Const(c) => Ok(*c),
+		Token::Const(c) => Ok(c),
 		Token::StringLiteral(_) => Err(ParseError::TypeMismatch),
 		_ => Err(ParseError::UnexpectedToken("not const".into())),
+	}
+}
+
+fn parse_stmt(iter: &mut core::slice::Iter<Token>, ntk: Token) -> Result<Statement, ParseError> {
+	match ntk {
+		Token::Keyword(Keyword::Return) => {
+			let cst = expect_const(iter)?;
+			expect_punct(iter, &[Punct::Semicolon])?;
+			Ok(Statement::Return(ReturnStmt { expr: Expr::Const(cst) }))
+		}
+		// TODO
+		_ => Err(ParseError::TypeMismatch),
 	}
 }
 
@@ -56,8 +60,56 @@ fn parse_fn_definition(
 	keyword: Keyword,
 	id_name: String,
 ) -> Result<Declaration, ParseError> {
-	iter.next();
-	Err(ParseError::TypeMismatch)
+	// int fn (int x, char c) {}
+	// int fn () {}
+	//        ^
+	//        |
+	//        |
+	//    curr pos
+	let mut params = vec![];
+
+	// 解析参数列表
+	loop {
+		let next_token = take_next_token(iter)?;
+		match next_token {
+			Token::Punct(punct) => {
+				if punct == Punct::ParentheseR {
+					break;
+				} else {
+					return Err(ParseError::UnexpectedToken("not )".into()));
+				}
+			}
+			Token::Keyword(pkw) => {
+				if pkw == Keyword::Char || pkw == Keyword::Int {
+					let param_name = expect_identifier(iter)?;
+					params.push(Parameter { ctype: CType::BaseType(pkw), name: param_name });
+					let next_punct = expect_punct(iter, &[Punct::Comma, Punct::ParentheseR])?;
+					if next_punct == Punct::ParentheseR {
+						break;
+					}
+				} else {
+					return Err(ParseError::UnexpectedToken("not type".into()));
+				}
+			}
+			_ => {
+				return Err(ParseError::TokenNotKeyword);
+			}
+		}
+	}
+
+	expect_punct(iter, &[Punct::BracesL])?;
+	let mut stmts = vec![];
+	// 解析语句列表
+
+	while let Ok(ntk) = take_next_token(iter) {
+		if ntk == Token::Punct(Punct::BracesR) {
+			break;
+		} else {
+			stmts.push(parse_stmt(iter, ntk)?);
+		}
+	}
+
+	Ok(Declaration::Function(FunctionDefinition { ctype: (CType::BaseType(keyword)), name: (id_name), params, stmts }))
 }
 
 fn parse_variable_definition(
@@ -93,9 +145,9 @@ fn parse_variable_definition(
 		return Ok(Declaration::Variable(VariableDeclaration { ctype: (CType::BaseType(keyword)), list: (il) }));
 	}
 
-	// 当前声明数量大于 1, loop直到遇到 ;
-	// 下一个是 标识符
+	// 当前声明数量大于 1, 循环处理
 	loop {
+		// 下一个是 标识符
 		let id_name = expect_identifier(iter)?;
 		let next_punct = expect_punct(iter, &[Punct::Assign, Punct::Comma, Punct::Semicolon])?;
 		if next_punct == Punct::Assign {
@@ -122,14 +174,14 @@ fn parse_declaration(iter: &mut core::slice::Iter<Token>, tk: &Token) -> Result<
 	// 2. 解析标识符(包括* 指针)
 	// 3. 判断是变量定义还是函数声明,分开处理
 	// 4. 得到一个声明/定义
-	let keyword = tk.try_basetype_keyword().ok_or(ParseError::UnexpectedToken("char int required".into()))?;
+	let keyword = tk.try_basetype_keyword().ok_or_else(|| ParseError::UnexpectedToken("char int required".into()))?;
 
 	// TODO 解析 * 间接引用
 
 	// 标准兼容 begin
 
-	let id_name: String; // rust果然可以根据流程分析出此值会初始化
-	match take_next_token(iter)? {
+	// rust果然可以根据流程分析出此值会初始化
+	let id_name = match take_next_token(iter)? {
 		Token::Punct(Punct::Semicolon) => {
 			// warning: useless type name in empty declarationx86-64 gcc 12.1
 			// 虽然是合法的,但因为没有用处,gcc会产生警告,
@@ -139,11 +191,9 @@ fn parse_declaration(iter: &mut core::slice::Iter<Token>, tk: &Token) -> Result<
 				list: (vec![]),
 			}));
 		}
-		Token::Id(id) => {
-			id_name = id.clone();
-		}
-		_ => return Err(ParseError::UnexpectedToken("".into())),
-	}
+		Token::Id(id) => id,
+		_ => return Err(ParseError::TokenNotIdentifier),
+	};
 	// 标准兼容 end
 
 	// 更合适的方案

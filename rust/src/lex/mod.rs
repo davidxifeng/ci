@@ -269,22 +269,8 @@ impl Token {
 			_ => None,
 		}
 	}
-
-	pub fn is_semicolon(&self) -> bool {
-		matches!(self, Token::Punct(Punct::Semicolon))
-	}
-
-	pub fn is_not_braces_r(&self) -> bool {
-		!matches!(self, Token::Punct(Punct::BracesR))
-	}
-
-	pub fn is_enum_type(&self) -> bool {
-		match self {
-			Token::Keyword(kw) => *kw == Keyword::Enum,
-			_ => false,
-		}
-	}
 }
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum LexError {
 	InvalidChar(char),

@@ -32,7 +32,11 @@ fn t0() {
 		]
 		.into())
 	);
+	assert_eq!(compile(r###"char 2 = 'a'"###), Err(ParseError::TokenNotIdentifier));
+	assert_eq!(compile(r###"char a = 'a', 2 = 'c'"###), Err(ParseError::TokenNotIdentifier));
+
 	assert_eq!(compile(r###"char c = 'a'"###), Err(ParseError::EndOfToken));
+
 	assert_eq!(compile(r###"char c = 'a' y "###), Err(ParseError::TokenNotPunct));
 	assert_eq!(
 		compile(r###"char c = 'a' = "###),
@@ -45,14 +49,30 @@ fn t0() {
 
 #[test]
 fn t1() {
-	// assert_eq!(
-	// 	compile("int id(int i) { return i; }"),
-	// 	Ok(vec![Declaration::Function(FunctionDefinition {
-	// 		ctype: CType::BaseType(Keyword::Char),
-	// 		name: "id".into(),
-	// 		params: vec![],
-	// 		stmts: vec![]
-	// 	}),]
-	// 	.into())
-	// );
+	assert_eq!(
+		compile("int id() {  }"),
+		Ok(vec![Declaration::Function(FunctionDefinition {
+			ctype: CType::BaseType(Keyword::Int),
+			name: "id".into(),
+			params: vec![],
+			stmts: vec![]
+		}),]
+		.into())
+	);
+	assert_eq!(
+		compile("int id(char c,int i) { return 1; return 'a'; }"),
+		Ok(vec![Declaration::Function(FunctionDefinition {
+			ctype: CType::BaseType(Keyword::Int),
+			name: "id".into(),
+			params: vec![
+				Parameter { ctype: CType::BaseType(Keyword::Char), name: "c".into() },
+				Parameter { ctype: CType::BaseType(Keyword::Int), name: "i".into() }
+			],
+			stmts: vec![
+				Statement::Return(ReturnStmt { expr: Expr::Const(Const::Integer(1)) }),
+				Statement::Return(ReturnStmt { expr: Expr::Const(Const::Character('a')) })
+			]
+		}),]
+		.into())
+	);
 }

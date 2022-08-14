@@ -7,6 +7,8 @@ pub enum ParseError {
 	UnexpectedToken(String),
 	TypeMismatch,
 	TokenNotPunct,
+	TokenNotKeyword,
+	TokenNotIdentifier,
 }
 
 impl std::fmt::Display for ParseError {
@@ -17,6 +19,8 @@ impl std::fmt::Display for ParseError {
 			ParseError::UnexpectedToken(s) => s.as_str(),
 			ParseError::TypeMismatch => "TypeMismatch",
 			ParseError::TokenNotPunct => "TokenNotPunct",
+			ParseError::TokenNotIdentifier => "TokenNotIdentifier",
+			ParseError::TokenNotKeyword => "TokenNotKeyword",
 		})
 	}
 }

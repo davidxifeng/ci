@@ -49,7 +49,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReturnStmt {
-	expr: Expr,
+	pub expr: Expr,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
