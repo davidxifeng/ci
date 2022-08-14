@@ -12,8 +12,8 @@ impl std::fmt::Display for CiType {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.write_str(match self {
 			Self::BaseType(kw) => match kw {
-				Keyword::Char => "char ",
-				Keyword::Int => "int ",
+				Keyword::Char => "char",
+				Keyword::Int => "int",
 				_ => "<error>",
 			},
 		})
@@ -29,7 +29,10 @@ pub struct Declarator {
 
 impl std::fmt::Display for Declarator {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.write_fmt(format_args!("{} = {}, ", self.name, self.value))
+		match self.value {
+			Const::Empty => write!(f, "{}", self.name),
+			_ => write!(f, "{} = {}", self.name, self.value),
+		}
 	}
 }
 
@@ -43,22 +46,14 @@ impl std::fmt::Display for Declaration {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Self::Variable { ci_type, list } => {
-				f.write_fmt(format_args!("{}", ci_type));
+				write!(f, "{}", ci_type)?;
 
 				if list.len() > 0 {
-					let v = &list[0];
-					if v.value == Const::Empty {
-						f.write_fmt(format_args!("{} ", v.name));
-					} else {
-						f.write_fmt(format_args!("{} = {}", v.name, v.value));
-					}
+					write!(f, " {}", list[0])?;
 				}
 				for v in list.iter().skip(1) {
-					if v.value == Const::Empty {
-						f.write_fmt(format_args!(", {} ", v.name));
-					} else {
-						f.write_fmt(format_args!(", {} = {}", v.name, v.value));
-					}
+					write!(f, ", ")?;
+					write!(f, "{}", v)?;
 				}
 				Ok(())
 			}
@@ -80,8 +75,7 @@ impl std::convert::From<Vec<Declaration>> for DeclarationList {
 impl std::fmt::Display for DeclarationList {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for v in &self.list {
-			f.write_fmt(format_args!("{}", v));
-			f.write_str(";\n");
+			write!(f, "{};\n", v)?;
 		}
 		Ok(())
 	}
@@ -167,6 +161,7 @@ impl SyntaxTree {
 			} else if *next_punct == Punct::Comma {
 				il.push(Declarator { name: id_name, value: Default::default() });
 			} else if *next_punct == Punct::Semicolon {
+				il.push(Declarator { name: id_name, value: Default::default() });
 				break;
 			} else {
 				return Err(ParseError::expecting_but(&[",", ";", "="], next_punct.to_string().as_str()));

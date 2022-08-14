@@ -1,5 +1,7 @@
 char a = 'A';
+char a2 = '\a';
 char b = 'B', c;
+char b2 = '\n';
 
 int i = 1;
 int j, k;

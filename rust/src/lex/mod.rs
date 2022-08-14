@@ -26,6 +26,51 @@ fn is_not_new_line(c: &char) -> bool {
 	*c != '\r' && *c != '\n'
 }
 
+#[inline]
+/// 完整的C语言中的转义
+fn simple_escape_seq(c: char) -> Option<char> {
+	// Rust中的转义:
+	// https://doc.rust-lang.org/reference/tokens.html
+	// (6.4.4.4) simple-escape-sequence:
+	// one of \' \" \? \\ \a \b \f \n \r \t \v
+	match c {
+		'\'' => Some('\''),
+		'"' => Some('"'),
+		'?' => Some('\x3F'),
+		'\\' => Some('\\'),
+		'a' => Some('\x07'), // aleat, bell
+		'b' => Some('\x08'), // backspace
+		'f' => Some('\x0C'), // formfeed page break
+		'n' => Some('\n'),   // 0a
+		'r' => Some('\r'),   // 0d
+		't' => Some('\t'),   // 09 horizontal Tab
+		'v' => Some('\x0b'), // vertical tab
+		_ => None,
+	}
+}
+
+#[inline]
+fn simple_unescape(c: &char) -> Option<&'static str> {
+	// Rust中的转义:
+	// https://doc.rust-lang.org/reference/tokens.html
+	// (6.4.4.4) simple-escape-sequence:
+	// one of \' \" \? \\ \a \b \f \n \r \t \v
+	match *c {
+		'\'' => Some("\\\''"),
+		'"' => Some("\\\""),
+		'\x3f' => Some("\\?"),
+		'\\' => Some("\\\\"),
+		'\x07' => Some("\\a"), // aleat, bell
+		'\x08' => Some("\\b"), // backspace
+		'\x0C' => Some("\\f"), // formfeed page break
+		'\n' => Some("\\n"),   // 0a
+		'\r' => Some("\\r"),   // 0d
+		'\t' => Some("\\t"),   // 09 horizontal Tab
+		'\x0b' => Some("\\v"), // vertical tab
+		_ => None,
+	}
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Keyword {
 	Char,
@@ -161,8 +206,12 @@ impl std::fmt::Display for Const {
 		match self {
 			Self::Empty => Ok(()),
 			Self::Character(c) => {
-				f.write_char('\'');
-				f.write_char(*c);
+				f.write_char('\'')?;
+				if let Some(s) = simple_unescape(c) {
+					f.write_str(s)?
+				} else {
+					f.write_char(*c)?
+				}
 				f.write_char('\'')
 			}
 			Self::Integer(i) => f.write_str(i.to_string().as_str()),
@@ -277,30 +326,9 @@ impl TokenApi {
 		}
 	}
 
-	fn simple_escape_seq(c: char) -> Option<char> {
-		// Rust中的转义:
-		// https://doc.rust-lang.org/reference/tokens.html
-		// (6.4.4.4) simple-escape-sequence:
-		// one of \' \" \? \\ \a \b \f \n \r \t \v
-		match c {
-			'\'' => Some('\''),
-			'"' => Some('"'),
-			'?' => Some('\x3F'),
-			'\\' => Some('\\'),
-			'a' => Some('\x07'), // aleat, bell
-			'b' => Some('\x08'), // backspace
-			'f' => Some('\x0C'), // formfeed page break
-			'n' => Some('\n'),   // 0a
-			'r' => Some('\r'),   // 0d
-			't' => Some('\t'),   // 09 horizontal Tab
-			'v' => Some('\x0b'), // vertical tab
-			_ => None,
-		}
-	}
-
 	fn escape(iter: &mut std::str::Chars) -> Result<char, LexError> {
 		if let Some(c) = iter.next() {
-			if let Some(r) = Self::simple_escape_seq(c) {
+			if let Some(r) = simple_escape_seq(c) {
 				Ok(r)
 			} else {
 				// TODO 八进制 十六进制 转义
