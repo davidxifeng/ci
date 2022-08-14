@@ -1,31 +1,34 @@
-#[cfg(test)]
 use super::*;
+#[cfg(test)]
+use crate::*;
 
 #[test]
 fn test_t0() {
 	assert_eq!(
 		SyntaxTree::compile("char ; int ;"),
 		Ok(vec![
-			Declaration::Variable { ci_type: (CiType::CiChar), list: vec![] },
-			Declaration::Variable { ci_type: (CiType::CiInt), list: vec![] },
-		])
+			Declaration::Variable { ci_type: (CiType::BaseType(Keyword::Char)), list: vec![] },
+			Declaration::Variable { ci_type: (CiType::BaseType(Keyword::Int)), list: vec![] },
+		]
+		.into())
 	);
 	assert_eq!(
 		SyntaxTree::compile("char a = 'A', b, c = 'C'; int i = 1;"),
 		Ok(vec![
 			Declaration::Variable {
-				ci_type: (CiType::CiChar),
+				ci_type: (CiType::BaseType(Keyword::Char)),
 				list: vec![
-					Declarator { name: "a".into(), value: CiValue::CiChar('A') },
-					Declarator { name: "b".into(), value: CiValue::CiChar('\0') },
-					Declarator { name: "c".into(), value: CiValue::CiChar('C') },
+					Declarator { name: "a".into(), value: ("A").into() },
+					Declarator { name: "b".into(), value: ("").into() },
+					Declarator { name: "c".into(), value: ("C").into() },
 				]
 			},
 			Declaration::Variable {
-				ci_type: (CiType::CiInt),
-				list: vec![Declarator { name: "i".into(), value: CiValue::CiInt(1) }]
+				ci_type: (CiType::BaseType(Keyword::Int)),
+				list: vec![Declarator { name: "i".into(), value: "1".into() }]
 			},
-		])
+		]
+		.into())
 	);
 	assert_eq!(SyntaxTree::compile(r###"char c = 'a'"###), Err(ParseError::EndOfToken));
 	assert_eq!(SyntaxTree::compile(r###"char c = 'a' y "###), Err(ParseError::TokenNotPunct));

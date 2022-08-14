@@ -2,7 +2,7 @@ mod tests;
 
 use crate::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CiType {
 	BaseType(Keyword),
 	// CiEnum(String),
@@ -20,7 +20,7 @@ impl std::fmt::Display for CiType {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Declarator {
 	name: String,
 	value: Const,
@@ -33,7 +33,7 @@ impl std::fmt::Display for Declarator {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Declaration {
 	Variable { ci_type: CiType, list: Vec<Declarator> },
 	// Function { ci_type: CiType, name: String },
@@ -69,6 +69,12 @@ impl std::fmt::Display for Declaration {
 #[derive(Debug, PartialEq)]
 pub struct DeclarationList {
 	list: Vec<Declaration>,
+}
+
+impl std::convert::From<Vec<Declaration>> for DeclarationList {
+	fn from(l: Vec<Declaration>) -> Self {
+		DeclarationList { list: (l) }
+	}
 }
 
 impl std::fmt::Display for DeclarationList {
@@ -148,7 +154,7 @@ impl SyntaxTree {
 			let id_name = Self::next_id(iter)?;
 			let next_punct = Self::take_next_token(iter)?.get_punct()?;
 			if *next_punct == Punct::Assign {
-				let val = Self::next_const(iter)?;
+				let val = Self::next_const(iter)?.check_type_match(&keyword)?;
 				il.push(Declarator { name: id_name, value: val });
 
 				let next_punct = Self::take_next_token(iter)?.get_punct()?;

@@ -134,6 +134,28 @@ pub enum Const {
 	Character(char),
 }
 
+impl Const {
+	pub fn check_type_match(self, kw: &Keyword) -> Result<Self, ParseError> {
+		match self {
+			Self::Empty => Ok(self),
+			Self::Character(_) => {
+				if *kw == Keyword::Char {
+					Ok(self)
+				} else {
+					Err(ParseError::TypeMismatch)
+				}
+			}
+			Self::Integer(_) => {
+				if *kw == Keyword::Int {
+					Ok(self)
+				} else {
+					Err(ParseError::TypeMismatch)
+				}
+			}
+		}
+	}
+}
+
 impl std::fmt::Display for Const {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
@@ -144,6 +166,19 @@ impl std::fmt::Display for Const {
 				f.write_char('\'')
 			}
 			Self::Integer(i) => f.write_str(i.to_string().as_str()),
+		}
+	}
+}
+
+impl std::convert::From<&str> for Const {
+	fn from(str: &str) -> Self {
+		if str == "" {
+			Self::Empty
+		} else {
+			match str::parse(&str) {
+				Ok(i) => Self::Integer(i),
+				Err(_) => Self::Character(str.chars().nth(0).unwrap_or('\0')),
+			}
 		}
 	}
 }

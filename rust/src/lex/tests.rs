@@ -15,15 +15,17 @@ fn test_lex_keyword() {
 #[test]
 fn test_identifier() {
 	assert_eq!(TokenApi::parse_all("fn"), Ok(vec![Token::Id("fn".into())]));
+	assert_eq!(TokenApi::parse_all("fn id2"), Ok(vec![Token::Id("fn".into()), Token::Id("id2".into())]));
+	assert_eq!(
+		TokenApi::parse_all("fn+id2"),
+		Ok(vec![Token::Id("fn".into()), Token::Punct(Punct::Add), Token::Id("id2".into())])
+	);
 }
 
 #[test]
 fn test_const() {
-	assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::Const("123".into())]));
-	assert_eq!(
-		TokenApi::parse_all("1 23"),
-		Ok(vec![Token::Const("1".into()), Token::Const("23".into())])
-	);
+	assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::Const(Const::Integer(123))]));
+	assert_eq!(TokenApi::parse_all("1 23"), Ok(vec![Token::Const(Const::Integer(1)), Token::Const(Const::Integer(23))]));
 }
 #[test]
 fn test_string_char() {
@@ -62,10 +64,10 @@ fn test_comment_preprocessor() {
 		c
 		"##
 		),
-		Ok(vec![Token::Id("x".into()), Token::Const("123".into()), Token::Id("c".into()),])
+		Ok(vec![Token::Id("x".into()), Token::Const(Const::Integer(123)), Token::Id("c".into()),])
 	);
 	assert_eq!(TokenApi::parse_all(r##"#include <stdio.h>"##), Ok(vec![]));
-	assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::Const("1".into())]));
+	assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::Const(Const::Integer(1))]));
 	assert_eq!(TokenApi::parse_all(r##"// hi"##), Ok(vec![]));
 	assert_eq!(TokenApi::parse_all(r##"1// hi"##), Ok(vec![Token::Const("1".into())]));
 	assert_eq!(
