@@ -1,10 +1,11 @@
 #[cfg(test)]
+use crate::{
+	compile::{errors::*, parse::*, types::*},
+	lex::*,
+};
+
 #[test]
 fn t0() {
-	use crate::{
-		compile::{errors::*, parse::*, types::*},
-		lex::*,
-	};
 	assert_eq!(
 		compile("char ; int ;"),
 		Ok(vec![
@@ -43,4 +44,15 @@ fn t0() {
 }
 
 #[test]
-fn t1() {}
+fn t1() {
+	assert_eq!(
+		compile("int id(int i) { return i; }"),
+		Ok(vec![Declaration::Function(FunctionDefinition {
+			ctype: CType::BaseType(Keyword::Char),
+			name: "id".into(),
+			params: vec![],
+			stmts: vec![]
+		}),]
+		.into())
+	);
+}

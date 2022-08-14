@@ -13,16 +13,54 @@ pub struct Declarator {
 	// idr: i32,
 }
 
+/// 变量定义+初始化
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VariableDeclaration {
 	pub ctype: CType,
 	pub list: Vec<Declarator>,
 }
 
+/// 函数定义
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionDefinition {
+	/// 函数返回值类型
+	pub ctype: CType,
+
+	/// 函数名
+	pub name: String,
+
+	pub params: Vec<Parameter>,
+
+	pub stmts: Vec<Statement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Parameter {
+	pub ctype: CType,
+	pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum Statement {
+	#[default]
+	Empty,
+	Return(ReturnStmt),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReturnStmt {
+	expr: Expr,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Expr {
+	Const(Const),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Declaration {
 	Variable(VariableDeclaration),
-	// Function { ci_type: CiType, name: String },
+	Function(FunctionDefinition),
 }
 
 #[derive(Debug, PartialEq, Eq)]

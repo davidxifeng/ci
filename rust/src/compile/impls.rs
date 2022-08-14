@@ -38,6 +38,7 @@ impl std::fmt::Display for Declaration {
 				}
 				Ok(())
 			}
+			Self::Function(_) => Ok(()),
 		}
 	}
 }
