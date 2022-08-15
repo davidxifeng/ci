@@ -203,7 +203,7 @@ impl std::fmt::Display for Punct {
 pub enum Const {
 	#[default]
 	Empty,
-	Integer(i128),
+	Integer(i128), // TODO 这里还是保持原样的str比较好
 	Character(char),
 }
 

@@ -4,6 +4,15 @@ use crate::*;
 
 use super::{errors::*, types::*};
 
+fn look_ahead(iter: &core::slice::Iter<Token>) -> Result<Token, ParseError> {
+	let mut lait = iter.clone();
+	if let Some(tk) = lait.next() {
+		Ok(tk.clone())
+	} else {
+		Err(ParseError::EndOfToken)
+	}
+}
+
 fn take_next_token(iter: &mut core::slice::Iter<Token>) -> Result<Token, ParseError> {
 	if let Some(tk) = iter.next() {
 		Ok(tk.clone())
@@ -223,4 +232,120 @@ pub fn compile(input: &str) -> Result<DeclarationList, ParseError> {
 		Ok(token_list) => parse(token_list),
 		Err(err) => Err(ParseError::LexError(err)),
 	}
+}
+
+type EvalResult = Result<i64, ParseError>;
+
+fn calc(op: &Punct, a: i64, b: i64) -> i64 {
+	match op {
+		Punct::Add => a + b,
+		Punct::Sub => a - b,
+		Punct::Mul => a * b,
+		Punct::Div => a / b,
+		Punct::Xor => pow(a, b),
+		_ => 0,
+	}
+}
+
+fn pow(a: i64, b: i64) -> i64 {
+	let mut r = 1;
+	for _ in 0..b {
+		r = a * r;
+	}
+	return r;
+}
+
+fn op_info(op: &Punct) -> i8 {
+	match op {
+		Punct::Add => 1,
+		Punct::Sub => 1,
+		Punct::Mul => 2,
+		Punct::Div => 2,
+		Punct::Xor => 3,
+		_ => panic!("bad input"),
+	}
+}
+
+fn compute_atom(iter: &mut core::slice::Iter<Token>) -> EvalResult {
+	// todo ()
+	let lhs_tk = expect_const(iter)?;
+	if let Const::Integer(lhs) = lhs_tk {
+		Ok(lhs as i64)
+	} else {
+		Err(ParseError::UnexpectedToken("".into()))
+	}
+}
+
+pub fn eval(iter: &mut core::slice::Iter<Token>, mut lhs: i64, lv: i8) -> EvalResult {
+	// let ops = [Punct::Add, Punct::Sub, Punct::Mul, Punct::Div, Punct::Xor];
+
+	let mut lookahead_p = match look_ahead(iter) {
+		Ok(Token::Punct(p)) => p,
+		_ => return Ok(lhs),
+	};
+
+	while op_info(&lookahead_p) >= lv {
+		let op = lookahead_p;
+		if iter.next().is_none() {
+			break;
+		}
+
+		// 取第二个数
+		let mut rhs = compute_atom(iter)?;
+
+		lookahead_p = match look_ahead(iter) {
+			Ok(Token::Punct(p)) => p,
+			_ => return Ok(calc(&op, lhs, rhs)),
+		};
+
+		while op_info(&lookahead_p) > op_info(&op)
+			|| (lookahead_p == Punct::Xor && op_info(&lookahead_p) == op_info(&op))
+		{
+			rhs = eval(iter, rhs, op_info(&op) + if op_info(&lookahead_p) > op_info(&op) { 1 } else { 0 })?;
+
+			lookahead_p = match look_ahead(iter) {
+				Ok(Token::Punct(p)) => p,
+				_ => break,
+			};
+			// 最后一个bug竟然在这里?
+			// iter.next();
+		}
+		lhs = calc(&op, lhs, rhs);
+	}
+	Ok(lhs)
+}
+
+pub fn start_eval(iter: &mut core::slice::Iter<Token>) -> EvalResult {
+	// 取第一个数
+	let lhs = compute_atom(iter)?;
+	eval(iter, lhs, 0)
+}
+
+pub fn t(input: &str) -> EvalResult {
+	match TokenApi::parse_all(input) {
+		Ok(token_list) => start_eval(&mut token_list.iter()),
+		Err(err) => Err(ParseError::LexError(err)),
+	}
+}
+
+#[test]
+fn test_eval() {
+	fn t(input: &str) -> EvalResult {
+		match TokenApi::parse_all(input) {
+			Ok(token_list) => start_eval(&mut token_list.iter()),
+			Err(err) => Err(ParseError::LexError(err)),
+		}
+	}
+	assert_eq!(t("1 + 2"), Ok(3));
+	assert_eq!(t("1 + 2 + 3"), Ok(6));
+	assert_eq!(t("1 + 2 * 3"), Ok(7));
+	assert_eq!(t("1 + 2 * 3 ^ 2"), Ok(19));
+	assert_eq!(t("1 - 2 * 3 ^ 2"), Ok(-17));
+
+	assert_eq!(t("1 + 2 * 3 ^ 2 + 2 * 6"), Ok(31));
+
+	assert_eq!(t("2 ^ 3 ^ 2"), Ok(512));
+	assert_eq!(t("2 * 2 ^ 3 ^ 2"), Ok(1024));
+	assert_eq!(t("2 * 2 ^ 3 ^ 2 * 2 / 2 + 1 * 2 ^ 2 * 20"), Ok(1104));
+	assert_eq!(t("2 ^ 3 ^ 2 * 2"), Ok(1024));
 }

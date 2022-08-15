@@ -1,5 +1,5 @@
-mod lex;
 mod compile;
+mod lex;
 
 use std::error::Error;
 use std::fs;
@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use clap::Parser;
 
-use lex::*;
 use compile::parse::*;
+use lex::*;
 
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -42,7 +42,6 @@ enum SubCommand {
 	Http,
 	Term,
 }
-
 fn main() -> Result<(), Box<dyn Error>> {
 	let args = Args::parse();
 
@@ -90,6 +89,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 		}
 		SubCommand::Parse { file } => {
 			let src = fs::read_to_string(file)?;
+
+			println!("{:#?}", compile::parse::t("1 + 2 * 3 ^ 2 + 2 * 6"));
 			println!("{}\n\n\n", src);
 			let r = compile(src.as_str())?;
 			println!("{}", r);
