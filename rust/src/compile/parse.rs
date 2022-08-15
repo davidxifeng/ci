@@ -267,12 +267,34 @@ fn op_info(op: &Punct) -> i8 {
 }
 
 fn compute_atom(iter: &mut core::slice::Iter<Token>) -> EvalResult {
-	// todo ()
-	let lhs_tk = expect_const(iter)?;
-	if let Const::Integer(lhs) = lhs_tk {
-		Ok(lhs as i64)
+	if let Some(lhs_tk) = iter.next() {
+		match lhs_tk {
+			Token::Const(Const::Integer(lhs)) => Ok(*lhs as i64),
+			Token::Punct(Punct::ParentheseL) => {
+				let mut tl = vec![];
+
+				let mut exp = 1;
+
+				for tk in iter.take_while(|&t| {
+					if *t == Token::Punct(Punct::ParentheseR) {
+						exp -= 1;
+						exp != 0
+					} else if *t == Token::Punct(Punct::ParentheseL) {
+						exp += 1;
+						true
+					} else {
+						true
+					}
+				}) {
+					tl.push(tk.clone());
+				}
+				let mut it2 = tl.iter();
+				Ok(start_eval(&mut it2)?)
+			}
+			_ => Err(ParseError::UnexpectedToken("no more".into())),
+		}
 	} else {
-		Err(ParseError::UnexpectedToken("".into()))
+		Err(ParseError::EndOfToken)
 	}
 }
 
@@ -339,10 +361,14 @@ fn test_eval() {
 	assert_eq!(t("1 + 2"), Ok(3));
 	assert_eq!(t("1 + 2 + 3"), Ok(6));
 	assert_eq!(t("1 + 2 * 3"), Ok(7));
+	assert_eq!(t("(1 + 2) * 3"), Ok(9));
 	assert_eq!(t("1 + 2 * 3 ^ 2"), Ok(19));
 	assert_eq!(t("1 - 2 * 3 ^ 2"), Ok(-17));
+	assert_eq!(t("1 - (2 * 3) ^ 2"), Ok(-35));
 
 	assert_eq!(t("1 + 2 * 3 ^ 2 + 2 * 6"), Ok(31));
+
+	assert_eq!(t("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6"), Ok(60));
 
 	assert_eq!(t("2 ^ 3 ^ 2"), Ok(512));
 	assert_eq!(t("2 * 2 ^ 3 ^ 2"), Ok(1024));
