@@ -81,7 +81,7 @@ fn comment_preprocessor() {
 }
 
 #[test]
-fn punct() {
+fn punct_and_ordering() {
 	assert_eq!(
 		TokenApi::parse_all(r##"1/2"##),
 		Ok(vec![Token::Const("1".into()), Token::Punct(Punct::Div), Token::Const("2".into())])
@@ -132,4 +132,12 @@ fn punct() {
 	assert_eq!(TokenApi::parse_all("?"), Ok(vec![Token::Punct(Punct::Cond)]));
 	assert_eq!(TokenApi::parse_all(";"), Ok(vec![Token::Punct(Punct::Semicolon)]));
 	assert_eq!(TokenApi::parse_all(","), Ok(vec![Token::Punct(Punct::Comma)]));
+
+	let ol = Punct::Assign..=Punct::BrakL;
+	assert!(!ol.is_empty());
+	assert!(ol.contains(&Punct::Assign));
+	assert!(ol.contains(&Punct::BrakL));
+
+	assert!(Punct::Assign < Punct::Cond);
+	assert!(Punct::Cond > Punct::Assign);
 }

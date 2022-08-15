@@ -6,6 +6,12 @@
 extern int line, *e;
 extern enum Token tk;
 
+/*
+
+从stmt开始的expr调用, lev优先级从最低的assign开始
+
+*/
+
 void stmt() {
 	int *a, *b;
 	if (tk == If) {
@@ -23,7 +29,8 @@ void stmt() {
 			printf("%d: close paren expected\n", line);
 			exit(-1);
 		}
-		*++e = BZ; b = ++e;
+		*++e = BZ;
+		b = ++e;
 		stmt();
 		if (tk == Else) {
 			*b = (int)(e + 3 - b);
@@ -59,7 +66,8 @@ void stmt() {
 		*b = (int)(e + 1 - b);
 	} else if (tk == Return) {
 		next();
-		if (tk != ';') expr(Assign);
+		if (tk != ';')
+			expr(Assign);
 		*++e = LEV;
 		if (tk == ';') {
 			next();
