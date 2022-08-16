@@ -250,9 +250,9 @@ fn calc(op: &Punct, a: i64, b: i64) -> i64 {
 fn pow(a: i64, b: i64) -> i64 {
 	let mut r = 1;
 	for _ in 0..b {
-		r = a * r;
+		r *= a
 	}
-	return r;
+	r
 }
 
 fn op_info(op: &Punct) -> i8 {
