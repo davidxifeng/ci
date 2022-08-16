@@ -270,27 +270,7 @@ fn compute_atom(iter: &mut core::slice::Iter<Token>) -> EvalResult {
 	if let Some(lhs_tk) = iter.next() {
 		match lhs_tk {
 			Token::Const(Const::Integer(lhs)) => Ok(*lhs as i64),
-			Token::Punct(Punct::ParentheseL) => {
-				let mut tl = vec![];
-
-				let mut exp = 1;
-
-				for tk in iter.take_while(|&t| {
-					if *t == Token::Punct(Punct::ParentheseR) {
-						exp -= 1;
-						exp != 0
-					} else if *t == Token::Punct(Punct::ParentheseL) {
-						exp += 1;
-						true
-					} else {
-						true
-					}
-				}) {
-					tl.push(tk.clone());
-				}
-				let mut it2 = tl.iter();
-				Ok(start_eval(&mut it2)?)
-			}
+			Token::Punct(Punct::ParentheseL) => Ok(start_eval(iter)?),
 			_ => Err(ParseError::UnexpectedToken("no more".into())),
 		}
 	} else {
@@ -316,7 +296,14 @@ pub fn eval(iter: &mut core::slice::Iter<Token>, mut lhs: i64, lv: i8) -> EvalRe
 		let mut rhs = compute_atom(iter)?;
 
 		lookahead_p = match look_ahead(iter) {
-			Ok(Token::Punct(p)) => p,
+			Ok(Token::Punct(p)) => {
+				if p == Punct::ParentheseR {
+					iter.next();
+					return Ok(calc(&op, lhs, rhs));
+				} else {
+					p
+				}
+			}
 			_ => return Ok(calc(&op, lhs, rhs)),
 		};
 
@@ -329,8 +316,6 @@ pub fn eval(iter: &mut core::slice::Iter<Token>, mut lhs: i64, lv: i8) -> EvalRe
 				Ok(Token::Punct(p)) => p,
 				_ => break,
 			};
-			// 最后一个bug竟然在这里?
-			// iter.next();
 		}
 		lhs = calc(&op, lhs, rhs);
 	}
