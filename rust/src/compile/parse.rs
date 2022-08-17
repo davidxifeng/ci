@@ -66,11 +66,7 @@ fn parse_stmt(iter: &mut Iter<Token>, ntk: Token) -> Result<Statement, ParseErro
 	}
 }
 
-fn parse_fn_definition(
-	iter: &mut Iter<Token>,
-	keyword: Keyword,
-	id_name: String,
-) -> Result<Declaration, ParseError> {
+fn parse_fn_definition(iter: &mut Iter<Token>, keyword: Keyword, id_name: String) -> Result<Declaration, ParseError> {
 	// int fn (int x, char c) {}
 	// int fn () {}
 	//        ^
@@ -330,23 +326,41 @@ pub fn start_eval(iter: &mut Iter<Token>) -> EvalResult {
 	eval(iter, lhs, 0)
 }
 
-fn eval2(iter: &mut Peekable<Iter<Token>>) -> EvalResult {
-	let token = iter.peek().unwrap();
-	assert_eq!(*token, &Token::Const(Const::Integer(1)));
-	assert_eq!(*token, &Token::Const(Const::Integer(1)));
-	assert_eq!(*token, &Token::Const(Const::Integer(1)));
-	let token = iter.next().unwrap();
+fn compute_atom2(iter: &mut Peekable<Iter<Token>>) -> EvalResult {
+	if let Some(tk) = iter.next() {
+		match tk {
+			Token::Const(Const::Integer(lhs)) => Ok(*lhs as i64),
+			Token::Punct(Punct::ParentheseL) => Ok(eval2(iter, 1)?),
+			_ => Err(ParseError::UnexpectedToken("".into())),
+		}
+	} else {
+		Err(ParseError::EndOfToken)
+	}
+}
 
-	assert_eq!(*token, Token::Const(Const::Integer(1)));
-	assert_eq!(*iter.peek().unwrap(), &Token::Punct(Punct::Add));
-	Ok(3)
+fn eval2(iter: &mut Peekable<Iter<Token>>, mp: i8) -> EvalResult {
+	let mut lhs = compute_atom2(iter)?;
+	let mut rhs;
+	while let Some(Token::Punct(op_tk)) = iter.peek() {
+		let lv = op_info(op_tk);
+		if lv >= mp {
+			iter.next();
+			let nlv = lv + if *op_tk == Punct::Xor { 0 } else { 1 };
+			rhs = dbg!(eval2(iter, nlv)?);
+			lhs = dbg!(calc(op_tk, lhs, rhs));
+		} else {
+			break;
+		}
+	}
+
+	Ok(lhs)
 }
 
 pub fn t2(input: &str) -> EvalResult {
 	match TokenApi::parse_all(input) {
 		Ok(token_list) => {
 			let mut iter = token_list.iter().peekable();
-			eval2(&mut iter)
+			eval2(&mut iter, 1)
 		}
 		Err(err) => Err(ParseError::LexError(err)),
 	}
@@ -355,6 +369,9 @@ pub fn t2(input: &str) -> EvalResult {
 #[test]
 fn test_peekable_eval() {
 	assert_eq!(t2("1 + 2"), Ok(3));
+	assert_eq!(t2("1 + 2 + 3"), Ok(6));
+	assert_eq!(t2("1 + 2 * 3"), Ok(7));
+	assert_eq!(t2("1 + 2 * 3 ^ 2 + 2 * 6"), Ok(31));
 }
 
 pub fn t(input: &str) -> EvalResult {
