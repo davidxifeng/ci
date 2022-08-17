@@ -1,10 +1,10 @@
+#[cfg(test)]
 mod tests;
-
-use std::fmt::Write;
-use std::str::Chars;
 
 use crate::compile::errors::*;
 use itertools::Itertools;
+use std::fmt::Write;
+use std::str::Chars;
 
 #[inline]
 fn is_digit(c: &char) -> bool {

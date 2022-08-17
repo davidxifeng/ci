@@ -1,8 +1,64 @@
-#[cfg(test)]
+use std::{iter::Peekable, slice::Iter};
+
 use crate::{
 	compile::{errors::*, parse::*, types::*},
 	lex::*,
 };
+
+struct V<'a, VT> {
+	iter: &'a mut Peekable<Iter<'a, VT>>,
+	cur: Option<Option<&'a VT>>,
+}
+
+#[test]
+fn test_nc() {
+	let v = vec![Token::Punct(Punct::Add), Token::Punct(Punct::Sub), Token::Punct(Punct::Mul)];
+	let mut vi = v.iter().peekable();
+	let mut v = V { iter: &mut vi, cur: None };
+	println!("{:?}", v.get_peek());
+	println!("{:?}", v.curr());
+	println!("{:?}", v.curr());
+	println!("{:?}", v.get_next());
+	println!("{:?}", v.curr());
+	println!("{:?}", v.curr());
+	println!("{:?}", v.get_next());
+	println!("{:?}", v.curr());
+	println!("{:?}", v.get_next());
+	println!("{:?}", v.curr());
+	println!("{:?}", v.get_next());
+	println!("{:?}", v.curr());
+	println!("{:?}", v.peek_curr());
+}
+
+impl<VT> V<'_, VT> {
+	fn peek_curr(&mut self) -> Option<&VT> {
+		match self.cur {
+			None => {
+				let v = self.iter.next();
+				self.cur = Some(v);
+				v
+			}
+			Some(v) => v,
+		}
+	}
+
+	fn curr(&mut self) -> Option<&VT> {
+		match self.cur {
+			None => None,
+			Some(v) => v,
+		}
+	}
+
+	fn get_next(&mut self) -> Option<&VT> {
+		let v = self.iter.next();
+		self.cur = Some(v);
+		v
+	}
+
+	fn get_peek(&mut self) -> Option<&&VT> {
+		self.iter.peek()
+	}
+}
 
 #[test]
 fn t0() {
