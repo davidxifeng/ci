@@ -347,20 +347,12 @@ fn eval2(iter: &mut Peekable<Iter<Token>>, mp: i8, cop: &mut Option<Punct>) -> E
 		_ => unreachable!(),
 	};
 
-	loop {
-		match *cop {
-			Some(Punct::ParentheseR) => break,
-			Some(op) => {
-				let lv = op_info(&op);
-				// println!("comparing {} lv: {}, mp: {} == {}", op, lv, mp, lv >= mp);
-				if lv >= mp {
-					// println!("calc: {} {} {}", lhs, op, rhs);
-					lhs = calc(&op, lhs, eval2(iter, lv + if op == Punct::Xor { 0 } else { 1 }, cop)?);
-				} else {
-					break;
-				}
-			}
-			None => break,
+	while let Some(op) = *cop {
+		if Punct::ParentheseR != op && op_info(&op) >= mp {
+			let next_mp = op_info(&op) + if op == Punct::Xor { 0 } else { 1 };
+			lhs = calc(&op, lhs, eval2(iter, next_mp, cop)?);
+		} else {
+			break;
 		}
 	}
 
