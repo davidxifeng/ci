@@ -1,6 +1,7 @@
 mod tests;
 
 use std::fmt::Write;
+use std::str::Chars;
 
 use crate::compile::errors::*;
 use itertools::Itertools;
@@ -301,9 +302,12 @@ pub struct TokenApi {
 
 type LexResult = Option<Result<Token, LexError>>;
 
+// TODO 简化类型,Token中增加一个特殊的EOF,表示结束
+//type LexResult = Result<Token, LexError>;
+
 impl TokenApi {
 	/// 处理广义上的标识符, 应该包括关键字和enum 常量
-	fn try_id(&mut self, iter: &mut std::str::Chars, c: char) -> LexResult {
+	fn try_id(&mut self, iter: &mut Chars, c: char) -> LexResult {
 		let mut ids = String::from(c);
 		while let Some(idc) = iter.peeking_take_while(is_id_char).next() {
 			ids.push(idc);
@@ -321,7 +325,7 @@ impl TokenApi {
 	}
 
 	/// const处理, 应该包含int, float, char
-	fn try_decimal(&mut self, iter: &mut std::str::Chars, c: char) -> LexResult {
+	fn try_decimal(&mut self, iter: &mut Chars, c: char) -> LexResult {
 		let mut str = String::from(c);
 		while let Some(nc) = iter.peeking_take_while(is_digit).next() {
 			str.push(nc);
@@ -333,7 +337,7 @@ impl TokenApi {
 		}
 	}
 
-	fn escape(iter: &mut std::str::Chars) -> Result<char, LexError> {
+	fn escape(iter: &mut Chars) -> Result<char, LexError> {
 		if let Some(c) = iter.next() {
 			if let Some(r) = simple_escape_seq(c) {
 				Ok(r)
@@ -346,7 +350,7 @@ impl TokenApi {
 		}
 	}
 
-	fn try_string_literal(&mut self, iter: &mut std::str::Chars) -> LexResult {
+	fn try_string_literal(&mut self, iter: &mut Chars) -> LexResult {
 		// 找到匹配的 " 之前, 匹配任何内容,并放入字符串常量; 需要处理转义,和 输入提前结束的异常
 		let mut val = String::new();
 		while let Some(nc) = iter.peeking_take_while(|&c| c != '"' && is_not_new_line(&c)).next() {
@@ -370,7 +374,7 @@ impl TokenApi {
 		}
 	}
 
-	fn try_char(&mut self, iter: &mut std::str::Chars) -> LexResult {
+	fn try_char(&mut self, iter: &mut Chars) -> LexResult {
 		let mut val = String::new();
 		// C标准规定字符串字面量中不能有换行
 		while let Some(nc) = iter.peeking_take_while(|&c| c != '\'' && is_not_new_line(&c)).next() {
@@ -403,7 +407,7 @@ impl TokenApi {
 		}
 	}
 
-	fn skip_next(&mut self, iter: &mut std::str::Chars, c: char) -> Option<LexError> {
+	fn skip_next(&mut self, iter: &mut Chars, c: char) -> Option<LexError> {
 		if let Some(nnc) = iter.next() {
 			if nnc == c {
 				None
@@ -418,11 +422,7 @@ impl TokenApi {
 
 impl TokenApi {
 	/// 标识符
-	/// c4中的做法: 提前准备好符号表,把关键字 还有库函数添加到符号表中,
-	/// 然后next函数只识别标识符, 并不区分 关键字 还是库函数,或者普通变量
-	/// 文档上看到说go语言解析可以不用符号表,不知道是什么意思.
-	/// 只有25个关键字, 不知是不是和词法解析有关系. 关键字和预定义标识符等内在关系上面
-	fn try_next_token(&mut self, iter: &mut std::str::Chars) -> LexResult {
+	fn try_next_token(&mut self, iter: &mut Chars) -> LexResult {
 		// 不可以使用for in, into iter 会move走迭代器,就不能手动控制了
 		while let Some(c) = iter.next() {
 			match c {
@@ -559,13 +559,8 @@ impl TokenApi {
 		let mut lex_state = TokenApi { line: 1, token_count: 0 };
 		let mut iter = input.chars();
 		while let Some(result) = lex_state.try_next_token(&mut iter) {
-			match result {
-				Ok(token) => {
-					lex_state.token_count += 1;
-					token_list.push(token);
-				}
-				Err(err) => return Err(err),
-			}
+			token_list.push(result?);
+			lex_state.token_count += 1;
 		}
 		Ok(token_list)
 	}

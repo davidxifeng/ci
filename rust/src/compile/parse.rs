@@ -1,10 +1,12 @@
+use std::{iter::Peekable, slice::Iter};
+
 use itertools::Itertools;
 
 use crate::*;
 
 use super::{errors::*, types::*};
 
-fn look_ahead(iter: &core::slice::Iter<Token>) -> Result<Token, ParseError> {
+fn look_ahead(iter: &Iter<Token>) -> Result<Token, ParseError> {
 	let mut lait = iter.clone();
 	if let Some(tk) = lait.next() {
 		Ok(tk.clone())
@@ -13,7 +15,7 @@ fn look_ahead(iter: &core::slice::Iter<Token>) -> Result<Token, ParseError> {
 	}
 }
 
-fn take_next_token(iter: &mut core::slice::Iter<Token>) -> Result<Token, ParseError> {
+fn take_next_token(iter: &mut Iter<Token>) -> Result<Token, ParseError> {
 	if let Some(tk) = iter.next() {
 		Ok(tk.clone())
 	} else {
@@ -21,7 +23,7 @@ fn take_next_token(iter: &mut core::slice::Iter<Token>) -> Result<Token, ParseEr
 	}
 }
 
-fn expect_identifier(iter: &mut core::slice::Iter<Token>) -> Result<String, ParseError> {
+fn expect_identifier(iter: &mut Iter<Token>) -> Result<String, ParseError> {
 	if let Token::Id(id) = take_next_token(iter)? {
 		Ok(id)
 	} else {
@@ -29,7 +31,7 @@ fn expect_identifier(iter: &mut core::slice::Iter<Token>) -> Result<String, Pars
 	}
 }
 
-fn expect_punct(iter: &mut core::slice::Iter<Token>, l: &[Punct]) -> Result<Punct, ParseError> {
+fn expect_punct(iter: &mut Iter<Token>, l: &[Punct]) -> Result<Punct, ParseError> {
 	if let Token::Punct(punct) = take_next_token(iter)? {
 		if l.contains(&punct) {
 			Ok(punct)
@@ -44,7 +46,7 @@ fn expect_punct(iter: &mut core::slice::Iter<Token>, l: &[Punct]) -> Result<Punc
 	}
 }
 
-fn expect_const(iter: &mut core::slice::Iter<Token>) -> Result<Const, ParseError> {
+fn expect_const(iter: &mut Iter<Token>) -> Result<Const, ParseError> {
 	match take_next_token(iter)? {
 		Token::Const(c) => Ok(c),
 		Token::StringLiteral(_) => Err(ParseError::TypeMismatch),
@@ -52,7 +54,7 @@ fn expect_const(iter: &mut core::slice::Iter<Token>) -> Result<Const, ParseError
 	}
 }
 
-fn parse_stmt(iter: &mut core::slice::Iter<Token>, ntk: Token) -> Result<Statement, ParseError> {
+fn parse_stmt(iter: &mut Iter<Token>, ntk: Token) -> Result<Statement, ParseError> {
 	match ntk {
 		Token::Keyword(Keyword::Return) => {
 			let cst = expect_const(iter)?;
@@ -65,7 +67,7 @@ fn parse_stmt(iter: &mut core::slice::Iter<Token>, ntk: Token) -> Result<Stateme
 }
 
 fn parse_fn_definition(
-	iter: &mut core::slice::Iter<Token>,
+	iter: &mut Iter<Token>,
 	keyword: Keyword,
 	id_name: String,
 ) -> Result<Declaration, ParseError> {
@@ -122,7 +124,7 @@ fn parse_fn_definition(
 }
 
 fn parse_variable_definition(
-	iter: &mut core::slice::Iter<Token>,
+	iter: &mut Iter<Token>,
 	keyword: Keyword,
 	id_name: String,
 	punct: Punct,
@@ -178,7 +180,7 @@ fn parse_variable_definition(
 }
 
 /// 解析top level 全局变量声明, 函数定义
-fn parse_declaration(iter: &mut core::slice::Iter<Token>, tk: &Token) -> Result<Declaration, ParseError> {
+fn parse_declaration(iter: &mut Iter<Token>, tk: &Token) -> Result<Declaration, ParseError> {
 	// 1. 函数定义 变量声明共通部分: 解析类型
 	// 2. 解析标识符(包括* 指针)
 	// 3. 判断是变量定义还是函数声明,分开处理
@@ -266,7 +268,7 @@ fn op_info(op: &Punct) -> i8 {
 	}
 }
 
-fn compute_atom(iter: &mut core::slice::Iter<Token>) -> EvalResult {
+fn compute_atom(iter: &mut Iter<Token>) -> EvalResult {
 	if let Some(lhs_tk) = iter.next() {
 		match lhs_tk {
 			Token::Const(Const::Integer(lhs)) => Ok(*lhs as i64),
@@ -278,7 +280,7 @@ fn compute_atom(iter: &mut core::slice::Iter<Token>) -> EvalResult {
 	}
 }
 
-pub fn eval(iter: &mut core::slice::Iter<Token>, mut lhs: i64, lv: i8) -> EvalResult {
+pub fn eval(iter: &mut Iter<Token>, mut lhs: i64, lv: i8) -> EvalResult {
 	// let ops = [Punct::Add, Punct::Sub, Punct::Mul, Punct::Div, Punct::Xor];
 
 	let mut lookahead_p = match look_ahead(iter) {
@@ -322,10 +324,37 @@ pub fn eval(iter: &mut core::slice::Iter<Token>, mut lhs: i64, lv: i8) -> EvalRe
 	Ok(lhs)
 }
 
-pub fn start_eval(iter: &mut core::slice::Iter<Token>) -> EvalResult {
+pub fn start_eval(iter: &mut Iter<Token>) -> EvalResult {
 	// 取第一个数
 	let lhs = compute_atom(iter)?;
 	eval(iter, lhs, 0)
+}
+
+fn eval2(iter: &mut Peekable<Iter<Token>>) -> EvalResult {
+	let token = iter.peek().unwrap();
+	assert_eq!(*token, &Token::Const(Const::Integer(1)));
+	assert_eq!(*token, &Token::Const(Const::Integer(1)));
+	assert_eq!(*token, &Token::Const(Const::Integer(1)));
+	let token = iter.next().unwrap();
+
+	assert_eq!(*token, Token::Const(Const::Integer(1)));
+	assert_eq!(*iter.peek().unwrap(), &Token::Punct(Punct::Add));
+	Ok(3)
+}
+
+pub fn t2(input: &str) -> EvalResult {
+	match TokenApi::parse_all(input) {
+		Ok(token_list) => {
+			let mut iter = token_list.iter().peekable();
+			eval2(&mut iter)
+		}
+		Err(err) => Err(ParseError::LexError(err)),
+	}
+}
+
+#[test]
+fn test_peekable_eval() {
+	assert_eq!(t2("1 + 2"), Ok(3));
 }
 
 pub fn t(input: &str) -> EvalResult {
@@ -337,12 +366,6 @@ pub fn t(input: &str) -> EvalResult {
 
 #[test]
 fn test_eval() {
-	fn t(input: &str) -> EvalResult {
-		match TokenApi::parse_all(input) {
-			Ok(token_list) => start_eval(&mut token_list.iter()),
-			Err(err) => Err(ParseError::LexError(err)),
-		}
-	}
 	assert_eq!(t("1 + 2"), Ok(3));
 	assert_eq!(t("1 + 2 + 3"), Ok(6));
 	assert_eq!(t("1 + 2 * 3"), Ok(7));
