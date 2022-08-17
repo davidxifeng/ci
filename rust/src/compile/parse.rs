@@ -326,11 +326,11 @@ pub fn start_eval(iter: &mut Iter<Token>) -> EvalResult {
 	eval(iter, lhs, 0)
 }
 
-fn compute_atom2(iter: &mut Peekable<Iter<Token>>) -> EvalResult {
+fn compute_atom2(iter: &mut Peekable<Iter<Token>>, cop: &mut Option<Punct>) -> EvalResult {
 	if let Some(tk) = iter.next() {
 		match tk {
 			Token::Const(Const::Integer(lhs)) => Ok(*lhs as i64),
-			Token::Punct(Punct::ParentheseL) => Ok(eval2(iter, 1)?),
+			Token::Punct(Punct::ParentheseL) => Ok(eval2(iter, 1, cop)?),
 			_ => Err(ParseError::UnexpectedToken("".into())),
 		}
 	} else {
@@ -338,18 +338,29 @@ fn compute_atom2(iter: &mut Peekable<Iter<Token>>) -> EvalResult {
 	}
 }
 
-fn eval2(iter: &mut Peekable<Iter<Token>>, mp: i8) -> EvalResult {
-	let mut lhs = compute_atom2(iter)?;
-	let mut rhs;
-	while let Some(Token::Punct(op_tk)) = iter.peek() {
-		let lv = op_info(op_tk);
-		if lv >= mp {
-			iter.next();
-			let nlv = lv + if *op_tk == Punct::Xor { 0 } else { 1 };
-			rhs = dbg!(eval2(iter, nlv)?);
-			lhs = dbg!(calc(op_tk, lhs, rhs));
-		} else {
-			break;
+fn eval2(iter: &mut Peekable<Iter<Token>>, mp: i8, cop: &mut Option<Punct>) -> EvalResult {
+	let mut lhs = compute_atom2(iter, cop)?;
+
+	*cop = match iter.next() {
+		Some(Token::Punct(mop)) => Some(*mop),
+		None => None,
+		_ => unreachable!(),
+	};
+
+	loop {
+		match *cop {
+			Some(Punct::ParentheseR) => break,
+			Some(op) => {
+				let lv = op_info(&op);
+				// println!("comparing {} lv: {}, mp: {} == {}", op, lv, mp, lv >= mp);
+				if lv >= mp {
+					// println!("calc: {} {} {}", lhs, op, rhs);
+					lhs = calc(&op, lhs, eval2(iter, lv + if op == Punct::Xor { 0 } else { 1 }, cop)?);
+				} else {
+					break;
+				}
+			}
+			None => break,
 		}
 	}
 
@@ -360,7 +371,8 @@ pub fn t2(input: &str) -> EvalResult {
 	match TokenApi::parse_all(input) {
 		Ok(token_list) => {
 			let mut iter = token_list.iter().peekable();
-			eval2(&mut iter, 1)
+			let mut cop = None;
+			eval2(&mut iter, 1, &mut cop)
 		}
 		Err(err) => Err(ParseError::LexError(err)),
 	}
@@ -369,9 +381,14 @@ pub fn t2(input: &str) -> EvalResult {
 #[test]
 fn test_peekable_eval() {
 	assert_eq!(t2("1 + 2"), Ok(3));
+	assert_eq!(t2("(1 + 2) * 3"), Ok(9));
 	assert_eq!(t2("1 + 2 + 3"), Ok(6));
 	assert_eq!(t2("1 + 2 * 3"), Ok(7));
 	assert_eq!(t2("1 + 2 * 3 ^ 2 + 2 * 6"), Ok(31));
+	assert_eq!(t2("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6"), Ok(60));
+	assert_eq!(t2("3 * ((3 - 5) * 2) ^ 2 + 2 * 6"), Ok(60));
+	assert_eq!(t2("3 * (2 + 2) ^ 2 + 2 * 6"), Ok(60));
+	assert_eq!(t2("(1 + 2) * ((3 - 5) * 2) ^ 2 ^ 2 + 2 * 6"), Ok(780));
 }
 
 pub fn t(input: &str) -> EvalResult {
