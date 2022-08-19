@@ -16,19 +16,11 @@ fn test_nc() {
 	let mut vi = v.iter().peekable();
 	let mut v = V { iter: &mut vi, cur: None };
 	println!("{:?}", v.get_peek());
-	println!("{:?}", v.curr());
-	println!("{:?}", v.curr());
-	println!("{:?}", v.get_next());
-	println!("{:?}", v.curr());
-	println!("{:?}", v.curr());
-	println!("{:?}", v.get_next());
-	println!("{:?}", v.curr());
-	println!("{:?}", v.get_next());
-	println!("{:?}", v.curr());
 	println!("{:?}", v.get_next());
 	println!("{:?}", v.curr());
 	println!("{:?}", v.peek_curr());
 }
+
 
 impl<VT> V<'_, VT> {
 	fn peek_curr(&mut self) -> Option<&VT> {
