@@ -6,6 +6,9 @@
 		{
 			"path": "rust"
 		},
+		{
+			"path": "nim"
+		}
 	],
 	"settings": {
 		"debug.allowBreakpointsEverywhere": true,
