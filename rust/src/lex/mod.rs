@@ -280,6 +280,14 @@ impl Token {
 			_ => None,
 		}
 	}
+
+	pub fn new_const_i(v: i128) -> Self {
+		Self::Const(Const::Integer(v))
+	}
+
+	pub fn new_punct(p: Punct) -> Self {
+		Self::Punct(p)
+	}
 }
 
 #[derive(Debug, PartialEq, Eq)]
