@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use console::style;
 use crate::lex::*;
 
 use super::parse::calc;
@@ -125,6 +126,7 @@ impl ExprTree {
 	}
 }
 
+
 impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if f.alternate() {
@@ -152,13 +154,13 @@ impl std::fmt::Display for ExprTree {
 			fn pr(this: &ExprTree, s: &mut String, p: &str, cp: &str) {
 				match this {
 					ExprTree::Leaf(v) => {
-						s.push_str(p);
-						s.push_str(format!("{}", v).as_str());
+						s.push_str(format!("{}", style(p).dim()).as_str());
+						s.push_str(format!("{}", style(v.to_string().as_str()).green()).as_str());
 						s.push('\n');
 					}
 					ExprTree::Branch(Branch { op, left, right }) => {
-						s.push_str(p);
-						s.push_str(format!("{}", op).as_str());
+						s.push_str(format!("{}", style(p).dim()).as_str());
+						s.push_str(format!("{}", style(op.to_string().as_str()).bold().blue()).as_str());
 						s.push('\n');
 
 						pr(left, s, (cp.to_owned() + "├───").as_str(), &(cp.to_owned() + "│   "));
