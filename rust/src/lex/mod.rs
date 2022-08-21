@@ -154,7 +154,7 @@ impl std::str::FromStr for Punct {
 
 impl std::fmt::Display for Punct {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.write_str(match self {
+		f.pad(match self {
 			Self::Add => "+",
 			Self::Assign => "=",
 			Self::Comma => ",",
@@ -279,14 +279,6 @@ impl Token {
 			},
 			_ => None,
 		}
-	}
-
-	pub fn new_const_i(v: i128) -> Self {
-		Self::Const(Const::Integer(v))
-	}
-
-	pub fn new_punct(p: Punct) -> Self {
-		Self::Punct(p)
 	}
 }
 

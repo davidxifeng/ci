@@ -2,126 +2,6 @@ use crate::lex::*;
 
 use super::parse::calc;
 
-#[derive(Debug)]
-struct ExprTreeNode<T> {
-	value: T,
-	// parent: Weak<Node<T>>,
-	children: Vec<Box<ExprTreeNode<T>>>,
-}
-
-impl<T> ExprTreeNode<T>
-where
-	T: std::fmt::Debug,
-{
-	fn new(v: T, left: T, right: T) -> Self {
-		ExprTreeNode {
-			value: v,
-			children: vec![
-				Box::new(ExprTreeNode { value: left, children: vec![] }),
-				Box::new(ExprTreeNode { value: right, children: vec![] }),
-			],
-		}
-	}
-
-	fn branch_atom_tree(v: T, left: T, right: Self) -> Self {
-		ExprTreeNode {
-			value: v,
-			children: vec![Box::new(ExprTreeNode { value: left, children: vec![] }), Box::new(right)],
-		}
-	}
-
-	fn branch_tree_atom(v: T, left: Self, right: T) -> Self {
-		ExprTreeNode {
-			value: v,
-			children: vec![Box::new(left), Box::new(ExprTreeNode { value: right, children: vec![] })],
-		}
-	}
-
-	fn print_pre_order(&self) {
-		self.print_pre_order_(0);
-	}
-
-	fn print_pre_order_(&self, depth: usize) {
-		println!("{: >2$}{:?}", "", self.value, depth * 2);
-		for v in &self.children {
-			v.as_ref().print_pre_order_(depth + 1);
-		}
-	}
-
-	fn print_in_order(&self) {
-		self.print_in_order_(0);
-	}
-
-	fn print_in_order_(&self, depth: usize) {
-		if self.children.len() > 0 {
-			self.children[0].as_ref().print_in_order_(depth + 1);
-		}
-		println!("{: >2$}{:?}", "", self.value, depth * 2);
-		if self.children.len() > 1 {
-			self.children[1].as_ref().print_in_order_(depth + 1);
-		}
-	}
-
-	fn print_post_order(&self) {
-		self.print_post_order_(0);
-	}
-
-	fn print_post_order_(&self, depth: usize) {
-		for v in &self.children {
-			v.as_ref().print_post_order_(depth + 1);
-		}
-		println!("{: >2$}{:?}", "", self.value, depth * 2);
-	}
-}
-
-fn eval_tree(this: &ExprTreeNode<Token>) -> i64 {
-	match this.value {
-		Token::Const(Const::Integer(v)) => v as i64,
-		Token::Punct(punct) => {
-			let left = &this.children[0];
-			let right = &this.children[1];
-			calc(&punct, eval_tree(left), eval_tree(right))
-		}
-		_ => unreachable!(),
-	}
-}
-
-#[test]
-fn test_tree() {
-	// 1 + 2 + 3
-	let tree = ExprTreeNode::branch_tree_atom(
-		Token::new_punct(Punct::Add),
-		ExprTreeNode::new(Token::new_punct(Punct::Add), Token::new_const_i(1), Token::new_const_i(2)),
-		Token::new_const_i(3),
-	);
-
-	tree.print_pre_order();
-
-	println!("------");
-	tree.print_in_order();
-
-	println!("------");
-	tree.print_post_order();
-
-	println!("\neval tree: {}\n---\n", eval_tree(&tree));
-
-	// 1 + 2 * 3
-	let tree = ExprTreeNode::branch_atom_tree(
-		Token::new_punct(Punct::Add),
-		Token::new_const_i(1),
-		ExprTreeNode::new(Token::new_punct(Punct::Mul), Token::new_const_i(2), Token::new_const_i(3)),
-	);
-	println!("\neval tree: {}\n---\n", eval_tree(&tree));
-
-	// (1 + 2) * 3
-	let tree = ExprTreeNode::branch_tree_atom(
-		Token::new_punct(Punct::Mul),
-		ExprTreeNode::new(Token::new_punct(Punct::Add), Token::new_const_i(1), Token::new_const_i(2)),
-		Token::new_const_i(3),
-	);
-	println!("\neval tree: {}\n---\n", eval_tree(&tree));
-}
-
 enum ExprTree {
 	Branch(Branch),
 	Leaf(i64),
@@ -133,32 +13,109 @@ struct Branch {
 	right: Box<ExprTree>,
 }
 
+enum VisitOrder {
+	Pre,
+	In,
+	Post,
+}
+
 impl ExprTree {
-	fn tree(op: Punct, left: ExprTree, right: ExprTree) -> Self {
+	pub fn tree(op: Punct, left: ExprTree, right: ExprTree) -> Self {
 		Self::Branch(Branch { op, left: Box::new(left), right: Box::new(right) })
 	}
-	fn branch(op: Punct, lhs: i64, rhs: i64) -> Self {
+	pub fn branch(op: Punct, lhs: i64, rhs: i64) -> Self {
 		Self::Branch(Branch { op, left: Box::new(Self::Leaf(lhs)), right: Box::new(Self::Leaf(rhs)) })
 	}
-	fn leaf(v: i64) -> Self {
+	pub fn leaf(v: i64) -> Self {
 		Self::Leaf(v)
 	}
 
-	fn do_print(&self, level: usize) {
-		match self {
-			Self::Leaf(v) => println!("{: >2$}{}", "", v, level * 2),
-			Self::Branch(Branch { op, left, right }) => {
-				left.do_print(level + 1);
-				right.do_print(level + 1);
-				println!("{:>2$}{}", "", format!("{}", op), level * 2);
-			}
-		}
-	}
-	fn print(&self) {
-		self.do_print(0);
+	pub fn print(&self, order: &VisitOrder) {
+		self.visit(
+			order,
+			&mut |v, depth| {
+				println!("{: >2$}{}", "", v, depth * 2);
+			},
+			&mut |op, depth| {
+				println!("{: >2$}{}", "", op, depth * 2);
+			},
+		)
 	}
 
-	fn eval(&self) -> i64 {
+	pub fn visit<F1, F2>(&self, order: &VisitOrder, fb: &mut F1, fe: &mut F2)
+	where
+		F1: FnMut(&Punct, &usize),
+		F2: FnMut(&i64, &usize),
+	{
+		fn pr<F1, F2>(this: &ExprTree, fb: &mut F1, fe: &mut F2, d: &usize)
+		where
+			F1: FnMut(&Punct, &usize),
+			F2: FnMut(&i64, &usize),
+		{
+			match this {
+				ExprTree::Leaf(v) => fe(&v, &d),
+				ExprTree::Branch(Branch { op, left, right }) => {
+					fb(op, &d);
+					pr(left, fb, fe, &(d + 1));
+					pr(right, fb, fe, &(d + 1));
+				}
+			}
+		}
+		fn i<F1, F2>(this: &ExprTree, fb: &mut F1, fe: &mut F2, d: &usize)
+		where
+			F1: FnMut(&Punct, &usize),
+			F2: FnMut(&i64, &usize),
+		{
+			match this {
+				ExprTree::Leaf(v) => fe(&v, &d),
+				ExprTree::Branch(Branch { op, left, right }) => {
+					i(left, fb, fe, &(d + 1));
+					fb(op, &d);
+					i(right, fb, fe, &(d + 1));
+				}
+			}
+		}
+		fn po<F1, F2>(this: &ExprTree, fb: &mut F1, fe: &mut F2, d: &usize)
+		where
+			F1: FnMut(&Punct, &usize),
+			F2: FnMut(&i64, &usize),
+		{
+			match this {
+				ExprTree::Leaf(v) => fe(&v, &d),
+				ExprTree::Branch(Branch { op, left, right }) => {
+					po(left, fb, fe, &(d + 1));
+					po(right, fb, fe, &(d + 1));
+					fb(op, &d);
+				}
+			}
+		}
+		match order {
+			VisitOrder::Pre => pr(self, fb, fe, &0),
+			VisitOrder::In => i(self, fb, fe, &0),
+			VisitOrder::Post => po(self, fb, fe, &0),
+		}
+	}
+
+	pub fn eval_stack(&self) -> i64 {
+		let mut op_s = vec![];
+		let mut v_s = vec![];
+		self.visit(
+			&VisitOrder::Post,
+			&mut |p, _| {
+				op_s.push(*p);
+			},
+			&mut |p, _| {
+				v_s.push(*p);
+			},
+		);
+		for op in op_s.iter().rev() {
+			let lhs = v_s.pop().unwrap();
+			let rhs = v_s.pop().unwrap();
+			v_s.push(calc(op, lhs, rhs));
+		}
+		v_s.pop().unwrap()
+	}
+	pub fn eval(&self) -> i64 {
 		match self {
 			Self::Leaf(v) => *v,
 			Self::Branch(Branch { op, left, right }) => calc(&op, left.eval(), right.eval()),
@@ -166,18 +123,42 @@ impl ExprTree {
 	}
 }
 
-#[test]
-fn test_expr_tree() {
-	let tree = ExprTree::tree(Punct::Add, ExprTree::branch(Punct::Add, 1, 2), ExprTree::leaf(3));
-	tree.print();
-	println!("eval tree: {}", tree.eval());
+impl std::fmt::Display for ExprTree {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let mut s = String::new();
+		let mut t = String::new();
+		self.visit(
+			&VisitOrder::In,
+			&mut |p: &Punct, d: &usize| {
+				s.push_str(format!("{: >2$}{}", "", *p, d).as_str());
+			},
+			&mut |p: &i64, d: &usize| {
+				t.push_str(format!("{: >2$}{}", "", *p, d).as_str());
+			},
+		);
+		f.write_str(s.as_str())?;
+		f.write_str(t.as_str())
+	}
 }
 
 #[test]
+fn test_expr_tree() {
+	let tree = ExprTree::tree(Punct::Add, ExprTree::branch(Punct::Mul, 1, 2), ExprTree::leaf(3));
+	tree.print(&VisitOrder::Pre);
+	println!("---");
+	tree.print(&VisitOrder::In);
+	println!("---");
+	tree.print(&VisitOrder::Post);
+	println!("---");
+	println!("eval tree: {}", tree.eval());
+	println!("eval tree with stack: {}", tree.eval_stack());
+	println!("tree is {}", tree);
+}
+
+#[test]
+#[ignore]
 fn test_fmt() {
-	let op = Punct::Xor;
-	// println!("this is: {:>5}", op, 4 + 1);
-	println!("{:>1$}", "^", 2 + 1);
-	println!("{:>1$}", op, 2 + 1);
-	println!("{:>1$}", format!("{}", op), 2 + 1);
+	assert_eq!(format!("{:>1$}", "^", 2), " ^");
+	assert_eq!(format!("{:>1$}", Punct::Xor, 2), " ^");
+	assert_eq!(format!("{}", Punct::Xor), "^");
 }
