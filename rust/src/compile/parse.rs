@@ -234,7 +234,7 @@ pub fn compile(input: &str) -> Result<DeclarationList, ParseError> {
 
 type EvalResult = Result<i64, ParseError>;
 
-fn calc(op: &Punct, a: i64, b: i64) -> i64 {
+pub fn calc(op: &Punct, a: i64, b: i64) -> i64 {
 	match op {
 		Punct::Add => a + b,
 		Punct::Sub => a - b,
