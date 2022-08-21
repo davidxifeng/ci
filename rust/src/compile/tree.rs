@@ -186,7 +186,11 @@ fn test_expr_tree() {
 	println!("eval tree with stack: {}", tree.eval_stack());
 	println!("tree is\n{:#}", tree);
 	println!("tree is\n{}", tree);
-	let tree = ExprTree::tree(Punct::Add, ExprTree::branch(Punct::Mul, 1, 2), ExprTree::branch(Punct::Mul, 3, 4));
+	let tree = ExprTree::tree(
+		Punct::Add,
+		ExprTree::branch(Punct::Mul, 1, 2),
+		ExprTree::tree(Punct::Mul, ExprTree::Leaf(3), ExprTree::branch(Punct::Xor, 4, 5)),
+	);
 	println!("eval tree: {}", tree.eval());
 	println!("tree is\n{}", tree);
 }
