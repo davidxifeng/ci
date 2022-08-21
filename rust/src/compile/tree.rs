@@ -129,17 +129,22 @@ impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let mut s = String::new();
 		let mut queue = VecDeque::from([self]);
-		while let Some(node) = queue.pop_front() {
-			match node {
-				ExprTree::Leaf(v) => {
-					s.push_str(format!("{},", v).as_str());
+		while !queue.is_empty() {
+			let mut lc = queue.len();
+			while lc > 0 {
+				match queue.pop_front().unwrap() {
+					ExprTree::Leaf(v) => {
+						s.push_str(format!(" {}", v).as_str());
+					}
+					ExprTree::Branch(Branch { op, left, right }) => {
+						s.push_str(format!("{}", op).as_str());
+						queue.push_back(left);
+						queue.push_back(right);
+					}
 				}
-				ExprTree::Branch(Branch { op, left, right }) => {
-					s.push_str(format!("{},", op).as_str());
-					queue.push_back(left);
-					queue.push_back(right);
-				}
+				lc -= 1;
 			}
+			s.push('\n');
 		}
 		f.write_str(s.as_str())
 	}
