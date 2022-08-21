@@ -127,26 +127,49 @@ impl ExprTree {
 
 impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		let mut s = String::new();
-		let mut queue = VecDeque::from([self]);
-		while !queue.is_empty() {
-			let mut lc = queue.len();
-			while lc > 0 {
-				match queue.pop_front().unwrap() {
+		if f.alternate() {
+			let mut s = String::new();
+			let mut queue = VecDeque::from([self]);
+			while !queue.is_empty() {
+				let mut lc = queue.len();
+				while lc > 0 {
+					match queue.pop_front().unwrap() {
+						ExprTree::Leaf(v) => {
+							s.push_str(format!(" {}", v).as_str());
+						}
+						ExprTree::Branch(Branch { op, left, right }) => {
+							s.push_str(format!("{}", op).as_str());
+							queue.push_back(left);
+							queue.push_back(right);
+						}
+					}
+					lc -= 1;
+				}
+				s.push('\n');
+			}
+			f.write_str(s.as_str())
+		} else {
+			fn pr(this: &ExprTree, s: &mut String, p: &str, cp: &str) {
+				match this {
 					ExprTree::Leaf(v) => {
-						s.push_str(format!(" {}", v).as_str());
+						s.push_str(p);
+						s.push_str(format!("{}", v).as_str());
+						s.push('\n');
 					}
 					ExprTree::Branch(Branch { op, left, right }) => {
+						s.push_str(p);
 						s.push_str(format!("{}", op).as_str());
-						queue.push_back(left);
-						queue.push_back(right);
+						s.push('\n');
+
+						pr(left, s, (cp.to_owned() + "├───").as_str(), &(cp.to_owned() + "│   "));
+						pr(right, s, (cp.to_owned() + "└───").as_str(), &(cp.to_owned() + "    "));
 					}
 				}
-				lc -= 1;
 			}
-			s.push('\n');
+			let mut s = String::new();
+			pr(self, &mut s, "", "");
+			f.write_str(s.as_str())
 		}
-		f.write_str(s.as_str())
 	}
 }
 
@@ -154,13 +177,17 @@ impl std::fmt::Display for ExprTree {
 fn test_expr_tree() {
 	let tree = ExprTree::tree(Punct::Add, ExprTree::branch(Punct::Mul, 1, 2), ExprTree::leaf(3));
 	tree.print(&VisitOrder::Pre);
-	println!("---");
+	println!("────");
 	tree.print(&VisitOrder::In);
-	println!("---");
+	println!("────");
 	tree.print(&VisitOrder::Post);
-	println!("---");
+	println!("────");
 	println!("eval tree: {}", tree.eval());
 	println!("eval tree with stack: {}", tree.eval_stack());
+	println!("tree is\n{:#}", tree);
+	println!("tree is\n{}", tree);
+	let tree = ExprTree::tree(Punct::Add, ExprTree::branch(Punct::Mul, 1, 2), ExprTree::branch(Punct::Mul, 3, 4));
+	println!("eval tree: {}", tree.eval());
 	println!("tree is\n{}", tree);
 }
 
