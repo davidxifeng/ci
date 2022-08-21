@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::lex::*;
 
 use super::parse::calc;
@@ -126,18 +128,20 @@ impl ExprTree {
 impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let mut s = String::new();
-		let mut t = String::new();
-		self.visit(
-			&VisitOrder::In,
-			&mut |p: &Punct, d: &usize| {
-				s.push_str(format!("{: >2$}{}", "", *p, d).as_str());
-			},
-			&mut |p: &i64, d: &usize| {
-				t.push_str(format!("{: >2$}{}", "", *p, d).as_str());
-			},
-		);
-		f.write_str(s.as_str())?;
-		f.write_str(t.as_str())
+		let mut queue = VecDeque::from([self]);
+		while let Some(node) = queue.pop_front() {
+			match node {
+				ExprTree::Leaf(v) => {
+					s.push_str(format!("{},", v).as_str());
+				}
+				ExprTree::Branch(Branch { op, left, right }) => {
+					s.push_str(format!("{},", op).as_str());
+					queue.push_back(left);
+					queue.push_back(right);
+				}
+			}
+		}
+		f.write_str(s.as_str())
 	}
 }
 
@@ -152,7 +156,7 @@ fn test_expr_tree() {
 	println!("---");
 	println!("eval tree: {}", tree.eval());
 	println!("eval tree with stack: {}", tree.eval_stack());
-	println!("tree is {}", tree);
+	println!("tree is\n{}", tree);
 }
 
 #[test]
