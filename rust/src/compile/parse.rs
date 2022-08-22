@@ -1,10 +1,10 @@
-use std::{iter::Peekable, slice::Iter};
+use std::slice::Iter;
 
 use itertools::Itertools;
 
 use crate::*;
 
-use super::{errors::*, types::*};
+use super::{errors::*, tree::*, types::*};
 
 fn look_ahead(iter: &Iter<Token>) -> Result<Token, ParseError> {
 	let mut lait = iter.clone();
@@ -326,7 +326,7 @@ pub fn start_eval(iter: &mut Iter<Token>) -> EvalResult {
 	eval(iter, lhs, 0)
 }
 
-fn compute_atom2(iter: &mut Peekable<Iter<Token>>, cop: &mut Option<Punct>) -> EvalResult {
+fn compute_atom2(iter: &mut Iter<Token>, cop: &mut Option<Punct>) -> EvalResult {
 	if let Some(tk) = iter.next() {
 		match tk {
 			Token::Const(Const::Integer(lhs)) => Ok(*lhs as i64),
@@ -338,7 +338,7 @@ fn compute_atom2(iter: &mut Peekable<Iter<Token>>, cop: &mut Option<Punct>) -> E
 	}
 }
 
-fn eval2(iter: &mut Peekable<Iter<Token>>, mp: i8, cop: &mut Option<Punct>) -> EvalResult {
+fn eval2(iter: &mut Iter<Token>, mp: i8, cop: &mut Option<Punct>) -> EvalResult {
 	let mut lhs = compute_atom2(iter, cop)?;
 
 	*cop = match iter.next() {
@@ -362,7 +362,7 @@ fn eval2(iter: &mut Peekable<Iter<Token>>, mp: i8, cop: &mut Option<Punct>) -> E
 pub fn t2(input: &str) -> EvalResult {
 	match TokenApi::parse_all(input) {
 		Ok(token_list) => {
-			let mut iter = token_list.iter().peekable();
+			let mut iter = token_list.iter();
 			let mut cop = None;
 			eval2(&mut iter, 1, &mut cop)
 		}
@@ -408,4 +408,60 @@ fn test_eval() {
 	assert_eq!(t("2 * 2 ^ 3 ^ 2"), Ok(1024));
 	assert_eq!(t("2 * 2 ^ 3 ^ 2 * 2 / 2 + 1 * 2 ^ 2 * 20"), Ok(1104));
 	assert_eq!(t("2 ^ 3 ^ 2 * 2"), Ok(1024));
+}
+
+type EvalResultTree = Result<ExprTree, ParseError>;
+
+fn compute_atom_node(iter: &mut Iter<Token>, cop: &mut Option<Punct>) -> EvalResultTree {
+	if let Some(tk) = iter.next() {
+		match tk {
+			Token::Const(Const::Integer(lhs)) => Ok(ExprTree::leaf(*lhs as i64)),
+			Token::Punct(Punct::ParentheseL) => Ok(tree_node(iter, 1, cop)?),
+			_ => Err(ParseError::UnexpectedToken("".into())),
+		}
+	} else {
+		Err(ParseError::EndOfToken)
+	}
+}
+
+fn tree_node(iter: &mut Iter<Token>, mp: i8, cop: &mut Option<Punct>) -> EvalResultTree {
+	let mut lhs = compute_atom_node(iter, cop)?;
+
+	*cop = match iter.next() {
+		Some(Token::Punct(mop)) => Some(*mop),
+		None => None,
+		_ => unreachable!(),
+	};
+
+	while let Some(op) = *cop {
+		if Punct::ParentheseR != op && op_info(&op) >= mp {
+			let next_mp = op_info(&op) + if op == Punct::Xor { 0 } else { 1 };
+			// lhs = calc(&op, lhs, eval2(iter, next_mp, cop)?);
+			lhs = ExprTree::tree(op, lhs, tree_node(iter, next_mp, cop)?);
+		} else {
+			break;
+		}
+	}
+
+	Ok(lhs)
+}
+
+pub fn build_tree(input: &str) -> EvalResultTree {
+	match TokenApi::parse_all(input) {
+		Ok(token_list) => {
+			let mut iter = token_list.iter();
+			let mut cop = None;
+			tree_node(&mut iter, 1, &mut cop)
+		}
+		Err(err) => Err(ParseError::LexError(err)),
+	}
+}
+
+#[test]
+fn test_tree() {
+	let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
+	match tree {
+		Ok(tree) => println!("tree is \n{}, eval to {}", tree, tree.eval()),
+		Err(err) => println!("err: {}", err),
+	}
 }

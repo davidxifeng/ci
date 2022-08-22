@@ -10,6 +10,8 @@ use clap::Parser;
 use compile::parse::*;
 use lex::*;
 
+use crate::compile::tree::VisitOrder;
+
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -25,7 +27,7 @@ enum SubCommand {
 		name: String,
 
 		/// Number of times to greet
-		#[clap(short, long, default_value_t = 1)]
+		#[clap(short, long, default_value_t = 1024)]
 		count: u16,
 	},
 	Lex {
@@ -42,31 +44,42 @@ enum SubCommand {
 	Http,
 	Term,
 }
+
+#[test]
+fn test_progress_bar() {
+	let total = 64 << 10;
+	let count = 1024 * 2;
+	let pb = indicatif::ProgressBar::new(total);
+	let tmpl = " {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})";
+	pb.set_style(
+		indicatif::ProgressStyle::with_template(tmpl)
+			.unwrap()
+			.with_key("eta", |state: &indicatif::ProgressState, w: &mut dyn std::fmt::Write| {
+				write!(w, "{:.3}s", state.eta().as_secs_f64()).unwrap()
+			})
+			.progress_chars("#>-"),
+	);
+
+	for i in (0..total).step_by(count as usize) {
+		std::thread::sleep(Duration::from_millis(100));
+		pb.set_position(i);
+	}
+	pb.finish_with_message("done");
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
 	let args = Args::parse();
 
 	match args.command {
-		SubCommand::Dev { name: _, count } => {
-			let total = 64 << 10;
-			let pb = indicatif::ProgressBar::new(total);
-			let tmpl = " {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})";
-			pb.set_style(
-				indicatif::ProgressStyle::with_template(tmpl)
-					.unwrap()
-					.with_key("eta", |state: &indicatif::ProgressState, w: &mut dyn std::fmt::Write| {
-						write!(w, "{:.3}s", state.eta().as_secs_f64()).unwrap()
-					})
-					.progress_chars("#>-"),
-			);
-
-			for i in (0..total).step_by(count as usize) {
-				std::thread::sleep(Duration::from_millis(100));
-				pb.set_position(i);
-			}
-			pb.finish_with_message("done");
-
-			use console::style;
-			println!("This is {} neat", style("quite").cyan());
+		SubCommand::Dev { name: _, count: _ } => {
+			let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6")?;
+			println!("tree is \n{}, eval to {}", tree, tree.eval());
+			tree.print(&VisitOrder::Pre);
+			println!("─────");
+			tree.print(&VisitOrder::In);
+			println!("─────");
+			tree.print(&VisitOrder::Post);
+			println!("eval stack to {}", tree.eval_stack());
 		}
 
 		SubCommand::Term => {

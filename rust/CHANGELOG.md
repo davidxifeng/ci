@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning].
 ### Added
 
 - 简化的全局变量声明解析,支持char和int两种类型.
+- 简单的表达式树定义,遍历,求值
 
 ### Changed
 
