@@ -10,7 +10,7 @@ use clap::Parser;
 use compile::parse::*;
 use lex::*;
 
-use crate::compile::tree::VisitOrder;
+use crate::compile::tree::{VisitOrder, ExprTree};
 
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -22,13 +22,13 @@ struct Args {
 #[derive(clap::Subcommand, Debug)]
 enum SubCommand {
 	Dev {
-		/// Name of the person to greet
-		#[clap(short, long, default_value = "dev")]
-		name: String,
+		/// more debug testing, also to avoid unused code warning
+		#[clap(short, long)]
+		debug: bool,
 
-		/// Number of times to greet
-		#[clap(short, long, default_value_t = 1024)]
-		count: u16,
+		/// expression
+		#[clap(value_parser, default_value = "(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6")]
+		expr: String,
 	},
 	Lex {
 		#[clap(short, long, action)]
@@ -71,15 +71,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let args = Args::parse();
 
 	match args.command {
-		SubCommand::Dev { name: _, count: _ } => {
-			let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6")?;
-			println!("tree is \n{}, eval to {}", tree, tree.eval());
-			tree.print(&VisitOrder::Pre);
-			println!("─────");
-			tree.print(&VisitOrder::In);
-			println!("─────");
-			tree.print(&VisitOrder::Post);
-			println!("eval stack to {}", tree.eval_stack());
+		SubCommand::Dev { expr, debug } => {
+			let tree = build_tree(&expr)?;
+
+			if debug {
+				tree.print(&VisitOrder::Pre);
+				println!("─────");
+				tree.print(&VisitOrder::In);
+				println!("─────");
+				tree.print(&VisitOrder::Post);
+				println!("eval stack to {}", tree.eval_stack());
+				let tree = ExprTree::tree(Punct::Add, ExprTree::branch(Punct::Mul, 1, 2), ExprTree::leaf(3));
+				tree.print(&VisitOrder::Pre);
+			}
+
+			println!("tree is \n{}eval to: {}", tree, tree.eval());
 		}
 
 		SubCommand::Term => {

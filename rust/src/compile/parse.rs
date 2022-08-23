@@ -412,7 +412,7 @@ fn test_eval() {
 
 type EvalResultTree = Result<ExprTree, ParseError>;
 
-fn compute_atom_node(iter: &mut Iter<Token>, cop: &mut Option<Punct>) -> EvalResultTree {
+fn compute_atom_node<'a>(iter: &mut impl Iterator<Item = &'a Token>, cop: &mut Option<Punct>) -> EvalResultTree {
 	if let Some(tk) = iter.next() {
 		match tk {
 			Token::Const(Const::Integer(lhs)) => Ok(ExprTree::leaf(*lhs as i64)),
@@ -424,7 +424,7 @@ fn compute_atom_node(iter: &mut Iter<Token>, cop: &mut Option<Punct>) -> EvalRes
 	}
 }
 
-fn tree_node(iter: &mut Iter<Token>, mp: i8, cop: &mut Option<Punct>) -> EvalResultTree {
+fn tree_node<'a>(iter: &mut impl Iterator<Item = &'a Token>, mp: i8, cop: &mut Option<Punct>) -> EvalResultTree {
 	let mut lhs = compute_atom_node(iter, cop)?;
 
 	*cop = match iter.next() {
@@ -436,7 +436,6 @@ fn tree_node(iter: &mut Iter<Token>, mp: i8, cop: &mut Option<Punct>) -> EvalRes
 	while let Some(op) = *cop {
 		if Punct::ParentheseR != op && op_info(&op) >= mp {
 			let next_mp = op_info(&op) + if op == Punct::Xor { 0 } else { 1 };
-			// lhs = calc(&op, lhs, eval2(iter, next_mp, cop)?);
 			lhs = ExprTree::tree(op, lhs, tree_node(iter, next_mp, cop)?);
 		} else {
 			break;
