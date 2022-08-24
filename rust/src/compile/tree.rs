@@ -100,27 +100,35 @@ impl ExprTree {
 	}
 
 	pub fn eval_stack(&self) -> i64 {
-		let mut op_s = vec![];
-		let mut v_s = vec![];
-		// TODO
-		self.visit(
-			&VisitOrder::Post,
-			&mut |p, _| {
-				op_s.push(*p);
-			},
-			&mut |p, _| {
-				v_s.push(*p);
-			},
-		);
-		v_s.reverse();
-		for op in op_s.iter() {
-			let lhs = v_s.pop().unwrap();
-			let rhs = v_s.pop().unwrap();
-			println!("calc: {} {} {}", op, lhs, rhs);
-			v_s.push(calc(op, lhs, rhs));
+		fn po(this: &ExprTree, stack: &mut Vec<Token>) {
+			match this {
+				ExprTree::Leaf(v) => stack.push(Token::Const(Const::Integer(*v as i128))),
+				ExprTree::Branch(Branch { op, left, right }) => {
+					po(left, stack);
+					po(right, stack);
+					stack.push(Token::Punct(*op));
+				}
+			}
 		}
-		v_s.pop().unwrap()
+		let mut list = vec![];
+		po(self, &mut list);
+
+		let mut stack = VecDeque::<i64>::new();
+		for token in list.iter() {
+			match token {
+				Token::Const(Const::Integer(v)) => stack.push_back(*v as i64),
+				Token::Punct(p) => {
+					let lhs = stack.pop_back().unwrap();
+					let rhs = stack.pop_back().unwrap();
+					println!("calc: {} {} {}", p, lhs, rhs);
+					stack.push_back(calc(p, lhs, rhs));
+				}
+				_ => unreachable!(),
+			}
+		}
+		stack.pop_back().unwrap()
 	}
+
 	pub fn eval(&self) -> i64 {
 		match self {
 			Self::Leaf(v) => *v,
