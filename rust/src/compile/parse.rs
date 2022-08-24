@@ -326,62 +326,6 @@ pub fn start_eval(iter: &mut Iter<Token>) -> EvalResult {
 	eval(iter, lhs, 0)
 }
 
-fn compute_atom2(iter: &mut Iter<Token>, cop: &mut Option<Punct>) -> EvalResult {
-	if let Some(tk) = iter.next() {
-		match tk {
-			Token::Const(Const::Integer(lhs)) => Ok(*lhs as i64),
-			Token::Punct(Punct::ParentheseL) => Ok(eval2(iter, 1, cop)?),
-			_ => Err(ParseError::UnexpectedToken("".into())),
-		}
-	} else {
-		Err(ParseError::EndOfToken)
-	}
-}
-
-fn eval2(iter: &mut Iter<Token>, mp: i8, cop: &mut Option<Punct>) -> EvalResult {
-	let mut lhs = compute_atom2(iter, cop)?;
-
-	*cop = match iter.next() {
-		Some(Token::Punct(mop)) => Some(*mop),
-		None => None,
-		_ => unreachable!(),
-	};
-
-	while let Some(op) = *cop {
-		if Punct::ParentheseR != op && op_info(&op) >= mp {
-			let next_mp = op_info(&op) + if op == Punct::Xor { 0 } else { 1 };
-			lhs = calc(&op, lhs, eval2(iter, next_mp, cop)?);
-		} else {
-			break;
-		}
-	}
-
-	Ok(lhs)
-}
-
-pub fn t2(input: &str) -> EvalResult {
-	match TokenApi::parse_all(input) {
-		Ok(token_list) => {
-			let mut iter = token_list.iter();
-			let mut cop = None;
-			eval2(&mut iter, 1, &mut cop)
-		}
-		Err(err) => Err(ParseError::LexError(err)),
-	}
-}
-
-#[test]
-fn test_peekable_eval() {
-	assert_eq!(t2("1 + 2"), Ok(3));
-	assert_eq!(t2("(1 + 2) * 3"), Ok(9));
-	assert_eq!(t2("1 + 2 + 3"), Ok(6));
-	assert_eq!(t2("1 + 2 * 3"), Ok(7));
-	assert_eq!(t2("1 + 2 * 3 ^ 2 + 2 * 6"), Ok(31));
-	assert_eq!(t2("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6"), Ok(60));
-	assert_eq!(t2("3 * ((3 - 5) * 2) ^ 2 + 2 * 6"), Ok(60));
-	assert_eq!(t2("3 * (2 + 2) ^ 2 + 2 * 6"), Ok(60));
-	assert_eq!(t2("(1 + 2) * ((3 - 5) * 2) ^ 2 ^ 2 + 2 * 6"), Ok(780));
-}
 
 pub fn t(input: &str) -> EvalResult {
 	match TokenApi::parse_all(input) {
