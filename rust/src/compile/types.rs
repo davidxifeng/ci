@@ -1,4 +1,4 @@
-use crate::lex::*;
+use super::token::{Keyword, Const};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CType {

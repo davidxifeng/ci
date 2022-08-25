@@ -1,6 +1,4 @@
-use crate::lex::*;
-
-use super::types::*;
+use super::{types::*, token::{Keyword, Const}};
 
 impl std::fmt::Display for CType {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

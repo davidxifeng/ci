@@ -1,4 +1,14 @@
-use crate::lex::LexError;
+#[derive(Debug, PartialEq, Eq)]
+pub enum LexError {
+	InvalidChar(char),
+	UnexpectedEof,
+	EmptyChar,
+	ConstOverflow,
+	MoreThanOneChar,
+	ExpectingBut(char, char),
+	UnknownEscape(char),
+}
+
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {

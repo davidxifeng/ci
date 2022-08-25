@@ -1,9 +1,10 @@
 use std::collections::VecDeque;
 
-use crate::lex::*;
 use console::style;
 
-use super::parse::calc;
+use crate::compile::token::{Token, Const};
+
+use super::{parse::calc, token::Punct};
 
 pub enum ExprTree {
 	Branch(Branch),

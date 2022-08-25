@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::*;
 
-use super::{errors::*, tree::*, types::*};
+use super::{errors::*, tree::*, types::*, token::{Punct, Const, Keyword}, lex::TokenApi};
 
 fn look_ahead(iter: &Iter<Token>) -> Result<Token, ParseError> {
 	let mut lait = iter.clone();

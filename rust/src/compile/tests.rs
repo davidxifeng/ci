@@ -1,8 +1,10 @@
 use std::{iter::Peekable, slice::Iter};
 
-use crate::{
-	compile::{errors::*, parse::*, types::*},
-	lex::*,
+use crate::compile::{
+	errors::*,
+	parse::*,
+	token::{Punct, Token, Const, Keyword},
+	types::*,
 };
 
 struct V<'a, VT> {
@@ -11,6 +13,7 @@ struct V<'a, VT> {
 }
 
 #[test]
+#[ignore]
 fn test_nc() {
 	let v = vec![Token::Punct(Punct::Add), Token::Punct(Punct::Sub), Token::Punct(Punct::Mul)];
 	let mut vi = v.iter().peekable();
@@ -20,7 +23,6 @@ fn test_nc() {
 	println!("{:?}", v.curr());
 	println!("{:?}", v.peek_curr());
 }
-
 
 impl<VT> V<'_, VT> {
 	fn peek_curr(&mut self) -> Option<&VT> {

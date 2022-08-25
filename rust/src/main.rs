@@ -1,5 +1,4 @@
 mod compile;
-mod lex;
 
 use std::error::Error;
 use std::fs;
@@ -8,9 +7,10 @@ use std::time::Duration;
 use clap::Parser;
 
 use compile::parse::*;
-use lex::*;
 
-use crate::compile::tree::{VisitOrder, ExprTree};
+use crate::compile::lex::TokenApi;
+use crate::compile::token::{Token, Punct};
+use crate::compile::tree::{ExprTree, VisitOrder};
 
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -48,7 +48,7 @@ enum SubCommand {
 #[test]
 fn test_progress_bar() {
 	let total = 64 << 10;
-	let count = 1024 * 2;
+	let count = 1024 * 8;
 	let pb = indicatif::ProgressBar::new(total);
 	let tmpl = " {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})";
 	pb.set_style(
