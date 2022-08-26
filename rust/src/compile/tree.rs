@@ -83,9 +83,9 @@ impl ExprTree {
 			F2: FnMut(&i64, &usize),
 		{
 			match this {
-				ExprTree::Leaf(v) => fe(&v, &d),
+				ExprTree::Leaf(v) => fe(v, d),
 				ExprTree::Branch(Branch { op, left, right }) => {
-					fb(op, &d);
+					fb(op, d);
 					pr(left, fb, fe, &(d + 1));
 					pr(right, fb, fe, &(d + 1));
 				}
@@ -97,10 +97,10 @@ impl ExprTree {
 			F2: FnMut(&i64, &usize),
 		{
 			match this {
-				ExprTree::Leaf(v) => fe(&v, &d),
+				ExprTree::Leaf(v) => fe(v, d),
 				ExprTree::Branch(Branch { op, left, right }) => {
 					i(left, fb, fe, &(d + 1));
-					fb(op, &d);
+					fb(op, d);
 					i(right, fb, fe, &(d + 1));
 				}
 			}
@@ -111,11 +111,11 @@ impl ExprTree {
 			F2: FnMut(&i64, &usize),
 		{
 			match this {
-				ExprTree::Leaf(v) => fe(&v, &d),
+				ExprTree::Leaf(v) => fe(v, d),
 				ExprTree::Branch(Branch { op, left, right }) => {
 					po(left, fb, fe, &(d + 1));
 					po(right, fb, fe, &(d + 1));
-					fb(op, &d);
+					fb(op, d);
 				}
 			}
 		}
@@ -159,7 +159,7 @@ impl ExprTree {
 	pub fn eval(&self) -> i64 {
 		match self {
 			Self::Leaf(v) => *v,
-			Self::Branch(Branch { op, left, right }) => calc(&op, left.eval(), right.eval()),
+			Self::Branch(Branch { op, left, right }) => calc(op, left.eval(), right.eval()),
 		}
 	}
 }
@@ -167,33 +167,14 @@ impl ExprTree {
 impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if f.alternate() {
-			fn pr(this: &ExprTree, s: &mut String, p: &str, cp: &str) {
-				match this {
-					ExprTree::Leaf(v) => {
-						s.push_str(format!("{}", style(p).dim()).as_str());
-						s.push_str(format!("{}\n", style(v.to_string().as_str()).green()).as_str());
-					}
-					ExprTree::Branch(Branch { op, left, right }) => {
-						s.push_str(format!("{}", style(p).dim()).as_str());
-						s.push_str(format!("{}\n", style(op.to_string().as_str()).bold().blue()).as_str());
-
-						pr(left, s, (cp.to_owned() + "├───").as_str(), &(cp.to_owned() + "│   "));
-						pr(right, s, (cp.to_owned() + "└───").as_str(), &(cp.to_owned() + "    "));
-					}
-				}
-			}
-			let mut s = String::new();
-			pr(self, &mut s, "", "");
-			f.write_str(s.as_str())
-
-		} else {
-
+			// TODO trunk的功能如何使用rust表示
+			// ref: https://www.techiedelight.com/c-program-print-binary-tree/
 			fn show_trunk(t: &Trunk, s: &mut String) {
 				match &t.prev {
-					None => { }
+					None => {}
 					Some(prev) => {
-						show_trunk(&prev, s);
-						s.push_str(format!("{}", t.str.as_str()).as_str());
+						show_trunk(prev, s);
+						s.push_str(t.str.as_str());
 					}
 				}
 			}
@@ -203,10 +184,10 @@ impl std::fmt::Display for ExprTree {
 					ExprTree::Branch(Branch { op, left, right }) => {
 						let prev_str = "    ";
 
-						let mut trunk = Trunk {  str: prev_str.into() ,prev: prev.clone()};
+						let mut trunk = Trunk { str: prev_str.into(), prev: prev.clone() };
 						let mut new_option_trunk = Some(Box::new(trunk.clone()));
 
-						pt(&right, &mut new_option_trunk, true, s);
+						pt(right, &mut new_option_trunk, true, s);
 						let (ts, ps) = match prev {
 							None => ("────", "    "),
 							Some(p) => {
@@ -220,7 +201,6 @@ impl std::fmt::Display for ExprTree {
 						};
 						trunk.str = ts.into();
 
-
 						show_trunk(&trunk, s);
 						s.push_str(format!("{}\n", op).as_str());
 
@@ -229,13 +209,12 @@ impl std::fmt::Display for ExprTree {
 						}
 
 						trunk.str = "   |".into();
-						pt(&left, &mut new_option_trunk, false, s);
-
+						pt(left, &mut new_option_trunk, false, s);
 					}
 					ExprTree::Leaf(v) => {
 						let prev_str = "    ";
 						let input_prev = prev.clone();
-						let mut trunk = Trunk {  str: prev_str.into() ,prev: prev.clone()};
+						let mut trunk = Trunk { str: prev_str.into(), prev: prev.clone() };
 						let (ts, ps) = match input_prev {
 							None => ("────", "    "),
 							Some(_) => {
@@ -263,11 +242,30 @@ impl std::fmt::Display for ExprTree {
 			let mut prev = None;
 			pt(self, &mut prev, false, &mut s);
 			f.write_str(s.as_str())
+		} else {
+			fn pr(this: &ExprTree, s: &mut String, p: &str, cp: &str) {
+				match this {
+					ExprTree::Leaf(v) => {
+						s.push_str(format!("{}", style(p).dim()).as_str());
+						s.push_str(format!("{}\n", style(v.to_string().as_str()).green()).as_str());
+					}
+					ExprTree::Branch(Branch { op, left, right }) => {
+						s.push_str(format!("{}", style(p).dim()).as_str());
+						s.push_str(format!("{}\n", style(op.to_string().as_str()).bold().blue()).as_str());
+
+						pr(left, s, (cp.to_owned() + "├───").as_str(), &(cp.to_owned() + "│   "));
+						pr(right, s, (cp.to_owned() + "└───").as_str(), &(cp.to_owned() + "    "));
+					}
+				}
+			}
+			let mut s = String::new();
+			pr(self, &mut s, "", "");
+			f.write_str(s.as_str())
 		}
 	}
 }
 
-#[derive(Clone, )]
+#[derive(Clone)]
 struct Trunk {
 	str: String,
 	prev: Option<Box<Trunk>>,

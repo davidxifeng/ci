@@ -411,7 +411,7 @@ fn test_tree() {
 	match tree {
 		Ok(tree) => {
 			tree.print_by_level();
-			println!("tree is \n{}\n{:#}eval to {}", tree, tree, tree.eval())
+			println!("tree is \n{}eval to {}", tree, tree.eval())
 		}
 		Err(err) => println!("err: {}", err),
 	}
