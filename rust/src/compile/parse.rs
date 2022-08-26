@@ -4,7 +4,13 @@ use itertools::Itertools;
 
 use crate::*;
 
-use super::{errors::*, tree::*, types::*, token::{Punct, Const, Keyword}, lex::TokenApi};
+use super::{
+	errors::*,
+	lex::TokenApi,
+	token::{Const, Keyword, Punct},
+	tree::*,
+	types::*,
+};
 
 fn look_ahead(iter: &Iter<Token>) -> Result<Token, ParseError> {
 	let mut lait = iter.clone();
@@ -326,7 +332,6 @@ pub fn start_eval(iter: &mut Iter<Token>) -> EvalResult {
 	eval(iter, lhs, 0)
 }
 
-
 pub fn t(input: &str) -> EvalResult {
 	match TokenApi::parse_all(input) {
 		Ok(token_list) => start_eval(&mut token_list.iter()),
@@ -404,7 +409,10 @@ pub fn build_tree(input: &str) -> EvalResultTree {
 fn test_tree() {
 	let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
 	match tree {
-		Ok(tree) => println!("tree is \n{}, eval to {}", tree, tree.eval()),
+		Ok(tree) => {
+			tree.print_by_level();
+			println!("tree is \n{}\n{:#}eval to {}", tree, tree, tree.eval())
+		}
 		Err(err) => println!("err: {}", err),
 	}
 }

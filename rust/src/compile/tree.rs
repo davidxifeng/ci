@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use console::style;
 
-use crate::compile::token::{Token, Const};
+use crate::compile::token::{Const, Token};
 
 use super::{parse::calc, token::Punct};
 
@@ -32,6 +32,32 @@ impl ExprTree {
 	}
 	pub fn leaf(v: i64) -> Self {
 		Self::Leaf(v)
+	}
+
+	#[cfg(test)]
+	pub fn print_by_level(&self) {
+		// 广度优先遍历 + 按层次分组.
+		let mut s = String::new();
+		let mut queue = VecDeque::from([self]);
+		while !queue.is_empty() {
+			let mut lc = queue.len();
+			while lc > 0 {
+				match queue.pop_front().unwrap() {
+					ExprTree::Leaf(v) => {
+						s.push_str(format!("{} ", v).as_str());
+					}
+					ExprTree::Branch(Branch { op, left, right }) => {
+						s.push_str(format!("{} ", op).as_str());
+						queue.push_back(left);
+						queue.push_back(right);
+					}
+				}
+				lc -= 1;
+			}
+			s.pop();
+			s.push('\n');
+		}
+		println!("{}", s);
 	}
 
 	pub fn print(&self, order: &VisitOrder) {
@@ -141,27 +167,6 @@ impl ExprTree {
 impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if f.alternate() {
-			let mut s = String::new();
-			let mut queue = VecDeque::from([self]);
-			while !queue.is_empty() {
-				let mut lc = queue.len();
-				while lc > 0 {
-					match queue.pop_front().unwrap() {
-						ExprTree::Leaf(v) => {
-							s.push_str(format!(" {}", v).as_str());
-						}
-						ExprTree::Branch(Branch { op, left, right }) => {
-							s.push_str(format!("{}", op).as_str());
-							queue.push_back(left);
-							queue.push_back(right);
-						}
-					}
-					lc -= 1;
-				}
-				s.push('\n');
-			}
-			f.write_str(s.as_str())
-		} else {
 			fn pr(this: &ExprTree, s: &mut String, p: &str, cp: &str) {
 				match this {
 					ExprTree::Leaf(v) => {
@@ -180,8 +185,92 @@ impl std::fmt::Display for ExprTree {
 			let mut s = String::new();
 			pr(self, &mut s, "", "");
 			f.write_str(s.as_str())
+
+		} else {
+
+			fn show_trunk(t: &Trunk, s: &mut String) {
+				match &t.prev {
+					None => { }
+					Some(prev) => {
+						show_trunk(&prev, s);
+						s.push_str(format!("{}", t.str.as_str()).as_str());
+					}
+				}
+			}
+
+			fn pt(root: &ExprTree, prev: &mut Option<Box<Trunk>>, is_right: bool, s: &mut String) {
+				match root {
+					ExprTree::Branch(Branch { op, left, right }) => {
+						let prev_str = "    ";
+
+						let mut trunk = Trunk {  str: prev_str.into() ,prev: prev.clone()};
+						let mut new_option_trunk = Some(Box::new(trunk.clone()));
+
+						pt(&right, &mut new_option_trunk, true, s);
+						let (ts, ps) = match prev {
+							None => ("────", "    "),
+							Some(p) => {
+								if is_right {
+									("┌───", "   |")
+								} else {
+									p.str = "    ".to_string();
+									("└───", "   |")
+								}
+							}
+						};
+						trunk.str = ts.into();
+
+
+						show_trunk(&trunk, s);
+						s.push_str(format!("{}\n", op).as_str());
+
+						if let Some(p) = prev {
+							p.str = ps.to_string();
+						}
+
+						trunk.str = "   |".into();
+						pt(&left, &mut new_option_trunk, false, s);
+
+					}
+					ExprTree::Leaf(v) => {
+						let prev_str = "    ";
+						let input_prev = prev.clone();
+						let mut trunk = Trunk {  str: prev_str.into() ,prev: prev.clone()};
+						let (ts, ps) = match input_prev {
+							None => ("────", "    "),
+							Some(_) => {
+								if is_right {
+									("┌───", "   |")
+								} else {
+									("└───", "   |")
+								}
+							}
+						};
+						trunk.str = ts.into();
+
+						show_trunk(&trunk, s);
+
+						s.push_str(format!("{}\n", v).as_str());
+
+						if let Some(mut trunk) = input_prev {
+							trunk.str = ps.to_string();
+						}
+						trunk.str = "   |".into();
+					}
+				}
+			}
+			let mut s = String::new();
+			let mut prev = None;
+			pt(self, &mut prev, false, &mut s);
+			f.write_str(s.as_str())
 		}
 	}
+}
+
+#[derive(Clone, )]
+struct Trunk {
+	str: String,
+	prev: Option<Box<Trunk>>,
 }
 
 #[test]
