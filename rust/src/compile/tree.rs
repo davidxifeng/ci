@@ -164,77 +164,9 @@ impl ExprTree {
 	}
 }
 
-struct Trunk<'a> {
-	str: String,
-	prev: Option<Box<&'a Trunk<'a>>>,
-}
-
 impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if f.alternate() {
-			// ref: https://www.techiedelight.com/c-program-print-binary-tree/
-			fn print_trunk(t: &Trunk, s: &mut String) {
-				match &t.prev {
-					None => {
-						s.push_str(&style(t.str.as_str()).dim().to_string());
-					}
-					Some(prev) => {
-						print_trunk(prev, s);
-						s.push_str(&style(t.str.as_str()).dim().to_string());
-					}
-				}
-			}
-
-			fn pr2(this: &ExprTree, s: &mut String, prev: &Trunk, is_right: bool) {
-				match this {
-					ExprTree::Leaf(v) => {
-						let prefix_str = if is_right { "┌───" } else { "└───" };
-
-						let curr = Trunk { str: prefix_str.to_string(), prev: Some(Box::new(prev)) };
-
-						print_trunk(&curr, s);
-						s.push_str(format!("{}\n", style(v.to_string().as_str()).green()).as_str());
-					}
-					ExprTree::Branch(Branch { op, left, right }) => {
-						let prefix_str;
-						if is_right || prev.str == "" {
-							prefix_str = "    ";
-						} else {
-							prefix_str = "│   ";
-						}
-
-						let mut curr = Trunk { str: prefix_str.to_string(), prev: Some(Box::new(prev)) };
-
-						pr2(right, s, &mut curr, true);
-
-						if &prev.str == "" {
-							curr.str = "────".into();
-						} else if is_right {
-							curr.str = "┌───".into();
-						} else {
-							curr.str = "└───".into();
-						}
-
-						print_trunk(&curr, s);
-						s.push_str(format!("{}\n", style(op.to_string().as_str()).bold().blue()).as_str());
-
-						if is_right {
-							curr.str = "│   ".into();
-						} else {
-							curr.str = "    ".into();
-						}
-
-						pr2(left, s, &mut curr, false);
-					}
-				}
-			}
-
-			let mut s = String::new();
-			let mut prev = Trunk { str: "".into(), prev: None };
-			pr2(self, &mut s, &mut prev, false);
-			f.write_str(s.as_str())
-
-		} else {
 			fn pr(this: &ExprTree, s: &mut String, p: &str, cp: &str) {
 				match this {
 					ExprTree::Leaf(v) => {
@@ -253,6 +185,41 @@ impl std::fmt::Display for ExprTree {
 
 			let mut s = String::new();
 			pr(self, &mut s, "", "");
+			f.write_str(s.as_str())
+		} else {
+			// ref: https://www.techiedelight.com/c-program-print-binary-tree/
+			fn pr2(this: &ExprTree, s: &mut String, prev: &str, is_right: bool) {
+				match this {
+					ExprTree::Leaf(v) => {
+						s.push_str(&style(prev).dim().to_string());
+						s.push_str(&style(if is_right { "┌───" } else { "└───" }).dim().to_string());
+						s.push_str(&style(v.to_string().as_str()).green().to_string());
+						s.push('\n');
+					}
+					ExprTree::Branch(Branch { op, left, right }) => {
+						let prefix_str = if is_right || prev.is_empty() { "    " } else { "│   " };
+						pr2(right, s, &(prev.to_owned() + prefix_str), true);
+
+						let op_prefix = if prev.is_empty() {
+							"─── "
+						} else if is_right {
+							"┌── "
+						} else {
+							"└── "
+						};
+
+						s.push_str(&style(prev).dim().to_string());
+						s.push_str(&style(op_prefix).dim().to_string());
+						s.push_str(&style(op.to_string().as_str()).bold().blue().to_string());
+						s.push('\n');
+
+						pr2(left, s, &(prev.to_owned() + if is_right { "│   " } else { "    " }), false);
+					}
+				}
+			}
+
+			let mut s = String::new();
+			pr2(self, &mut s, "", false);
 			f.write_str(s.as_str())
 		}
 	}
