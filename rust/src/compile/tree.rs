@@ -228,6 +228,7 @@ impl std::fmt::Display for ExprTree {
 #[test]
 fn test_expr_tree() {
 	let tree = ExprTree::tree(Punct::Add, ExprTree::branch(Punct::Mul, 1, 2), ExprTree::leaf(3));
+	tree.print_by_level();
 	tree.print(&VisitOrder::Pre);
 	println!("─────");
 	tree.print(&VisitOrder::In);
