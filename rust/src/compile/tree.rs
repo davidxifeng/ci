@@ -1,7 +1,6 @@
-use std::{collections::VecDeque, rc::Rc};
+use std::collections::VecDeque;
 
 use console::style;
-use serde::de::IntoDeserializer;
 
 use crate::compile::token::{Const, Token};
 
@@ -165,12 +164,15 @@ impl ExprTree {
 	}
 }
 
+struct Trunk<'a> {
+	str: String,
+	prev: Option<Box<&'a Trunk<'a>>>,
+}
+
 impl std::fmt::Display for ExprTree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if f.alternate() {
-			// TODO trunk的功能如何使用rust表示
 			// ref: https://www.techiedelight.com/c-program-print-binary-tree/
-
 			fn print_trunk(t: &Trunk, s: &mut String) {
 				match &t.prev {
 					None => {
@@ -183,7 +185,7 @@ impl std::fmt::Display for ExprTree {
 				}
 			}
 
-			fn pr2(this: &ExprTree, s: &mut String, prev: &Trunk, pp: &mut Option<Trunk>, is_right: bool) {
+			fn pr2(this: &ExprTree, s: &mut String, prev: &Trunk, is_right: bool) {
 				match this {
 					ExprTree::Leaf(v) => {
 						let prefix_str = if is_right { "┌───" } else { "└───" };
@@ -194,41 +196,44 @@ impl std::fmt::Display for ExprTree {
 						s.push_str(format!("{}\n", style(v.to_string().as_str()).green()).as_str());
 					}
 					ExprTree::Branch(Branch { op, left, right }) => {
-						// let mut prefix_str = "│   ";
-						let mut prefix_str = " xx ";
+						let prefix_str;
+						if is_right || prev.str == "" {
+							prefix_str = "    ";
+						} else {
+							prefix_str = "│   ";
+						}
 
 						let mut curr = Trunk { str: prefix_str.to_string(), prev: Some(Box::new(prev)) };
-						//  "┌─R─" "└─L─" "│   "
 
-						pr2(right, s, &mut curr, pp, true);
+						pr2(right, s, &mut curr, true);
 
 						if &prev.str == "" {
 							curr.str = "────".into();
 						} else if is_right {
 							curr.str = "┌───".into();
-							prefix_str = "   │";
 						} else {
 							curr.str = "└───".into();
-							// (*prev).str = "    ".into();
-							// prev.str = "zzzz".into();
 						}
 
 						print_trunk(&curr, s);
 						s.push_str(format!("{}\n", style(op.to_string().as_str()).bold().blue()).as_str());
 
-						// prev.str = prefix_str.into();
-						curr.str = " yy ".into();
+						if is_right {
+							curr.str = "│   ".into();
+						} else {
+							curr.str = "    ".into();
+						}
 
-						pr2(left, s, &mut curr, pp, false);
+						pr2(left, s, &mut curr, false);
 					}
 				}
 			}
 
 			let mut s = String::new();
 			let mut prev = Trunk { str: "".into(), prev: None };
-			let mut op = None;
-			pr2(self, &mut s, &mut prev, &mut op, false);
+			pr2(self, &mut s, &mut prev, false);
 			f.write_str(s.as_str())
+
 		} else {
 			fn pr(this: &ExprTree, s: &mut String, p: &str, cp: &str) {
 				match this {
@@ -251,11 +256,6 @@ impl std::fmt::Display for ExprTree {
 			f.write_str(s.as_str())
 		}
 	}
-}
-
-struct Trunk<'a> {
-	str: String,
-	prev: Option<Box<&'a Trunk<'a>>>,
 }
 
 #[test]

@@ -407,8 +407,12 @@ pub fn build_tree(input: &str) -> EvalResultTree {
 
 #[test]
 fn test_tree() {
-	let tree = build_tree("1 + 2 + 3 * 4 + 5");
-	// let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
+	fn tp(i: &str) {
+		let tree = build_tree(i).unwrap();
+		println!("------\n{}------\n{:#}", tree, tree);
+	}
+
+	let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
 	match tree {
 		Ok(tree) => {
 			tree.print_by_level();
@@ -417,16 +421,13 @@ fn test_tree() {
 		Err(err) => println!("err: {}", err),
 	}
 
-	let tree = build_tree("1 + 2 * 3 ^ 4").unwrap();
-	println!("------\n{}------\n{:#}", tree, tree);
-
-	let tree = build_tree("1 + 2 + 3 + 4").unwrap();
-	println!("------\n{}------\n{:#}", tree, tree);
-
-	let tree = build_tree("1 + 2 + 3").unwrap();
-	println!("------\n{}------\n{:#}", tree, tree);
-
-	let tree = build_tree("1 + 2").unwrap();
-	println!("------\n{}------\n{:#}", tree, tree);
-
+	tp("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
+	tp("2 ^ 3 ^ 2");
+	tp("2 * 2 ^ 3 ^ 2");
+	tp("2 * 2 ^ 3 ^ 2 * 2 / 2 + 1 * 2 ^ 2 * 20");
+	tp("1 + 2 + 3 * 4 + 5");
+	tp("1 + 2 + 3 + 4");
+	tp("1 + 2 + 3");
+	tp("1 ^ 2 ^ 3");
+	tp("1 * 2 + 3 * 4 + 5 * 6");
 }
