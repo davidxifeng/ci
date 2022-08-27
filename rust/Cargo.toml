@@ -11,6 +11,7 @@ edition = "2021"
 clap = { version = "3.2.16", features = ["derive"] }
 console = "0.15.1"
 dialoguer = "0.10.2"
+grid = "0.8.1"
 http = "0.2.8"
 indicatif = { version = "0.17.0", features = ["in_memory", "improved_unicode"] }
 itertools = "0.10.3"
