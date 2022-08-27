@@ -407,12 +407,26 @@ pub fn build_tree(input: &str) -> EvalResultTree {
 
 #[test]
 fn test_tree() {
-	let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
+	let tree = build_tree("1 + 2 + 3 * 4 + 5");
+	// let tree = build_tree("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
 	match tree {
 		Ok(tree) => {
 			tree.print_by_level();
-			println!("tree is \n{}eval to {}", tree, tree.eval())
+			println!("tree is \n{}------\n{:#}eval to {}", tree, tree, tree.eval())
 		}
 		Err(err) => println!("err: {}", err),
 	}
+
+	let tree = build_tree("1 + 2 * 3 ^ 4").unwrap();
+	println!("------\n{}------\n{:#}", tree, tree);
+
+	let tree = build_tree("1 + 2 + 3 + 4").unwrap();
+	println!("------\n{}------\n{:#}", tree, tree);
+
+	let tree = build_tree("1 + 2 + 3").unwrap();
+	println!("------\n{}------\n{:#}", tree, tree);
+
+	let tree = build_tree("1 + 2").unwrap();
+	println!("------\n{}------\n{:#}", tree, tree);
+
 }
