@@ -1,7 +1,6 @@
-use std::{collections::VecDeque, fmt::Write, i64::MAX};
+use std::collections::VecDeque;
 
 use console::style;
-use grid::Grid;
 
 use crate::compile::token::{Const, Token};
 
@@ -189,17 +188,10 @@ impl std::fmt::Display for ExprTree {
 			f.write_str(s.as_str())
 		} else {
 			// ref: https://www.techiedelight.com/c-program-print-binary-tree/
-			fn pr2(this: &ExprTree, s: &mut String, prev: &str, is_right: bool, g: &mut Vec<String>) {
+			fn pr2(this: &ExprTree, s: &mut String, prev: &str, is_right: bool) {
 				match this {
 					ExprTree::Leaf(v) => {
 						let prefix = if is_right { "┌───" } else { "└───" };
-
-						let mut line = String::new();
-						line.push_str(prev);
-						line.push_str(prefix);
-						line.push_str(v.to_string().as_str());
-						g.push(line);
-
 						s.push_str(&style(prev).dim().to_string());
 						s.push_str(&style(prefix).dim().to_string());
 						s.push_str(&style(v.to_string().as_str()).green().to_string());
@@ -207,7 +199,7 @@ impl std::fmt::Display for ExprTree {
 					}
 					ExprTree::Branch(Branch { op, left, right }) => {
 						let prefix_str = if is_right || prev.is_empty() { "    " } else { "│   " };
-						pr2(right, s, &(prev.to_owned() + prefix_str), true, g);
+						pr2(right, s, &(prev.to_owned() + prefix_str), true);
 
 						let op_prefix = if prev.is_empty() {
 							"────"
@@ -217,62 +209,18 @@ impl std::fmt::Display for ExprTree {
 							"└───"
 						};
 
-						let mut line = String::new();
-						line.push_str(prev);
-						line.push_str(op_prefix);
-						line.push_str(op.to_string().as_str());
-						g.push(line);
-
 						s.push_str(&style(prev).dim().to_string());
 						s.push_str(&style(op_prefix).dim().to_string());
 						s.push_str(&style(op.to_string().as_str()).bold().blue().to_string());
 						s.push('\n');
 
-						pr2(left, s, &(prev.to_owned() + if is_right { "│   " } else { "    " }), false, g);
+						pr2(left, s, &(prev.to_owned() + if is_right { "│   " } else { "    " }), false);
 					}
 				}
 			}
 			let mut s = String::new();
-			let mut g: Vec<String> = vec![];
-			pr2(self, &mut s, "", false, &mut g);
-			let mut x = 0;
-			let mut y = 0;
-			for line in g.iter() {
-				x += 1;
-
-				let lc = line.chars().count();
-				y = if lc > y { lc } else { y };
-			}
-
-			let mut grid: Grid<char> = Grid::new(x, y);
-			grid.fill(' ');
-			for (i, line) in g.iter().enumerate() {
-				for (j, c) in line.chars().enumerate() {
-					if let Some(v) = grid.get_mut(i, j) {
-						if c == '─' {
-							*v = '│';
-						} else if c == '│' {
-							*v = '─';
-						} else if c == '└' {
-							*v = '┐';
-						} else {
-							*v = c;
-						}
-					}
-				}
-			}
-			let grid = grid.transpose();
-			let mut ns = String::new();
-			let mut i = 0;
-			while i < grid.rows() {
-				let line = grid.iter_row(i);
-				ns.push_str(&(line.collect::<String>()));
-				ns.push('\n');
-				i += 1;
-			}
-
-			f.write_str(s.as_str())?;
-			f.write_str(ns.as_str())
+			pr2(self, &mut s, "", false);
+			f.write_str(s.as_str())
 		}
 	}
 }
