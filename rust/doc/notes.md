@@ -1,18 +1,28 @@
 # 笔记
 
-编译器中的树:
-
+## 编译器中的树:
 
 * Binary expression tree
 
-![表达式树](https://upload.wikimedia.org/wikipedia/commons/9/98/Exp-tree-ex-11.svg)
+```
+            ┌───5
+        ┌───^
+        │   └───4
+    ┌───*
+    │   └───3
+────+
+    │   ┌───2
+    └───*
+        └───1
+```
 
 * 解析树
-
 * 抽象语法树 AST
 
 
 ## C语言中的表达式 (6.5 Expressions)
+
+### overview
 
 An expression is a sequence of operators and operands that specifies computation of a
 value, or that designates an object or a function, or that generates side effects, or that
@@ -46,11 +56,10 @@ Furthermore, the prior value shall be read only to determine the value to be sto
 >	a[i] = i;
 >	```
 
-
-
 The grouping of operators and operands is indicated by the syntax.
 
-运算的分组由语法指定. (语法指定了运算符在表达式求值中的优先级. 以及左结合 右结合等内容)
+运算的分组由语法指定. (通过语法指定了运算符在表达式求值中的优先级. 以及左结合 右结合等内容,
+实际上C规范中确实没有运算符优先级的定义,而是通过语法确定的.)
 
 Except as specified later (for the function-call (), &&, ||, ?:, and comma operators),
 the order of evaluation of subexpressions and the order in which side effects

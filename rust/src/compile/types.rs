@@ -1,4 +1,4 @@
-use super::token::{Keyword, Const};
+use super::token::{Const, Keyword, Punct};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CType {
@@ -55,7 +55,30 @@ pub struct ReturnStmt {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
 	Const(Const),
-	// BinOp(BinOp)
+	CondExpr(CondExpr), // BinOp(BinOp)
+	AssignExpr(AssignExpr),
+	CommaExpr(CommaExpr), // BinOp(BinOp)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CondExpr {
+	cond: Box<Expr>,
+	left: Box<Expr>, // then, expr
+	right: Box<Expr> // else, conditional expr
+}
+// C语法中, x ? a : b = 2 被解释为:
+// (x ? a : b) = 2, 而C++中则为 (x ? a : (b = 2)), 更最小惊讶.
+// 条件表达式并不是左值,所以C中为非法语句.
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AssignExpr {
+	left: Box<Expr>,
+	assign: Punct, // = += -= *= ...
+	right: Box<Expr>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommaExpr {
+	pub expr: Vec<Expr>,
 }
 
 // #[derive(Debug, Clone, PartialEq, Eq)]

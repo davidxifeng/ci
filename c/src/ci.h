@@ -20,6 +20,9 @@ enum Token {
 	Char, Else, Enum, If, Int, Return, While,
 
 	// operators
+	// 通过语法指定优先级
+	// 参考: https://en.cppreference.com/w/c/language/operator_precedence
+	// 和C语言规范
 	Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge,
 	Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
 };

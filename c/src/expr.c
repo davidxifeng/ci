@@ -11,6 +11,7 @@ extern enum Token tk;
 extern int loc; // local variable offset
 extern int ty;  // current expression type
 
+// 解析单个表达式
 void parse_expr() {
 	int t, *d;
 	switch ((int)tk) {
@@ -132,7 +133,7 @@ void parse_expr() {
 			ty = ty + PTR;
 			break;
 		case '!':
-			// 位运算 取反
+			// 逻辑运算 Not
 			next();
 			expr(Inc); *++e = PSH;
 			*++e = IMM; *++e = 0;
@@ -140,7 +141,7 @@ void parse_expr() {
 			ty = INT;
 			break;
 		case '~':
-			// 位运算 异或
+			// 位运算 取反; 计算方法: 与 0xffff 进行异或运算,刚好就是取反
 			next();
 			expr(Inc); *++e = PSH;
 			*++e = IMM; *++e = -1;
@@ -186,11 +187,14 @@ void parse_expr() {
 	}
 }
 
+// 解析优先级 >= lev的表达式
 void expr(int lev) {
 	int t, *d;
 
+	// 解析当前表达式
 	parse_expr();
 
+	// 如果接下来的优先级比当前表达式高,继续解析.
 	// "precedence climbing" or "Top Down Operator Precedence" method
 	while (tk >= lev) {
 		t = ty;
