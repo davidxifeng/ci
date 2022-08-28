@@ -55,7 +55,12 @@ pub struct ReturnStmt {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
 	Const(Const),
+	// BinOp(BinOp)
 }
+
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub struct BinOp {
+// }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Declaration {
