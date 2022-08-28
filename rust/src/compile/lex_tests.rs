@@ -1,5 +1,8 @@
-#[cfg(test)]
-use super::*;
+use crate::compile::{
+	errors::LexError,
+	lex::TokenApi,
+	token::{Const, Keyword, Punct, Token},
+};
 
 #[test]
 fn lex_keyword() {
@@ -24,8 +27,11 @@ fn identifier() {
 
 #[test]
 fn const_value() {
-	assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::Const(Const::Integer(123))]));
-	assert_eq!(TokenApi::parse_all("1 23"), Ok(vec![Token::Const(Const::Integer(1)), Token::Const(Const::Integer(23))]));
+	assert_eq!(TokenApi::parse_all("123"), Ok(vec![Token::Const(Const::Integer("123".to_owned()))]));
+	assert_eq!(
+		TokenApi::parse_all("1 23"),
+		Ok(vec![Token::Const(Const::Integer("1".to_owned())), Token::Const(Const::Integer("23".to_owned()))])
+	);
 }
 #[test]
 fn string_char() {
@@ -39,7 +45,7 @@ fn string_char() {
 	assert_eq!(
 		TokenApi::parse_all(r##"123 fn "I am a C string""##),
 		Ok(vec![
-			Token::Const(Const::Integer(123)),
+			Token::Const(Const::Integer("123".to_owned())),
 			Token::Id("fn".into()),
 			Token::StringLiteral("I am a C string".into())
 		])
@@ -64,19 +70,19 @@ fn comment_preprocessor() {
 		c
 		"##
 		),
-		Ok(vec![Token::Id("x".into()), Token::Const(Const::Integer(123)), Token::Id("c".into()),])
+		Ok(vec![Token::Id("x".into()), Token::Const(Const::Integer("123".to_owned())), Token::Id("c".into()),])
 	);
 	assert_eq!(TokenApi::parse_all(r##"#include <stdio.h>"##), Ok(vec![]));
-	assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::Const(Const::Integer(1))]));
+	assert_eq!(TokenApi::parse_all(r##"1#include <stdio.h>"##), Ok(vec![Token::Const(Const::Integer("1".to_owned()))]));
 	assert_eq!(TokenApi::parse_all(r##"// hi"##), Ok(vec![]));
-	assert_eq!(TokenApi::parse_all(r##"1// hi"##), Ok(vec![Token::Const("1".into())]));
+	assert_eq!(TokenApi::parse_all(r##"1// hi"##), Ok(vec![Token::Const(Const::Integer("1".to_owned()))]));
 	assert_eq!(
 		TokenApi::parse_all(
 			r##"1// hi
 		2
 		"##
 		),
-		Ok(vec![Token::Const("1".into()), Token::Const("2".into())])
+		Ok(vec![Token::Const(Const::Integer("1".to_owned())), Token::Const(Const::Integer("2".to_owned()))])
 	);
 }
 
@@ -84,9 +90,13 @@ fn comment_preprocessor() {
 fn punct_and_ordering() {
 	assert_eq!(
 		TokenApi::parse_all(r##"1/2"##),
-		Ok(vec![Token::Const("1".into()), Token::Punct(Punct::Div), Token::Const("2".into())])
+		Ok(vec![
+			Token::Const(Const::Integer("1".to_owned())),
+			Token::Punct(Punct::Div),
+			Token::Const(Const::Integer("2".to_owned()))
+		])
 	);
-	assert_eq!(TokenApi::parse_all(r##"1//2"##), Ok(vec![Token::Const("1".into())]));
+	assert_eq!(TokenApi::parse_all(r##"1//2"##), Ok(vec![Token::Const(Const::Integer("1".to_owned()))]));
 	assert_eq!(TokenApi::parse_all("="), Ok(vec![Token::Punct(Punct::Assign)]));
 	assert_eq!(TokenApi::parse_all("=="), Ok(vec![Token::Punct(Punct::Eq)]));
 	assert_eq!(TokenApi::parse_all("==="), Ok(vec![Token::Punct(Punct::Eq), Token::Punct(Punct::Assign)]));
@@ -117,8 +127,14 @@ fn punct_and_ordering() {
 	assert_eq!(TokenApi::parse_all(">>"), Ok(vec![Token::Punct(Punct::Shr)]));
 
 	assert_eq!(TokenApi::parse_all(">=<="), Ok(vec![Token::Punct(Punct::Ge), Token::Punct(Punct::Le)]));
-	assert_eq!(TokenApi::parse_all(">=1"), Ok(vec![Token::Punct(Punct::Ge), Token::Const("1".into())]));
-	assert_eq!(TokenApi::parse_all(">1"), Ok(vec![Token::Punct(Punct::Gt), Token::Const("1".into())]));
+	assert_eq!(
+		TokenApi::parse_all(">=1"),
+		Ok(vec![Token::Punct(Punct::Ge), Token::Const(Const::Integer("1".to_owned()))])
+	);
+	assert_eq!(
+		TokenApi::parse_all(">1"),
+		Ok(vec![Token::Punct(Punct::Gt), Token::Const(Const::Integer("1".to_owned()))])
+	);
 
 	assert_eq!(TokenApi::parse_all("|"), Ok(vec![Token::Punct(Punct::Or)]));
 	assert_eq!(TokenApi::parse_all("||"), Ok(vec![Token::Punct(Punct::Lor)]));

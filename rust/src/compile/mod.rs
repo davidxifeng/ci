@@ -5,8 +5,10 @@ pub mod types;
 pub mod token;
 pub mod tree;
 
-#[cfg(test)]
-mod tests;
 pub mod lex;
 pub mod token_impl;
+#[cfg(test)]
+mod lex_tests;
 
+#[cfg(test)]
+mod tests;

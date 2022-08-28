@@ -108,8 +108,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 		}
 		SubCommand::Parse { file } => {
 			let src = fs::read_to_string(file)?;
-
-			println!("{:#?}", compile::parse::t("1 + 2 * 3 ^ 2 + 2 * 6"));
 			println!("{}\n\n\n", src);
 			let r = compile(src.as_str())?;
 			println!("{}", r);

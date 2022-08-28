@@ -73,11 +73,11 @@ pub enum Punct {
 	Tilde,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Const {
 	#[default]
 	Empty,
-	Integer(i128), // TODO 这里还是保持原样的str比较好
+	Integer(String),
 	Character(char),
 }
 

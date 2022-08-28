@@ -129,7 +129,7 @@ impl ExprTree {
 	pub fn eval_stack(&self) -> i64 {
 		fn po(this: &ExprTree, stack: &mut Vec<Token>) {
 			match this {
-				ExprTree::Leaf(v) => stack.push(Token::Const(Const::Integer(*v as i128))),
+				ExprTree::Leaf(v) => stack.push(Token::Const(Const::Integer(v.to_string()))),
 				ExprTree::Branch(Branch { op, left, right }) => {
 					po(left, stack);
 					po(right, stack);
@@ -143,7 +143,7 @@ impl ExprTree {
 		let mut stack = VecDeque::<i64>::new();
 		for token in list.iter() {
 			match token {
-				Token::Const(Const::Integer(v)) => stack.push_back(*v as i64),
+				Token::Const(Const::Integer(v)) => stack.push_back(v.parse::<i64>().unwrap()),
 				Token::Punct(p) => {
 					let lhs = stack.pop_back().unwrap();
 					let rhs = stack.pop_back().unwrap();

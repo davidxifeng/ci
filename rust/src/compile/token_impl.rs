@@ -1,6 +1,9 @@
 use std::fmt::{Formatter, Write};
 
-use super::{token::{Token, Keyword, Punct, Const}, errors::ParseError};
+use super::{
+	errors::ParseError,
+	token::{Const, Keyword, Punct, Token},
+};
 
 impl Token {
 	pub fn try_basetype_keyword(&self) -> Option<Keyword> {
@@ -112,20 +115,7 @@ impl std::fmt::Display for Const {
 				}
 				f.write_char('\'')
 			}
-			Self::Integer(i) => f.write_str(i.to_string().as_str()),
-		}
-	}
-}
-
-impl std::convert::From<&str> for Const {
-	fn from(str: &str) -> Self {
-		if str.is_empty() {
-			Self::Empty
-		} else {
-			match str::parse(str) {
-				Ok(i) => Self::Integer(i),
-				Err(_) => Self::Character(str.chars().next().unwrap_or('\0')),
-			}
+			Self::Integer(i) => f.write_str(i.as_str()),
 		}
 	}
 }
@@ -151,5 +141,3 @@ fn simple_unescape(c: &char) -> Option<&'static str> {
 		_ => None,
 	}
 }
-
-

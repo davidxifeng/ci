@@ -70,14 +70,14 @@ fn t0() {
 			Declaration::Variable(VariableDeclaration {
 				ctype: CType::BaseType(Keyword::Char),
 				list: vec![
-					Declarator { name: "a".into(), value: ("A").into() },
-					Declarator { name: "b".into(), value: ("").into() },
-					Declarator { name: "c".into(), value: ("C").into() },
+					Declarator { name: "a".into(), value: Const::Character('A') },
+					Declarator { name: "b".into(), value: Const::Empty },
+					Declarator { name: "c".into(), value: Const::Character('C') },
 				]
 			}),
 			Declaration::Variable(VariableDeclaration {
 				ctype: CType::BaseType(Keyword::Int),
-				list: vec![Declarator { name: "i".into(), value: "1".into() }]
+				list: vec![Declarator { name: "i".into(), value: Const::Integer("1".to_string()) }]
 			}),
 		]
 		.into())
@@ -119,7 +119,7 @@ fn t1() {
 				Parameter { ctype: CType::BaseType(Keyword::Int), name: "i".into() }
 			],
 			stmts: vec![
-				Statement::Return(ReturnStmt { expr: Expr::Const(Const::Integer(1)) }),
+				Statement::Return(ReturnStmt { expr: Expr::Const(Const::Integer("1".to_owned())) }),
 				Statement::Return(ReturnStmt { expr: Expr::Const(Const::Character('a')) })
 			]
 		}),]

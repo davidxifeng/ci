@@ -41,11 +41,7 @@ impl TokenApi {
 		while let Some(nc) = iter.peeking_take_while(is_digit).next() {
 			str.push(nc);
 		}
-		if let Ok(n) = str.parse() {
-			Some(Ok(Token::Const(Const::Integer(n))))
-		} else {
-			Some(Err(LexError::ConstOverflow))
-		}
+		Some(Ok(Token::Const(Const::Integer(str))))
 	}
 
 	fn escape(iter: &mut Chars) -> Result<char, LexError> {
