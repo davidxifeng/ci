@@ -146,9 +146,10 @@ parenthesized expression 也是主表达式. 类型和值与未括起来的表�
 >		postfix-expression -> identifier
 >		postfix-expression ++
 >		postfix-expression --
->		( type-name ) { initializer-list } // 符合字面量
+>		( type-name ) { initializer-list } // 复合字面量
 >		( type-name ) { initializer-list , }
->		argument-expression-list:
+>
+>	argument-expression-list:
 >		assignment-expression
 >		argument-expression-list , assignment-expression
 >	```

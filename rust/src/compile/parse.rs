@@ -12,7 +12,9 @@ use super::{
 	types::*,
 };
 
-fn take_next_token(iter: &mut Iter<Token>) -> Result<Token, ParseError> {
+type TokenIter = dyn Iterator<Item = Token>;
+
+fn take_next_token<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<Token, ParseError> {
 	if let Some(tk) = iter.next() {
 		Ok(tk.clone())
 	} else {
@@ -20,7 +22,7 @@ fn take_next_token(iter: &mut Iter<Token>) -> Result<Token, ParseError> {
 	}
 }
 
-fn expect_identifier(iter: &mut Iter<Token>) -> Result<String, ParseError> {
+fn expect_identifier<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<String, ParseError> {
 	if let Token::Id(id) = take_next_token(iter)? {
 		Ok(id)
 	} else {
@@ -28,7 +30,7 @@ fn expect_identifier(iter: &mut Iter<Token>) -> Result<String, ParseError> {
 	}
 }
 
-fn expect_punct(iter: &mut Iter<Token>, l: &[Punct]) -> Result<Punct, ParseError> {
+fn expect_punct<'a>(iter: &mut impl Iterator<Item = &'a Token>, l: &[Punct]) -> Result<Punct, ParseError> {
 	if let Token::Punct(punct) = take_next_token(iter)? {
 		if l.contains(&punct) {
 			Ok(punct)
@@ -43,7 +45,7 @@ fn expect_punct(iter: &mut Iter<Token>, l: &[Punct]) -> Result<Punct, ParseError
 	}
 }
 
-fn expect_const(iter: &mut Iter<Token>) -> Result<Const, ParseError> {
+fn expect_const<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<Const, ParseError> {
 	match take_next_token(iter)? {
 		Token::Const(c) => Ok(c),
 		Token::StringLiteral(_) => Err(ParseError::TypeMismatch),
@@ -51,19 +53,23 @@ fn expect_const(iter: &mut Iter<Token>) -> Result<Const, ParseError> {
 	}
 }
 
-fn parse_stmt(iter: &mut Iter<Token>, ntk: Token) -> Result<Statement, ParseError> {
+fn parse_stmt<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Statement, ParseError> {
 	match ntk {
 		Token::Keyword(Keyword::Return) => {
 			let cst = expect_const(iter)?;
 			expect_punct(iter, &[Punct::Semicolon])?;
-			Ok(Statement::Return(ReturnStmt { expr: Expr::Const(cst) }))
+			Ok(Statement::ReturnStmt(Expr::Const(cst)))
 		}
 		// TODO
 		_ => Err(ParseError::TypeMismatch),
 	}
 }
 
-fn parse_fn_definition(iter: &mut Iter<Token>, keyword: Keyword, id_name: String) -> Result<Declaration, ParseError> {
+fn parse_fn_definition<'a>(
+	iter: &mut impl Iterator<Item = &'a Token>,
+	keyword: Keyword,
+	id_name: String,
+) -> Result<Declaration, ParseError> {
 	// int fn (int x, char c) {}
 	// int fn () {}
 	//        ^
@@ -116,8 +122,8 @@ fn parse_fn_definition(iter: &mut Iter<Token>, keyword: Keyword, id_name: String
 	Ok(Declaration::Function(FunctionDefinition { ctype: (CType::BaseType(keyword)), name: (id_name), params, stmts }))
 }
 
-fn parse_variable_definition(
-	iter: &mut Iter<Token>,
+fn parse_variable_definition<'a>(
+	iter: &mut impl Iterator<Item = &'a Token>,
 	keyword: Keyword,
 	id_name: String,
 	punct: Punct,
@@ -173,7 +179,7 @@ fn parse_variable_definition(
 }
 
 /// 解析top level 全局变量声明, 函数定义
-fn parse_declaration(iter: &mut Iter<Token>, tk: &Token) -> Result<Declaration, ParseError> {
+fn parse_declaration<'a>(iter: &mut impl Iterator<Item = &'a Token>, tk: &Token) -> Result<Declaration, ParseError> {
 	// 1. 函数定义 变量声明共通部分: 解析类型
 	// 2. 解析标识符(包括* 指针)
 	// 3. 判断是变量定义还是函数声明,分开处理
@@ -259,11 +265,8 @@ fn op_info(op: &Punct) -> i8 {
 	}
 }
 
-
-
 #[test]
-fn test_eval() {
-}
+fn test_eval() {}
 
 type EvalResultTree = Result<ExprTree, ParseError>;
 

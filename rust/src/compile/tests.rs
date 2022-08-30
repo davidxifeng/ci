@@ -3,7 +3,7 @@ use std::{iter::Peekable, slice::Iter};
 use crate::compile::{
 	errors::*,
 	parse::*,
-	token::{Punct, Token, Const, Keyword},
+	token::{Const, Keyword, Punct, Token},
 	types::*,
 };
 
@@ -13,7 +13,6 @@ struct V<'a, VT> {
 }
 
 #[test]
-#[ignore]
 fn test_nc() {
 	let v = vec![Token::Punct(Punct::Add), Token::Punct(Punct::Sub), Token::Punct(Punct::Mul)];
 	let mut vi = v.iter().peekable();
@@ -119,8 +118,8 @@ fn t1() {
 				Parameter { ctype: CType::BaseType(Keyword::Int), name: "i".into() }
 			],
 			stmts: vec![
-				Statement::Return(ReturnStmt { expr: Expr::Const(Const::Integer("1".to_owned())) }),
-				Statement::Return(ReturnStmt { expr: Expr::Const(Const::Character('a')) })
+				Statement::ReturnStmt(Expr::Const(Const::Integer("1".to_owned()))),
+				Statement::ReturnStmt(Expr::Const(Const::Character('a')))
 			]
 		}),]
 		.into())

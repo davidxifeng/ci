@@ -44,27 +44,50 @@ pub struct Parameter {
 pub enum Statement {
 	#[default]
 	Empty,
-	Return(ReturnStmt),
+	ReturnStmt(Expr),
+	ExprStmt(Expr)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ReturnStmt {
-	pub expr: Expr,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
 	Const(Const),
-	CondExpr(CondExpr), // BinOp(BinOp)
+	StringLiteral(String),
+	Id(String),
+	SimplePostfix(PostfixOP),
+	UnaryOp(UnaryOp),
+	BinOp(BinOp),
+	CondExpr(CondExpr),
 	AssignExpr(AssignExpr),
-	CommaExpr(CommaExpr), // BinOp(BinOp)
+	CommaExpr(CommaExpr),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct PostfixOP {
+	op: Punct,
+	expr: Box<Expr>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnaryOp {
+	op: Punct,
+	expr: Box<Expr>
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BinOp {
+	left: Box<Expr>,
+	op: Punct,
+	right: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CondExpr {
 	cond: Box<Expr>,
-	left: Box<Expr>, // then, expr
-	right: Box<Expr> // else, conditional expr
+	left: Box<Expr>,  // then, expr
+	right: Box<Expr>, // else, conditional expr
 }
 // C语法中, x ? a : b = 2 被解释为:
 // (x ? a : b) = 2, 而C++中则为 (x ? a : (b = 2)), 更最小惊讶.
@@ -80,10 +103,6 @@ pub struct AssignExpr {
 pub struct CommaExpr {
 	pub expr: Vec<Expr>,
 }
-
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct BinOp {
-// }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Declaration {
