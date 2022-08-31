@@ -1,18 +1,12 @@
-use std::slice::Iter;
-
 use itertools::Itertools;
-
-use crate::*;
 
 use super::{
 	errors::*,
 	lex::TokenApi,
-	token::{Const, Keyword, Punct},
+	token::{Const, Keyword, Punct, Token},
 	tree::*,
 	types::*,
 };
-
-type TokenIter = dyn Iterator<Item = Token>;
 
 fn take_next_token<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<Token, ParseError> {
 	if let Some(tk) = iter.next() {
@@ -53,6 +47,15 @@ fn expect_const<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<Const,
 	}
 }
 
+
+fn single_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token, level: Punct) -> Result<Expr, ParseError> {
+	Ok(Expr::Id("hi".to_string()))
+}
+
+fn parse_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token, level: Punct) -> Result<Expr, ParseError>{
+	Ok(Expr::Id("hi".to_string()))
+}
+
 fn parse_stmt<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Statement, ParseError> {
 	match ntk {
 		Token::Keyword(Keyword::Return) => {
@@ -60,8 +63,14 @@ fn parse_stmt<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Res
 			expect_punct(iter, &[Punct::Semicolon])?;
 			Ok(Statement::ReturnStmt(Expr::Const(cst)))
 		}
-		// TODO
-		_ => Err(ParseError::TypeMismatch),
+		Token::Keyword(Keyword::If) => unimplemented!("if stmt"),
+		Token::Keyword(Keyword::While) => unimplemented!("while stmt"),
+		Token::Punct(Punct::BracesL) => unimplemented!("compound statement"),
+		// id, lookahead : => labeled stmt
+		_ => {
+			let expr = parse_expr(iter, ntk, Punct::Comma)?;
+			Ok(Statement::ExprStmt(expr))
+		}
 	}
 }
 
@@ -109,8 +118,8 @@ fn parse_fn_definition<'a>(
 
 	expect_punct(iter, &[Punct::BracesL])?;
 	let mut stmts = vec![];
-	// 解析语句列表
 
+	// 解析语句列表
 	while let Ok(ntk) = take_next_token(iter) {
 		if ntk == Token::Punct(Punct::BracesR) {
 			break;

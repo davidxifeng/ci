@@ -36,7 +36,7 @@ pub struct FunctionDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parameter {
-	pub ctype: CType,
+	pub ctype: CType, // TODO
 	pub name: String,
 }
 
@@ -112,5 +112,5 @@ pub enum Declaration {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DeclarationList {
-	pub(crate) list: Vec<Declaration>,
+	pub list: Vec<Declaration>,
 }

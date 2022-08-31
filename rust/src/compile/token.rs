@@ -7,7 +7,6 @@ pub enum Token {
 	Punct(Punct),
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Keyword {
 	Char,
@@ -18,12 +17,24 @@ pub enum Keyword {
 	Else,
 	While,
 	Return,
+
+	Goto,
+	Break,
+	Continue,
+	For,
+	Do,
+	Switch,
+	Case,
+	Default,
 }
 
 // Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Punct {
+
 	/// = 优先级顺序开始 这块的符号顺序表示优先级,ordering matters
+	/// ,
+	Comma,
 	Assign,
 	Cond,
 	Lor,
@@ -51,12 +62,11 @@ pub enum Punct {
 	/// [
 	BrakL,
 	/// 优先级顺序结束
+
 	/// !
 	Not,
 	/// ;
 	Semicolon,
-	/// ,
-	Comma,
 	/// (
 	ParentheseL,
 	/// )
@@ -80,4 +90,3 @@ pub enum Const {
 	Integer(String),
 	Character(char),
 }
-

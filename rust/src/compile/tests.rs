@@ -98,30 +98,46 @@ fn t0() {
 
 #[test]
 fn t1() {
-	assert_eq!(
-		compile("int id() {  }"),
-		Ok(vec![Declaration::Function(FunctionDefinition {
-			ctype: CType::BaseType(Keyword::Int),
-			name: "id".into(),
-			params: vec![],
-			stmts: vec![]
-		}),]
-		.into())
+	fn compile_test(input: &str, expected: Option<DeclarationList>) {
+		let r = compile(input);
+		match r {
+			Ok(d) => {
+				if let Some(expected) = expected {
+					assert_eq!(d, expected)
+				}
+				println!("{}", d)
+			}
+			Err(e) => println!("compile error: {}", e),
+		}
+	}
+	compile_test(
+		"int id() {  }",
+		Some(
+			vec![Declaration::Function(FunctionDefinition {
+				ctype: CType::BaseType(Keyword::Int),
+				name: "id".into(),
+				params: vec![],
+				stmts: vec![],
+			})]
+			.into(),
+		),
 	);
-	assert_eq!(
-		compile("int id(char c,int i) { return 1; return 'a'; }"),
-		Ok(vec![Declaration::Function(FunctionDefinition {
-			ctype: CType::BaseType(Keyword::Int),
-			name: "id".into(),
-			params: vec![
-				Parameter { ctype: CType::BaseType(Keyword::Char), name: "c".into() },
-				Parameter { ctype: CType::BaseType(Keyword::Int), name: "i".into() }
-			],
-			stmts: vec![
-				Statement::ReturnStmt(Expr::Const(Const::Integer("1".to_owned()))),
-				Statement::ReturnStmt(Expr::Const(Const::Character('a')))
-			]
-		}),]
-		.into())
+	compile_test(
+		"int id(char c,int i) { return 1; return 'a'; }",
+		Some(
+			vec![Declaration::Function(FunctionDefinition {
+				ctype: CType::BaseType(Keyword::Int),
+				name: "id".into(),
+				params: vec![
+					Parameter { ctype: CType::BaseType(Keyword::Char), name: "c".into() },
+					Parameter { ctype: CType::BaseType(Keyword::Int), name: "i".into() },
+				],
+				stmts: vec![
+					Statement::ReturnStmt(Expr::Const(Const::Integer("1".to_owned()))),
+					Statement::ReturnStmt(Expr::Const(Const::Character('a'))),
+				],
+			})]
+			.into(),
+		),
 	);
 }
