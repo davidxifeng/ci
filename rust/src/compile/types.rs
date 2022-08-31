@@ -63,31 +63,30 @@ pub enum Expr {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct PostfixOP {
-	op: Punct,
-	expr: Box<Expr>
+	pub op: Punct,
+	pub expr: Box<Expr>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnaryOp {
-	op: Punct,
-	expr: Box<Expr>
+	pub op: Punct,
+	pub expr: Box<Expr>
 }
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BinOp {
-	left: Box<Expr>,
-	op: Punct,
-	right: Box<Expr>,
+	pub left: Box<Expr>,
+	pub op: Punct,
+	pub right: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CondExpr {
-	cond: Box<Expr>,
-	left: Box<Expr>,  // then, expr
-	right: Box<Expr>, // else, conditional expr
+	pub cond: Box<Expr>,
+	pub left: Box<Expr>,  // then, expr
+	pub right: Box<Expr>, // else, conditional expr
 }
 // C语法中, x ? a : b = 2 被解释为:
 // (x ? a : b) = 2, 而C++中则为 (x ? a : (b = 2)), 更最小惊讶.
@@ -95,9 +94,9 @@ pub struct CondExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AssignExpr {
-	left: Box<Expr>,
-	assign: Punct, // = += -= *= ...
-	right: Box<Expr>,
+	pub left: Box<Expr>,
+	pub assign: Punct, // = += -= *= ...
+	pub right: Box<Expr>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommaExpr {

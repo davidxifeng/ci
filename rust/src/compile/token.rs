@@ -18,14 +18,14 @@ pub enum Keyword {
 	While,
 	Return,
 
-	Goto,
-	Break,
-	Continue,
-	For,
-	Do,
-	Switch,
-	Case,
-	Default,
+	// Goto,
+	// Break,
+	// Continue,
+	// For,
+	// Do,
+	// Switch,
+	// Case,
+	// Default,
 }
 
 // Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak

@@ -9,7 +9,7 @@ use clap::Parser;
 use compile::parse::*;
 
 use crate::compile::lex::TokenApi;
-use crate::compile::token::{Token, Punct};
+use crate::compile::token::{Punct, Token};
 use crate::compile::tree::{ExprTree, VisitOrder};
 
 #[derive(clap::Parser, Debug)]
@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 				tree.print(&VisitOrder::Pre);
 			}
 
-			println!("tree is \n{}eval to: {}", tree, tree.eval());
+			println!("──────\n{}\n{}= {}", expr, tree, tree.eval());
 		}
 
 		SubCommand::Term => {
