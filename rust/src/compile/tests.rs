@@ -149,7 +149,18 @@ fn t1() {
 			op: Punct::Eq,
 			right: Box::new(Expr::Const(Const::Integer("21".into()))),
 		})),
-		left: Box::new(Expr::Id("ok".into())),
+		left: Box::new(Expr::CommaExpr(CommaExpr {
+			expr: vec![
+				Expr::Id("v1".into()),
+				Expr::Id("v2".into()),
+				Expr::BinOp(BinOp {
+					left: Box::new(Expr::Const(Const::Integer("123".into()))),
+					op: Punct::Add,
+					right: Box::new(Expr::Const(Const::Integer("456".into()))),
+				}),
+				Expr::Id("ok".into()),
+			],
+		})),
 		right: Box::new(Expr::BinOp(BinOp {
 			left: Box::new(Expr::Const(Const::Integer("123".into()))),
 			op: Punct::Add,
