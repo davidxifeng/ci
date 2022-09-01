@@ -99,7 +99,7 @@ fn parse_basic_test() {
 }
 
 #[test]
-// #[ignore]
+#[ignore]
 fn test_expr_tree_display() {
 	let expr = Expr::AssignExpr(AssignExpr {
 		assign: Punct::Assign,
@@ -150,6 +150,7 @@ fn test_expr_tree_display() {
 }
 
 fn compile_test(input: &str, print: bool, expected: Option<DeclarationList>) {
+	println!("{}\n------", input);
 	let r = compile(input);
 	match r {
 		Ok(d) => {
@@ -165,11 +166,12 @@ fn compile_test(input: &str, print: bool, expected: Option<DeclarationList>) {
 }
 
 #[test]
+#[ignore]
 fn test_variable_declaration() {
 	compile_test("int i = 2, j = 1, k; char c = 'c', d;", false, None);
 }
 
 #[test]
 fn test_func_declaration() {
-	// compile_test("int id(char c,int i) { i = 1; return 'a'; }", true, None);
+	compile_test("int id(char c,int i) { i = 1; return 'a'; }", true, None);
 }

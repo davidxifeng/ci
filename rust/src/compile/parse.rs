@@ -3,7 +3,7 @@ use itertools::Itertools;
 use super::{
 	errors::*,
 	lex::TokenApi,
-	token::{Const, Keyword, Punct, Token},
+	token::{Const, Keyword, Punct, Token, TokenList},
 	tree::*,
 	types::*,
 };
@@ -47,26 +47,45 @@ fn expect_const<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<Const,
 	}
 }
 
-fn single_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Expr, ParseError> {
+fn single_expr_node<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Expr, ParseError> {
 	match ntk {
 		Token::Const(c) => Ok(Expr::Const(c)),
 		Token::StringLiteral(str) => Ok(Expr::StringLiteral(str)),
-		Token::Id(id) => Ok(Expr::Id(id)),
+		Token::Id(id) => {
+			if let Some(tk) = iter.next() {
+				if *tk == Token::Punct(Punct::Assign) {
+					let ntk = take_next_token(iter)?;
+					let right = parse_expr(iter, ntk, Punct::Comma)?;
+					return Ok(Expr::AssignExpr(AssignExpr {
+						left: Box::new(Expr::Id(id)),
+						assign: Punct::Assign,
+						right: Box::new(right),
+					}));
+				} else {
+					unimplemented!()
+				}
+			} else {
+				return Ok(Expr::Id(id));
+			}
+		}
+		Token::Punct(Punct::Semicolon) => {
+			unimplemented!()
+		}
 		Token::Punct(Punct::ParentheseL) => {
-			iter.next();
+			let ntk = take_next_token(iter)?;
 			let expr = parse_expr(iter, ntk, Punct::Comma)?;
 			expect_punct(iter, &[Punct::ParentheseR])?;
-			Ok(expr)
+			return Ok(expr);
 		}
 		Token::Keyword(Keyword::SizeOf) => {
 			unimplemented!()
 		}
-		_ => unreachable!(),
+		_ => unimplemented!(),
 	}
 }
 
 fn parse_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token, level: Punct) -> Result<Expr, ParseError> {
-	let expr = single_expr(iter, ntk)?;
+	let expr = single_expr_node(iter, ntk)?;
 	Ok(expr)
 }
 
@@ -83,6 +102,7 @@ fn parse_stmt<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Res
 		// id, lookahead : => labeled stmt
 		_ => {
 			let expr = parse_expr(iter, ntk, Punct::Comma)?;
+			expect_punct(iter, &[Punct::Semicolon])?;
 			Ok(Statement::ExprStmt(expr))
 		}
 	}
@@ -252,8 +272,11 @@ fn parse(token_list: Vec<Token>) -> Result<DeclarationList, ParseError> {
 }
 
 pub fn compile(input: &str) -> Result<DeclarationList, ParseError> {
-	match TokenApi::parse_all(input) {
-		Ok(token_list) => parse(token_list),
+	match input.parse::<TokenList>() {
+		Ok(token_list) => {
+			println!("{}", token_list);
+			parse(token_list.token_list)
+		}
 		Err(err) => Err(ParseError::LexError(err)),
 	}
 }
