@@ -13,7 +13,7 @@ struct V<'a, VT> {
 }
 
 #[test]
-#[ignore = "no reason"]
+#[ignore]
 fn test_nc() {
 	let v = vec![Token::Punct(Punct::Add), Token::Punct(Punct::Sub), Token::Punct(Punct::Mul)];
 	let mut vi = v.iter().peekable();
@@ -56,7 +56,7 @@ impl<VT> V<'_, VT> {
 
 #[test]
 #[ignore]
-fn t0() {
+fn parse_basic_test() {
 	assert_eq!(
 		compile("char ; int ;"),
 		Ok(vec![
@@ -98,41 +98,9 @@ fn t0() {
 	assert_eq!(compile(r###"int i = "int";"###), Err(ParseError::TypeMismatch));
 }
 
-fn compile_test(input: &str, expected: Option<DeclarationList>) {
-	let r = compile(input);
-	match r {
-		Ok(d) => {
-			if let Some(expected) = expected {
-				assert_eq!(d, expected)
-			}
-			println!("{}", d)
-		}
-		Err(e) => println!("compile error: {}", e),
-	}
-}
-
 #[test]
-fn t1() {
-	compile_test("int i = 2, j = 1, k; char c = 'c', d;", None);
-	compile_test(
-		"int id(char c,int i) { return 1; return 'a'; }",
-		Some(
-			vec![Declaration::Function(FunctionDefinition {
-				ctype: CType::BaseType(Keyword::Int),
-				name: "id".into(),
-				params: vec![
-					Parameter { ctype: CType::BaseType(Keyword::Char), name: "c".into() },
-					Parameter { ctype: CType::BaseType(Keyword::Int), name: "i".into() },
-				],
-				stmts: vec![
-					Statement::ReturnStmt(Expr::Const(Const::Integer("1".to_owned()))),
-					Statement::ReturnStmt(Expr::Const(Const::Character('a'))),
-				],
-			})]
-			.into(),
-		),
-	);
-
+// #[ignore]
+fn test_expr_tree_display() {
 	let expr = Expr::AssignExpr(AssignExpr {
 		assign: Punct::Assign,
 		left: Box::new(Expr::Id("demo".into())),
@@ -179,4 +147,29 @@ fn t1() {
 	})]
 	.into();
 	println!("{}", tree)
+}
+
+fn compile_test(input: &str, print: bool, expected: Option<DeclarationList>) {
+	let r = compile(input);
+	match r {
+		Ok(d) => {
+			if let Some(expected) = expected {
+				assert_eq!(d, expected)
+			}
+			if print {
+				println!("{}", d)
+			}
+		}
+		Err(e) => println!("compile error: {}", e),
+	}
+}
+
+#[test]
+fn test_variable_declaration() {
+	compile_test("int i = 2, j = 1, k; char c = 'c', d;", false, None);
+}
+
+#[test]
+fn test_func_declaration() {
+	// compile_test("int id(char c,int i) { i = 1; return 'a'; }", true, None);
 }

@@ -47,13 +47,27 @@ fn expect_const<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<Const,
 	}
 }
 
-
-fn single_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token, level: Punct) -> Result<Expr, ParseError> {
-	Ok(Expr::Id("hi".to_string()))
+fn single_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Expr, ParseError> {
+	match ntk {
+		Token::Const(c) => Ok(Expr::Const(c)),
+		Token::StringLiteral(str) => Ok(Expr::StringLiteral(str)),
+		Token::Id(id) => Ok(Expr::Id(id)),
+		Token::Punct(Punct::ParentheseL) => {
+			iter.next();
+			let expr = parse_expr(iter, ntk, Punct::Comma)?;
+			expect_punct(iter, &[Punct::ParentheseR])?;
+			Ok(expr)
+		}
+		Token::Keyword(Keyword::SizeOf) => {
+			unimplemented!()
+		}
+		_ => unreachable!(),
+	}
 }
 
-fn parse_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token, level: Punct) -> Result<Expr, ParseError>{
-	Ok(Expr::Id("hi".to_string()))
+fn parse_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token, level: Punct) -> Result<Expr, ParseError> {
+	let expr = single_expr(iter, ntk)?;
+	Ok(expr)
 }
 
 fn parse_stmt<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Statement, ParseError> {

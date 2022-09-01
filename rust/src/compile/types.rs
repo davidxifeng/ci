@@ -52,8 +52,8 @@ pub enum Statement {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
 	Const(Const),
-	StringLiteral(String),
 	Id(String),
+	StringLiteral(String),
 	SimplePostfix(PostfixOP),
 	UnaryOp(UnaryOp),
 	BinOp(BinOp),

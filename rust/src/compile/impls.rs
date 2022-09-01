@@ -152,23 +152,17 @@ fn print_binary_node(s: &mut String, prev: &str, pos: &NodePos, v: impl Display,
 }
 
 fn print_multi_node(s: &mut String, prev: &str, pos: &NodePos, v: impl Display, expr: &Vec<Expr>) {
-	if expr.is_empty() {
-		print_op(s, prev, pos, v);
-	} else {
-		let prefix_str = if pos.is_top() || prev.is_empty() { "    " } else { "│   " };
-		print_expr_tree(&expr[0], s, &(prev.to_owned() + prefix_str), &NodePos::Top);
-
+	if let Some((first, elems)) = expr.split_first() {
+		let prefix_str = if pos.is_top() || pos.is_init() { "    " } else { "│   " };
+		print_expr_tree(first, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
 		print_op(s, prev, pos, v);
 
-		let mut iter = expr.iter().skip(1).peekable();
-		let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
-		while let Some(e) = iter.next() {
-			print_expr_tree(
-				e,
-				s,
-				&next_prefix,
-				if iter.peek().is_none() { &NodePos::Bottom } else { &NodePos::Middle },
-			);
+		if let Some((last, elems)) = elems.split_last() {
+			let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
+			for e in elems {
+				print_expr_tree(e, s, &next_prefix, &NodePos::Middle);
+			}
+			print_expr_tree(last, s, &next_prefix, &NodePos::Bottom);
 		}
 	}
 }

@@ -18,6 +18,7 @@ pub enum Keyword {
 	While,
 	Return,
 
+	SizeOf
 	// Goto,
 	// Break,
 	// Continue,
