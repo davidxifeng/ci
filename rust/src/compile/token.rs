@@ -7,6 +7,11 @@ pub enum Token {
 	Punct(Punct),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct TokenList {
+	pub token_list: Vec<Token>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Keyword {
 	Char,

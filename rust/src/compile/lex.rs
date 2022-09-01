@@ -2,7 +2,7 @@ use crate::compile::errors::*;
 use itertools::Itertools;
 use std::str::Chars;
 
-use super::token::{Token, Keyword, Const, Punct};
+use super::token::{Const, Keyword, Punct, Token};
 
 #[derive(Debug)]
 pub struct TokenApi {
@@ -315,4 +315,3 @@ fn simple_escape_seq(c: char) -> Option<char> {
 		_ => None,
 	}
 }
-

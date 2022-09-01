@@ -8,8 +8,7 @@ use clap::Parser;
 
 use compile::parse::*;
 
-use crate::compile::lex::TokenApi;
-use crate::compile::token::{Punct, Token};
+use crate::compile::token::{Punct, TokenList};
 use crate::compile::tree::{ExprTree, VisitOrder};
 
 #[derive(clap::Parser, Debug)]
@@ -104,7 +103,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 		}
 		SubCommand::Lex { file, cli_text } => {
 			let input = if let Some(f) = file { fs::read_to_string(f)? } else { cli_text.ok_or("input is empty")? };
-			println!("lex: {}\n{:#?}", input, TokenApi::parse_all(input.as_str()));
+			if let Ok(r) = input.as_str().parse::<TokenList>() {
+				println!("lex: {}\n{:#}{}", input, r, r);
+			}
 		}
 		SubCommand::Parse { file } => {
 			let src = fs::read_to_string(file)?;

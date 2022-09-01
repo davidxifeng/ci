@@ -1,8 +1,14 @@
-use std::fmt::{Formatter, Write};
+use std::{
+	fmt::{Display, Formatter, Write},
+	str::FromStr,
+};
+
+use console::style;
 
 use super::{
-	errors::ParseError,
-	token::{Const, Keyword, Punct, Token},
+	errors::{LexError, ParseError},
+	lex::TokenApi,
+	token::{Const, Keyword, Punct, Token, TokenList},
 };
 
 impl Token {
@@ -33,9 +39,9 @@ impl std::str::FromStr for Punct {
 	}
 }
 
-impl std::fmt::Display for Punct {
+impl Display for Punct {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		f.pad(match self {
+		let s = match self {
 			Self::Add => "+",
 			Self::Assign => "=",
 			Self::Comma => ",",
@@ -69,7 +75,12 @@ impl std::fmt::Display for Punct {
 			Self::ParentheseR => ")",
 			Self::Tilde => "~",
 			Self::Colon => ":",
-		})
+		};
+		if f.alternate() {
+			f.write_str(&style(s).blue().bold().to_string())
+		} else {
+			f.write_str(s)
+		}
 	}
 }
 
@@ -102,7 +113,7 @@ impl Const {
 	}
 }
 
-impl std::fmt::Display for Const {
+impl Display for Const {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Self::Empty => Ok(()),
@@ -116,6 +127,38 @@ impl std::fmt::Display for Const {
 				f.write_char('\'')
 			}
 			Self::Integer(i) => f.write_str(i.as_str()),
+		}
+	}
+}
+
+impl Display for Keyword {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		let s = match self {
+			Keyword::Char => "char",
+			Keyword::Int => "int",
+			Keyword::If => "if",
+			Keyword::Else => "else",
+			Keyword::While => "while",
+			Keyword::Return => "return",
+			Keyword::SizeOf => "sizeof",
+			Keyword::Enum => "enum",
+		};
+		if f.alternate() {
+			f.write_str(&style(s).bright().green().to_string())
+		} else {
+			f.write_str(s)
+		}
+	}
+}
+
+impl Display for Token {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Token::Const(c) => write!(f, "{}", c),
+			Token::Id(id) => write!(f, "{}", id),
+			Token::Keyword(kw) => write!(f, "{:#}", kw),
+			Token::Punct(p) => write!(f, "{:#}", p),
+			Token::StringLiteral(s) => f.write_str(s.as_str()),
 		}
 	}
 }
@@ -139,5 +182,43 @@ fn simple_unescape(c: &char) -> Option<&'static str> {
 		'\t' => Some("\\t"),   // 09 horizontal Tab
 		'\x0b' => Some("\\v"), // vertical tab
 		_ => None,
+	}
+}
+
+impl FromStr for TokenList {
+	type Err = LexError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match TokenApi::parse_all(s) {
+			Ok(token_list) => Ok(TokenList { token_list }),
+			Err(e) => Err(e),
+		}
+	}
+}
+
+impl Display for TokenList {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		if f.alternate() {
+			if let Some((first, elems)) = self.token_list.split_first() {
+				write!(f, "{:?}", first)?;
+				for tk in elems {
+					f.write_str(&style(" ◦ ").dim().to_string())?;
+					write!(f, "{:?}", tk)?
+				}
+				f.write_char('\n')
+			} else {
+				Ok(())
+			}
+		} else {
+			if let Some((first, elems)) = self.token_list.split_first() {
+				write!(f, "{}", first)?;
+				for tk in elems {
+					f.write_str(&style(" ◦ ").dim().to_string())?;
+					write!(f, "{}", tk)?
+				}
+				f.write_char('\n')
+			} else {
+				Ok(())
+			}
+		}
 	}
 }
