@@ -83,15 +83,15 @@ fn parse_basic_test() {
 		]
 		.into())
 	);
-	assert_eq!(compile(r###"char 2 = 'a'"###), Err(ParseError::TokenNotIdentifier));
-	assert_eq!(compile(r###"char a = 'a', 2 = 'c'"###), Err(ParseError::TokenNotIdentifier));
+	assert_eq!(compile(r###"char 2 = 'a'"###), Err(ParseError::NotIdentifier));
+	assert_eq!(compile(r###"char a = 'a', 2 = 'c'"###), Err(ParseError::NotIdentifier));
 
 	assert_eq!(compile(r###"char c = 'a'"###), Err(ParseError::EndOfToken));
 
-	assert_eq!(compile(r###"char c = 'a' y "###), Err(ParseError::TokenNotPunct));
+	assert_eq!(compile(r###"char c = 'a' y "###), Err(ParseError::NotPunct));
 	assert_eq!(
 		compile(r###"char c = 'a' = "###),
-		Err(ParseError::expecting_str_but(&mut [Punct::Comma.to_string(), Punct::Semicolon.to_string()], "="))
+		Err(ParseError::expecting_but(&mut [Punct::Comma.to_string(), Punct::Semicolon.to_string()], "="))
 	);
 	assert_eq!(compile(r###"char c "###), Err(ParseError::EndOfToken));
 	assert_eq!(compile(r###"int i = 'c';"###), Err(ParseError::TypeMismatch));
@@ -165,6 +165,17 @@ fn compile_test(input: &str, print: bool, expected: Option<DeclarationList>) {
 	}
 }
 
+fn test_expr(input: &str) {
+	match parse_expr_test(input) {
+		Ok(el) => {
+			for e in el {
+				println!("{}", e);
+			}
+		}
+		Err(e) => println!("error: {}", e),
+	}
+}
+
 #[test]
 #[ignore]
 fn test_variable_declaration() {
@@ -173,5 +184,7 @@ fn test_variable_declaration() {
 
 #[test]
 fn test_func_declaration() {
-	compile_test("int id(char c,int i) { i = 1; return 'a'; }", true, None);
+	// compile_test("int id(char c,int i) { i = 1; return 'a'; }", true, None);
+	test_expr("i = 1");
+	// test_expr("i = 1; j = 1 + 2;");
 }

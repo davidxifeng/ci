@@ -9,7 +9,7 @@ use clap::Parser;
 use compile::parse::*;
 
 use crate::compile::token::{Punct, TokenList};
-use crate::compile::tree::{ExprTree, VisitOrder};
+use crate::compile::tree::{build_tree, ExprTree, VisitOrder};
 
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -39,6 +39,9 @@ enum SubCommand {
 	Parse {
 		#[clap(short, long, action, default_value = "data/t0.c")]
 		file: String,
+
+		#[clap(short, long)]
+		debug: bool,
 	},
 	Http,
 	Term,
@@ -107,12 +110,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 				println!("lex: {}\n{:#}{}", input, r, r);
 			}
 		}
-		SubCommand::Parse { file } => {
+		SubCommand::Parse { file, debug } => {
 			let src = fs::read_to_string(file)?;
-			println!("{}\n\n\n", src);
-			let r = compile(src.as_str())?;
-			println!("{}", r);
+
+			if debug {
+				println!("{}\n\n\n", src);
+				println!("{}", compile(src.as_str())?);
+			}
+
+			match parse_expr_test(&src) {
+				Ok(el) => {
+					for e in el {
+						println!("{}", e);
+					}
+				}
+				Err(e) => println!("error: {}", e),
+			}
 		}
+
 		SubCommand::Http => {
 			use http::Request;
 			use serde::ser;
@@ -146,6 +161,5 @@ fn main() -> Result<(), Box<dyn Error>> {
 			println!("serialize: {:#?}", r);
 		}
 	}
-
 	Ok(())
 }

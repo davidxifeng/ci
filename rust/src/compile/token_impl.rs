@@ -23,18 +23,16 @@ impl Token {
 	}
 }
 
-impl std::str::FromStr for Punct {
-	type Err = ();
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		match s {
-			"+" => Ok(Self::Add),
-			"-" => Ok(Self::Sub),
-			"*" => Ok(Self::Mul),
-			"/" => Ok(Self::Div),
-			"%" => Ok(Self::Mod),
-			"==" => Ok(Self::Eq),
-			"!=" => Ok(Self::Ne),
-			_ => Err(()),
+impl Punct {
+	pub fn is_assign(&self) -> bool {
+		match self {
+			Punct::Assign
+			| Punct::AssignAdd
+			| Punct::AssignSub
+			| Punct::AssignMul
+			| Punct::AssignDiv
+			| Punct::AssignMod => true,
+			_ => false,
 		}
 	}
 }
@@ -43,7 +41,6 @@ impl Display for Punct {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		let s = match self {
 			Self::Add => "+",
-			Self::Assign => "=",
 			Self::Comma => ",",
 			Self::Semicolon => ";",
 			Self::Not => "!",
@@ -75,6 +72,12 @@ impl Display for Punct {
 			Self::ParentheseR => ")",
 			Self::Tilde => "~",
 			Self::Colon => ":",
+			Self::Assign => "=",
+			Self::AssignAdd => "+=",
+			Self::AssignSub => "-=",
+			Self::AssignMul => "*=",
+			Self::AssignDiv => "/=",
+			Self::AssignMod => "%=",
 		};
 		if f.alternate() {
 			f.write_str(&style(s).blue().bold().to_string())
@@ -134,14 +137,46 @@ impl Display for Const {
 impl Display for Keyword {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		let s = match self {
+			Keyword::Complex => "complex",
+			Keyword::Imaginary => "imaginary",
+			Keyword::Bool => "bool",
+			// Keyword::Bool => "_Bool",
+			// Keyword::Complex => "_Complex",
+			// Keyword::Imaginary => "_Imaginary",
+			Keyword::Auto => "auto",
+			Keyword::Break => "break",
+			Keyword::Case => "case",
 			Keyword::Char => "char",
-			Keyword::Int => "int",
-			Keyword::If => "if",
+			Keyword::Const => "const",
+			Keyword::Continue => "continue",
+			Keyword::Default => "default",
+			Keyword::Do => "do",
+			Keyword::Double => "double",
 			Keyword::Else => "else",
-			Keyword::While => "while",
-			Keyword::Return => "return",
-			Keyword::SizeOf => "sizeof",
 			Keyword::Enum => "enum",
+			Keyword::Extern => "extern",
+			Keyword::Float => "float",
+			Keyword::For => "for",
+			Keyword::Goto => "goto",
+			Keyword::If => "if",
+			Keyword::Inline => "inline",
+			Keyword::Int => "int",
+			Keyword::Long => "long",
+			Keyword::Register => "register",
+			Keyword::Restrict => "restrict",
+			Keyword::Return => "return",
+			Keyword::Short => "short",
+			Keyword::Signed => "signed",
+			Keyword::SizeOf => "sizeof",
+			Keyword::Static => "static",
+			Keyword::Struct => "struct",
+			Keyword::Switch => "switch",
+			Keyword::Typedef => "typedef",
+			Keyword::Union => "union",
+			Keyword::Unsigned => "unsigned",
+			Keyword::Void => "void",
+			Keyword::Volatile => "volatile",
+			Keyword::While => "while",
 		};
 		if f.alternate() {
 			f.write_str(&style(s).bright().green().to_string())

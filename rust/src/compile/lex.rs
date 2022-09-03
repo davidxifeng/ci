@@ -13,25 +13,62 @@ pub struct TokenApi {
 
 type LexResult = Option<Result<Token, LexError>>;
 
-// TODO 简化类型,Token中增加一个特殊的EOF,表示结束
+// 使用特殊的Token EOF,表示结束?
 //type LexResult = Result<Token, LexError>;
 
 impl TokenApi {
 	/// 处理广义上的标识符, 应该包括关键字和enum 常量
 	fn try_id(&mut self, iter: &mut Chars, c: char) -> LexResult {
-		let mut ids = String::from(c);
-		while let Some(idc) = iter.peeking_take_while(is_id_char).next() {
-			ids.push(idc);
+		let mut identifier = String::from(c);
+		while let Some(c) = iter.peeking_take_while(is_id_char).next() {
+			identifier.push(c);
 		}
-		Some(Ok(match ids.as_str() {
-			"if" => Token::Keyword(Keyword::If),
-			"else" => Token::Keyword(Keyword::Else),
+		Some(Ok(match identifier.as_str() {
+			"bool" => Token::Keyword(Keyword::Bool),
+			"complex" => Token::Keyword(Keyword::Complex),
+			"imaginary" => Token::Keyword(Keyword::Imaginary),
+			"true" => Token::Const(Const::Integer("1".to_string())),
+			"false" => Token::Const(Const::Integer("0".to_string())),
+
+			"auto" => Token::Keyword(Keyword::Auto),
+			"break" => Token::Keyword(Keyword::Break),
+			"case" => Token::Keyword(Keyword::Case),
 			"char" => Token::Keyword(Keyword::Char),
-			"int" => Token::Keyword(Keyword::Int),
+			"const" => Token::Keyword(Keyword::Const),
+			"continue" => Token::Keyword(Keyword::Continue),
+			"default" => Token::Keyword(Keyword::Default),
+			"do" => Token::Keyword(Keyword::Do),
+			"double" => Token::Keyword(Keyword::Double),
+			"else" => Token::Keyword(Keyword::Else),
 			"enum" => Token::Keyword(Keyword::Enum),
+			"extern" => Token::Keyword(Keyword::Extern),
+			"float" => Token::Keyword(Keyword::Float),
+			"for" => Token::Keyword(Keyword::For),
+			"goto" => Token::Keyword(Keyword::Goto),
+			"if" => Token::Keyword(Keyword::If),
+			"inline" => Token::Keyword(Keyword::Inline),
+			"int" => Token::Keyword(Keyword::Int),
+			"long" => Token::Keyword(Keyword::Long),
+			"register" => Token::Keyword(Keyword::Register),
+			"restrict" => Token::Keyword(Keyword::Restrict),
 			"return" => Token::Keyword(Keyword::Return),
+			"short" => Token::Keyword(Keyword::Short),
+			"signed" => Token::Keyword(Keyword::Signed),
+			"sizeof" => Token::Keyword(Keyword::SizeOf),
+			"static" => Token::Keyword(Keyword::Static),
+			"struct" => Token::Keyword(Keyword::Struct),
+			"switch" => Token::Keyword(Keyword::Switch),
+			"typedef" => Token::Keyword(Keyword::Typedef),
+			"union" => Token::Keyword(Keyword::Union),
+			"unsigned" => Token::Keyword(Keyword::Unsigned),
+			"void" => Token::Keyword(Keyword::Void),
+			"volatile" => Token::Keyword(Keyword::Volatile),
 			"while" => Token::Keyword(Keyword::While),
-			_ => Token::Id(ids),
+			"_Bool" => Token::Keyword(Keyword::Bool),
+			"_Complex" => Token::Keyword(Keyword::Complex),
+			"_Imaginary" => Token::Keyword(Keyword::Imaginary),
+
+			_ => Token::Id(identifier),
 		}))
 	}
 
@@ -146,6 +183,8 @@ impl TokenApi {
 					if iter.peeking_take_while(|&x| x == '/').next().is_some() {
 						// 跳过 // 注释
 						while iter.peeking_take_while(is_not_new_line).next().is_some() {}
+					} else if iter.peeking_take_while(|&x| x == '=').next().is_some() {
+						return Some(Ok(Token::Punct(Punct::AssignDiv)));
 					} else {
 						return Some(Ok(Token::Punct(Punct::Div)));
 					}
@@ -167,6 +206,8 @@ impl TokenApi {
 				'+' => {
 					if iter.peeking_take_while(|&x| x == '+').next().is_some() {
 						return Some(Ok(Token::Punct(Punct::Inc)));
+					} else if iter.peeking_take_while(|&x| x == '=').next().is_some() {
+						return Some(Ok(Token::Punct(Punct::AssignAdd)));
 					} else {
 						return Some(Ok(Token::Punct(Punct::Add)));
 					}
@@ -174,6 +215,8 @@ impl TokenApi {
 				'-' => {
 					if iter.peeking_take_while(|&x| x == '-').next().is_some() {
 						return Some(Ok(Token::Punct(Punct::Dec)));
+					} else if iter.peeking_take_while(|&x| x == '=').next().is_some() {
+						return Some(Ok(Token::Punct(Punct::AssignSub)));
 					} else {
 						return Some(Ok(Token::Punct(Punct::Sub)));
 					}
@@ -234,8 +277,20 @@ impl TokenApi {
 					}
 				}
 				'^' => return Some(Ok(Token::Punct(Punct::Xor))),
-				'%' => return Some(Ok(Token::Punct(Punct::Mod))),
-				'*' => return Some(Ok(Token::Punct(Punct::Mul))),
+				'%' => {
+					if iter.peeking_take_while(|&x| x == '=').next().is_some() {
+						return Some(Ok(Token::Punct(Punct::AssignMod)));
+					} else {
+						return Some(Ok(Token::Punct(Punct::Mod)));
+					}
+				}
+				'*' => {
+					return Some(Ok(Token::Punct(if iter.peeking_take_while(|&x| x == '=').next().is_some() {
+						Punct::AssignMul
+					} else {
+						Punct::Mul
+					})));
+				}
 				'[' => return Some(Ok(Token::Punct(Punct::BrakL))),
 				'?' => return Some(Ok(Token::Punct(Punct::Cond))),
 				';' => return Some(Ok(Token::Punct(Punct::Semicolon))),

@@ -4,7 +4,37 @@ use console::style;
 
 use crate::compile::token::{Const, Token};
 
-use super::{parse::calc, token::Punct};
+use super::{token::{Punct, TokenList}, errors::ParseError};
+
+fn calc(op: &Punct, a: i64, b: i64) -> i64 {
+	match op {
+		Punct::Add => a + b,
+		Punct::Sub => a - b,
+		Punct::Mul => a * b,
+		Punct::Div => a / b,
+		Punct::Xor => pow(a, b),
+		_ => 0,
+	}
+}
+
+fn pow(a: i64, b: i64) -> i64 {
+	let mut r = 1;
+	for _ in 0..b {
+		r *= a
+	}
+	r
+}
+
+fn op_info(op: &Punct) -> i8 {
+	match op {
+		Punct::Add => 1,
+		Punct::Sub => 1,
+		Punct::Mul => 2,
+		Punct::Div => 2,
+		Punct::Xor => 3,
+		_ => panic!("bad input"),
+	}
+}
 
 pub enum ExprTree {
 	Branch(Branch),
@@ -253,4 +283,73 @@ fn test_fmt() {
 	assert_eq!(format!("{:>1$}", "^", 2), " ^");
 	assert_eq!(format!("{:>1$}", Punct::Xor, 2), " ^");
 	assert_eq!(format!("{}", Punct::Xor), "^");
+}
+
+type EvalResultTree = Result<ExprTree, ParseError>;
+
+fn parse_leaf<'a>(iter: &mut impl Iterator<Item = &'a Token>, cop: &mut Option<Punct>) -> EvalResultTree {
+	if let Some(tk) = iter.next() {
+		match tk {
+			Token::Const(Const::Integer(lhs)) => Ok(ExprTree::leaf(lhs.parse::<i64>().unwrap())),
+			Token::Punct(Punct::ParentheseL) => Ok(parse_expr_tree(iter, 1, cop)?),
+			_ => Err(ParseError::Unexpected("".into())),
+		}
+	} else {
+		Err(ParseError::EndOfToken)
+	}
+}
+
+fn parse_expr_tree<'a>(iter: &mut impl Iterator<Item = &'a Token>, mp: i8, cop: &mut Option<Punct>) -> EvalResultTree {
+	let mut lhs = parse_leaf(iter, cop)?;
+
+	*cop = match iter.next() {
+		Some(Token::Punct(mop)) => Some(*mop),
+		None => None,
+		_ => unreachable!(),
+	};
+
+	while let Some(op) = *cop {
+		if Punct::ParentheseR != op && op_info(&op) >= mp {
+			let next_mp = op_info(&op) + if op == Punct::Xor { 0 } else { 1 };
+			lhs = ExprTree::tree(op, lhs, parse_expr_tree(iter, next_mp, cop)?);
+		} else {
+			break;
+		}
+	}
+
+	Ok(lhs)
+}
+
+pub fn build_tree(input: &str) -> EvalResultTree {
+	match input.parse::<TokenList>() {
+		Ok(r) => {
+			let mut iter = r.token_list.iter();
+			let mut cop = None;
+			parse_expr_tree(&mut iter, 1, &mut cop)
+		}
+		Err(err) => Err(ParseError::LexError(err)),
+	}
+}
+
+#[test]
+#[ignore]
+fn test_tree() {
+	fn tp(i: &str) {
+		match build_tree(i) {
+			Ok(tree) => {
+				println!("{} = {}\n{}------\n", i, tree.eval(), tree)
+			}
+			Err(err) => println!("err: {}", err),
+		}
+	}
+
+	tp("(1 + 2) * ((3 - 5) * 2) ^ 2 + 2 * 6");
+	tp("2 ^ 3 ^ 2");
+	tp("2 * 2 ^ 3 ^ 2");
+	tp("2 * 2 ^ 3 ^ 2 * 2 / 2 + 1 * 2 ^ 2 * 20");
+	tp("1 + 2 + 3 + 4 + 5");
+	tp("1 + 2 + 3");
+	tp("1 ^ 2 ^ 3");
+	tp("1 + 2 + 3 * 4 + 5");
+	tp("1 * 2 * 3 + 4 * 5 * 6");
 }

@@ -36,12 +36,12 @@ impl Display for LexError {
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {
 	LexError(LexError),
+	Unexpected(String),
 	EndOfToken,
-	UnexpectedToken(String),
 	TypeMismatch,
-	TokenNotPunct,
-	TokenNotKeyword,
-	TokenNotIdentifier,
+	NotPunct,
+	NotKeyword,
+	NotIdentifier,
 }
 
 impl Display for ParseError {
@@ -49,15 +49,15 @@ impl Display for ParseError {
 		let s;
 		f.write_str(match self {
 			ParseError::LexError(e) => {
-				s = format!("Lex Error{}", e);
+				s = format!("Lex Error: {}", e);
 				&s
 			}
+			ParseError::Unexpected(s) => s.as_str(),
 			ParseError::EndOfToken => "EndOfToken",
-			ParseError::UnexpectedToken(s) => s.as_str(),
 			ParseError::TypeMismatch => "TypeMismatch",
-			ParseError::TokenNotPunct => "TokenNotPunct",
-			ParseError::TokenNotIdentifier => "TokenNotIdentifier",
-			ParseError::TokenNotKeyword => "TokenNotKeyword",
+			ParseError::NotPunct => "NotPunct",
+			ParseError::NotIdentifier => "NotIdentifier",
+			ParseError::NotKeyword => "NotKeyword",
 		})
 	}
 }
@@ -65,8 +65,8 @@ impl Display for ParseError {
 impl std::error::Error for ParseError {}
 
 impl ParseError {
-	pub fn expecting_str_but(es: &mut [String], g: &str) -> ParseError {
+	pub fn expecting_but(es: &mut [String], g: &str) -> ParseError {
 		es.sort();
-		ParseError::UnexpectedToken(format!("expecting: {} got: {}", es.join(" "), g))
+		ParseError::Unexpected(format!("expecting: {} got: {}", es.join(" "), g))
 	}
 }
