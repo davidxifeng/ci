@@ -312,9 +312,14 @@ impl Parser {
 	}
 }
 
-pub fn parse_expr_test(input: &str) -> Result<Vec<Expr>, ParseError> {
+pub fn parse_expr_test(input: &str, print: bool) -> Result<Vec<Expr>, ParseError> {
 	match input.parse() {
-		Ok(token_list) => Parser::new(token_list).parse_expr_list(),
+		Ok(token_list) => {
+			if print {
+				println!("{}", token_list);
+			}
+			Parser::new(token_list).parse_expr_list()
+		}
 		Err(err) => Err(ParseError::LexError(err)),
 	}
 }

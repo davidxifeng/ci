@@ -33,8 +33,8 @@ enum SubCommand {
 		#[clap(short, long, action)]
 		file: Option<String>,
 
-		#[clap(value_parser)]
-		cli_text: Option<String>,
+		#[clap(value_parser, default_value = "char c = 'A', d = 'C'; int i = 1, j, k = 3;")]
+		cli_text: String,
 	},
 	Parse {
 		#[clap(short, long, action, default_value = "data/t0.c")]
@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 			term.move_cursor_down(3)?;
 		}
 		SubCommand::Lex { file, cli_text } => {
-			let input = if let Some(f) = file { fs::read_to_string(f)? } else { cli_text.ok_or("input is empty")? };
+			let input = if let Some(f) = file { fs::read_to_string(f)? } else { cli_text };
 			if let Ok(r) = input.as_str().parse::<TokenList>() {
 				println!("lex: {}\n{:#}{}", input, r, r);
 			}
@@ -118,7 +118,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 				println!("{}", compile(src.as_str())?);
 			}
 
-			match parse_expr_test(&src) {
+			match parse_expr_test(&src, true) {
 				Ok(el) => {
 					for e in el {
 						println!("{}", e);
