@@ -118,13 +118,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 				println!("{}", compile(src.as_str())?);
 			}
 
-			match parse_expr_test(&src, true) {
-				Ok(el) => {
-					for e in el {
-						println!("{}", e);
-					}
-				}
-				Err(e) => println!("error: {}", e),
+			match compile::parse::Parser::test(src.as_str()) {
+				Ok(expr) => println!("------\n{}", expr),
+				Err(e) => println!("\t[error]\n{}", e),
 			}
 		}
 

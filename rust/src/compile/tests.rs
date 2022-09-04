@@ -67,12 +67,10 @@ fn compile_test(input: &str, print: bool, expected: Option<DeclarationList>) {
 
 fn test_expr(input: &str) {
 	println!("\t[ok]\n{}", input);
-	match parse_expr_test(input, true) {
-		Ok(el) => {
-			for (i, e) in el.iter().enumerate() {
-				println!("------\n  {}:\n{}", i, e);
-			}
-		}
+	match Parser::from_str(input).map(|mut x| x.parse()) {
+		Ok(Ok(Some(expr))) => println!("------\n{}", expr),
+		Ok(Ok(None)) => println!("none"),
+		Ok(Err(e)) => println!("\t[error]\n{}", e),
 		Err(e) => println!("\t[error]\n{}", e),
 	}
 }
@@ -118,5 +116,9 @@ fn test_expr_parse() {
 	test_expr("f(a,b,c)");
 	test_expr("t.f(a,b,c = 2)");
 	test_expr("s->t.f(a,(b ? 1 : 2),c) + 2");
+
+	// example from N1256, 说明f1-f4的求值顺序可以任意,标准没有规定;
+	// 所有副作用在函数调用前完成
+	test_expr("(*pf[f1()]) (f2(), f3() + f4())");
 	// test_expr("i = 1; j = 1 + 2;");
 }

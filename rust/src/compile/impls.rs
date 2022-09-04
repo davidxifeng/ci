@@ -151,7 +151,7 @@ fn print_binary_node(s: &mut String, prev: &str, pos: &NodePos, v: impl Display,
 	print_expr_tree(right, s, &(prev.to_owned() + next_prefix), &NodePos::Bottom);
 }
 
-fn print_func_args(s: &mut String, prev: &str, pos: &NodePos, expr: &Vec<Expr>) {
+fn print_func_args(s: &mut String, prev: &str, pos: &NodePos, expr: &[Expr]) {
 	if let Some((last, elems)) = expr.split_last() {
 		let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
 		for e in elems {

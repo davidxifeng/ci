@@ -150,16 +150,23 @@ pub struct Parser {
 }
 
 impl Parser {
-	fn new(token_list: TokenList) -> Self {
+	pub fn new(token_list: TokenList) -> Self {
 		Parser { token_list: token_list.data, index: 0 }
 	}
 
-	fn parse_expr_list(&mut self) -> Result<Vec<Expr>, ParseError> {
-		let mut expr_list = vec![];
-		while let Some(expr) = self.parse_expr(Precedence::P1Comma)? {
-			expr_list.push(expr);
+	pub fn from_str(input: &str) -> Result<Self, ParseError> {
+		input.parse().map_err(ParseError::LexError).map(Self::new)
+	}
+
+	pub fn parse(&mut self) -> Result<Option<Expr>, ParseError> {
+		self.parse_expr(Precedence::P1Comma)
+	}
+
+	pub fn test(input: &str) -> Result<Expr, ParseError> {
+		match Self::from_str(input)?.parse()? {
+			Some(expr) => Ok(expr),
+			None => Err(ParseError::EndOfToken),
 		}
-		Ok(expr_list)
 	}
 
 	#[inline]
@@ -168,15 +175,15 @@ impl Parser {
 	}
 
 	#[inline]
-	fn advance(&mut self) {
-		self.index += 1;
-	}
-
-	#[inline]
 	fn next(&mut self) -> Result<Token, ParseError> {
 		let r = self.token_list.get(self.index);
 		self.index += 1;
 		r.map_or(Err(ParseError::EndOfToken), |x| Ok(x.clone()))
+	}
+
+	#[inline]
+	fn advance(&mut self) {
+		self.index += 1;
 	}
 
 	fn expect_punct(&mut self, punct: Punct) -> Result<(), ParseError> {
@@ -316,18 +323,6 @@ impl Parser {
 		}
 
 		Ok(Some(first))
-	}
-}
-
-pub fn parse_expr_test(input: &str, print: bool) -> Result<Vec<Expr>, ParseError> {
-	match input.parse() {
-		Ok(token_list) => {
-			if print {
-				println!("{}", token_list);
-			}
-			Parser::new(token_list).parse_expr_list()
-		}
-		Err(err) => Err(ParseError::LexError(err)),
 	}
 }
 
