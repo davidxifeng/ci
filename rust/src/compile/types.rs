@@ -53,9 +53,12 @@ pub enum Expr {
 	Const(Const),
 	Id(String),
 	StringLiteral(String),
-	Postfix(PostfixOP),
+
 	MemberAccess(Box<Expr>, String),
 	MemberAccessP(Box<Expr>, String),
+	Postfix(PostfixOP),
+	FunctionCall(Box<Expr>, Vec<Expr>),
+
 	UnaryOp(UnaryOp),
 	BinOp(BinOp),
 	CondExpr(CondExpr),
@@ -70,6 +73,10 @@ impl Expr {
 
 	pub fn new_member_access_p(expr: Self, id: String) -> Self {
 		Expr::MemberAccessP(Box::new(expr), id)
+	}
+
+	pub fn new_func_call(expr: Self, args: Vec<Expr>) -> Self{
+		Expr::FunctionCall(Box::new(expr), args)
 	}
 
 	pub fn new_assign(left: Self, op: Punct, right: Self) -> Self {

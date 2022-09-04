@@ -135,7 +135,9 @@ fn token_info(token: &Token) -> Precedence {
 			// 一元运算符不会调用此函数获取优先级
 			Punct::Not | Punct::Tilde => unreachable!("unary"),
 
-			Punct::Inc | Punct::Dec | Punct::BrakL | Punct::Dot | Punct::Arrow => Precedence::P15Post,
+			Punct::Inc | Punct::Dec | Punct::ParentheseL | Punct::BrakL | Punct::Dot | Punct::Arrow => {
+				Precedence::P15Post
+			}
 
 			_ => Precedence::P0Min,
 		},
@@ -203,15 +205,7 @@ impl Parser {
 			match tk {
 				Token::Const(c) => Ok(Some(Expr::Const(c))),
 				Token::StringLiteral(str) => Ok(Some(Expr::StringLiteral(str))),
-				Token::Id(id) => {
-					if let Some(tk) = self.peek() {
-						match tk {
-							_ => Ok(Some(Expr::Id(id))),
-						}
-					} else {
-						Ok(Some(Expr::Id(id)))
-					}
-				}
+				Token::Id(id) => Ok(Some(Expr::Id(id))),
 				Token::Punct(punct) => match punct {
 					Punct::ParentheseL => match self.parse_expr(Precedence::P1Comma)? {
 						Some(expr) => {
@@ -275,6 +269,19 @@ impl Parser {
 							}
 							None => return Err(ParseError::NoMoreExpr),
 						},
+						Punct::ParentheseL => {
+							let mut argument_expr_list = vec![];
+							while let Some(tk) = self.peek() {
+								if tk == Token::Punct(Punct::ParentheseR) {
+									self.advance();
+									break;
+								} else if tk == Token::Punct(Punct::Comma) {
+									self.advance();
+								}
+								argument_expr_list.push(self.expect_expr(Precedence::P2Assign)?);
+							}
+							first = Expr::new_func_call(first, argument_expr_list)
+						}
 						_ if p.is_binary_op() => match self.parse_expr(ntk_precedence.next_level())? {
 							Some(second) => first = Expr::new_binary(first, p, second),
 							None => return Err(ParseError::NoMoreExpr),

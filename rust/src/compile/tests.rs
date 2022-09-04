@@ -113,6 +113,10 @@ fn test_expr_parse() {
 	test_expr("i[a.b + c.d] + 2");
 	test_expr("x &= i[a.b + c.d] + 2");
 	test_expr("y >>= i[a.b + c.d] + 2");
-	test_expr("&x + *p + sizeof c.d.e, y >>= i[a.b + c.d] + 2, c ? 1 + 2 : 2 + 5");
+	test_expr("&x + *p + sizeof c.d.e, y >>= i[a.b + c->d] + 2, c ? 1 + 2 : 2 + 5");
+	test_expr("f()");
+	test_expr("f(a,b,c)");
+	test_expr("t.f(a,b,c = 2)");
+	test_expr("s->t.f(a,(b ? 1 : 2),c) + 2");
 	// test_expr("i = 1; j = 1 + 2;");
 }
