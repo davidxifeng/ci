@@ -22,18 +22,6 @@ fn expect_identifier<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<S
 	}
 }
 
-fn expect_punct<'a>(iter: &mut impl Iterator<Item = &'a Token>, expect: &Punct) -> Result<(), ParseError> {
-	if let Token::Punct(punct) = take_next_token(iter)? {
-		if *expect == punct {
-			Ok(())
-		} else {
-			let s = format!("expecting: {} ,got: {}", expect, punct);
-			Err(ParseError::Unexpected(s))
-		}
-	} else {
-		Err(ParseError::NotPunct)
-	}
-}
 fn expect_punct_list<'a>(iter: &mut impl Iterator<Item = &'a Token>, l: &[Punct]) -> Result<Punct, ParseError> {
 	if let Token::Punct(punct) = take_next_token(iter)? {
 		if l.contains(&punct) {
@@ -138,68 +126,28 @@ fn token_info(token: &Token) -> (Precedence, Associativity) {
 	}
 }
 
-fn single_expr_node<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Expr, ParseError> {
-	match ntk {
-		Token::Const(c) => Ok(Expr::Const(c)),
-		Token::StringLiteral(str) => Ok(Expr::StringLiteral(str)),
-		Token::Id(id) => {
-			if let Some(tk) = iter.next() {
-				if *tk == Token::Punct(Punct::Assign) {
-					let ntk = take_next_token(iter)?;
-					let right = parse_expr(iter, ntk, Punct::Comma)?;
-					return Ok(Expr::AssignExpr(AssignExpr {
-						left: Box::new(Expr::Id(id)),
-						assign: Punct::Assign,
-						right: Box::new(right),
-					}));
-				} else {
-					unimplemented!()
-				}
-			} else {
-				return Ok(Expr::Id(id));
-			}
-		}
-		Token::Punct(Punct::Semicolon) => {
-			unimplemented!()
-		}
-		Token::Punct(Punct::ParentheseL) => {
-			let ntk = take_next_token(iter)?;
-			let expr = parse_expr(iter, ntk, Punct::Comma)?;
-			expect_punct_list(iter, &[Punct::ParentheseR])?;
-			return Ok(expr);
-		}
-		Token::Keyword(Keyword::SizeOf) => {
-			unimplemented!()
-		}
-		_ => unimplemented!(),
-	}
-}
-
-fn parse_expr<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token, level: Punct) -> Result<Expr, ParseError> {
-	let expr = single_expr_node(iter, ntk)?;
-	Ok(expr)
-}
-
 pub struct Parser {
 	token_list: Vec<Token>,
 	index: usize,
 }
 
 impl Parser {
+	fn new(token_list: TokenList) -> Self {
+		Parser { token_list: token_list.data, index: 0 }
+	}
+
 	fn parse_expr_list(&mut self) -> Result<Vec<Expr>, ParseError> {
 		let mut expr_list = vec![];
-		while let Some(expr) = self.parse_expr_slice(Precedence::P1Comma)? {
+		while let Some(expr) = self.parse_expr(Precedence::P1Comma)? {
 			expr_list.push(expr);
 		}
 		Ok(expr_list)
 	}
 
-	fn lookahead(&mut self) -> Option<Token> {
-		self.token_list.get(self.index + 1).map(|x| x.clone())
-	}
-	fn peek(&mut self) -> Option<Token> {
+	fn peek(&self) -> Option<Token> {
 		self.token_list.get(self.index).map(|x| x.clone())
 	}
+
 	fn advance(&mut self) {
 		self.index += 1;
 	}
@@ -210,99 +158,94 @@ impl Parser {
 		r.map_or(Err(ParseError::EndOfToken), |x| Ok(x.clone()))
 	}
 
-	fn parse_leaf(&mut self) -> Option<Expr> {
-		if let Ok(tk) = self.next() {
-			match tk {
-				Token::Const(c) => Some(Expr::Const(c.to_owned())),
-				Token::StringLiteral(str) => Some(Expr::StringLiteral(str.to_owned())),
-				Token::Id(id) => {
-					if let Some(tk) = self.peek() {
-						match tk {
-							_ => Some(Expr::Id(id.to_owned())),
-						}
-					} else {
-						Some(Expr::Id(id.to_owned()))
-					}
-				}
-				Token::Punct(Punct::Semicolon) => {
-					unimplemented!()
-				}
-				Token::Punct(Punct::ParentheseL) => {
-					unimplemented!()
-
-					// let ntk = take_next_token(iter)?;
-					// let expr = parse_expr(iter, ntk, Punct::Comma)?;
-					// expect_punct_list(iter, &[Punct::ParentheseR])?;
-					// return Ok(expr);
-				}
-				Token::Keyword(Keyword::SizeOf) => {
-					unimplemented!()
-				}
-				_ => unimplemented!(),
+	fn expect_punct(&mut self, punct: Punct) -> Result<(), ParseError> {
+		match self.peek() {
+			Some(Token::Punct(p)) if p == punct => {
+				self.advance();
+				Ok(())
 			}
-		} else {
-			None
+			_ => Err(ParseError::Unexpected(format!("expecting {}", punct))),
 		}
 	}
 
-	fn parse_expr_slice(&mut self, precedence: Precedence) -> Result<Option<Expr>, ParseError> {
-		let leaf = match self.parse_leaf() {
+	fn parse_leaf(&mut self) -> Result<Option<Expr>, ParseError> {
+		if let Ok(tk) = self.next() {
+			match tk {
+				Token::Const(c) => Ok(Some(Expr::Const(c))),
+				Token::StringLiteral(str) => Ok(Some(Expr::StringLiteral(str))),
+				Token::Id(id) => {
+					if let Some(tk) = self.peek() {
+						match tk {
+							_ => Ok(Some(Expr::Id(id))),
+						}
+					} else {
+						Ok(Some(Expr::Id(id)))
+					}
+				}
+				Token::Punct(punct) => match punct {
+					Punct::ParentheseL => match self.parse_expr(Precedence::P1Comma)? {
+						Some(expr) => {
+							self.expect_punct(Punct::ParentheseR)?;
+							Ok(Some(expr))
+						}
+						None => Err(ParseError::General("(expr) failed")),
+					},
+					Punct::Semicolon => unimplemented!(),
+					_ => unimplemented!(),
+				},
+				Token::Keyword(keyword) => match keyword {
+					Keyword::SizeOf => {
+						unimplemented!()
+					}
+					_ => unimplemented!(),
+				},
+			}
+		} else {
+			Ok(None)
+		}
+	}
+
+	fn parse_expr(&mut self, precedence: Precedence) -> Result<Option<Expr>, ParseError> {
+		let mut first = match self.parse_leaf()? {
 			Some(leaf) => leaf,
 			None => return Ok(None),
 		};
 
-		match self.peek() {
-			None => Ok(Some(leaf)),
-			Some(ref ntk) => {
-				let next_token_info = token_info(ntk);
-				if next_token_info.0 >= precedence {
-					self.advance();
-					match ntk {
-						Token::Punct(p) if p.is_assign() => {
-							self.parse_expr_slice(Precedence::P2Assign)?.map_or(Err(ParseError::EndOfToken), |right| {
-								Ok(Some(Expr::AssignExpr(AssignExpr {
-									left: Box::new(leaf),
-									assign: Punct::Assign,
-									right: Box::new(right),
-								})))
-							})
-						}
+		while let Some(ntk) = self.peek() {
+			let next_token_info = token_info(&ntk);
+			println!("expr: \n{}next tk: {}, {:?}", first, ntk, next_token_info);
+			if next_token_info.0 >= precedence {
+				self.advance();
+				match ntk {
+					Token::Punct(p) => match p {
+						Punct::Add | Punct::Sub => match self.parse_expr(Precedence::P13Mul)? {
+							None => return Err(ParseError::NoMoreExpr),
+							Some(second) => first = Expr::new_binary(first, p, second),
+						},
+						Punct::Mul | Punct::Div | Punct::Mod => match self.parse_expr(Precedence::P14Unary)? {
+							None => return Err(ParseError::NoMoreExpr),
+							Some(second) => first = Expr::new_binary(first, p, second),
+						},
+						_ if p.is_assign() => match self.parse_expr(Precedence::P2Assign)? {
+							None => return Err(ParseError::NoMoreExpr),
+							Some(second) => first = Expr::new_assign(first, p, second),
+						},
 						_ => unimplemented!(),
-					}
-				} else {
-					Ok(Some(leaf))
+					},
+					_ => unimplemented!(),
 				}
+			} else {
+				break;
 			}
 		}
+		Ok(Some(first))
 	}
 }
 
 pub fn parse_expr_test(input: &str) -> Result<Vec<Expr>, ParseError> {
-	match input.parse::<TokenList>() {
-		Ok(r) => {
-			let mut parser = Parser { token_list: r.token_list, index: 0 };
-			parser.parse_expr_list()
-		}
+	match input.parse() {
+		Ok(token_list) => Parser::new(token_list).parse_expr_list(),
 		Err(err) => Err(ParseError::LexError(err)),
-	}
-}
-
-fn parse_stmt<'a>(iter: &mut impl Iterator<Item = &'a Token>, ntk: Token) -> Result<Statement, ParseError> {
-	match ntk {
-		Token::Keyword(Keyword::Return) => {
-			let cst = expect_const(iter)?;
-			expect_punct(iter, &Punct::Semicolon)?;
-			Ok(Statement::ReturnStmt(Expr::Const(cst)))
-		}
-		Token::Keyword(Keyword::If) => unimplemented!("if stmt"),
-		Token::Keyword(Keyword::While) => unimplemented!("while stmt"),
-		Token::Punct(Punct::BracesL) => unimplemented!("compound statement"),
-		// id, lookahead : => labeled stmt
-		_ => {
-			let expr = parse_expr(iter, ntk, Punct::Comma)?;
-			expect_punct(iter, &Punct::Semicolon)?;
-			Ok(Statement::ExprStmt(expr))
-		}
 	}
 }
 
@@ -349,18 +292,19 @@ fn parse_fn_definition<'a>(
 	}
 
 	expect_punct_list(iter, &[Punct::BracesL])?;
-	let mut stmts = vec![];
-
 	// 解析语句列表
 	while let Ok(ntk) = take_next_token(iter) {
 		if ntk == Token::Punct(Punct::BracesR) {
 			break;
-		} else {
-			stmts.push(parse_stmt(iter, ntk)?);
 		}
 	}
 
-	Ok(Declaration::Function(FunctionDefinition { ctype: (CType::BaseType(keyword)), name: (id_name), params, stmts }))
+	Ok(Declaration::Function(FunctionDefinition {
+		ctype: (CType::BaseType(keyword)),
+		name: (id_name),
+		params,
+		stmts: vec![],
+	}))
 }
 
 fn parse_variable_definition<'a>(
@@ -473,7 +417,7 @@ pub fn compile(input: &str) -> Result<DeclarationList, ParseError> {
 	match input.parse::<TokenList>() {
 		Ok(token_list) => {
 			println!("{}", token_list);
-			parse(token_list.token_list)
+			parse(token_list.data)
 		}
 		Err(err) => Err(ParseError::LexError(err)),
 	}

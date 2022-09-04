@@ -9,7 +9,7 @@ pub enum Token {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TokenList {
-	pub token_list: Vec<Token>,
+	pub data: Vec<Token>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -224,7 +224,7 @@ impl FromStr for TokenList {
 	type Err = LexError;
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match TokenApi::parse_all(s) {
-			Ok(token_list) => Ok(TokenList { token_list }),
+			Ok(token_list) => Ok(TokenList { data: token_list }),
 			Err(e) => Err(e),
 		}
 	}
@@ -233,7 +233,7 @@ impl FromStr for TokenList {
 impl Display for TokenList {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if f.alternate() {
-			if let Some((first, elems)) = self.token_list.split_first() {
+			if let Some((first, elems)) = self.data.split_first() {
 				write!(f, "{:?}", first)?;
 				for tk in elems {
 					f.write_str(&style(" ◦ ").dim().to_string())?;
@@ -244,7 +244,7 @@ impl Display for TokenList {
 				Ok(())
 			}
 		} else {
-			if let Some((first, elems)) = self.token_list.split_first() {
+			if let Some((first, elems)) = self.data.split_first() {
 				write!(f, "{}", first)?;
 				for tk in elems {
 					f.write_str(&style(" ◦ ").dim().to_string())?;

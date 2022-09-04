@@ -44,10 +44,9 @@ pub struct Parameter {
 pub enum Statement {
 	#[default]
 	Empty,
-	ReturnStmt(Expr),
-	ExprStmt(Expr)
+	// ReturnStmt(Expr),
+	// ExprStmt(Expr),
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
@@ -62,18 +61,27 @@ pub enum Expr {
 	CommaExpr(CommaExpr),
 }
 
+impl Expr {
+	pub fn new_assign(left: Self, op: Punct, right: Self) -> Self {
+		Expr::AssignExpr(AssignExpr { left: Box::new(left), assign: op, right: Box::new(right) })
+	}
+
+	pub fn new_binary(left: Self, op: Punct, right: Self) -> Self {
+		Expr::BinOp(BinOp { left: Box::new(left), op, right: Box::new(right) })
+	}
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PostfixOP {
 	pub op: Punct,
-	pub expr: Box<Expr>
+	pub expr: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnaryOp {
 	pub op: Punct,
-	pub expr: Box<Expr>
+	pub expr: Box<Expr>,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BinOp {

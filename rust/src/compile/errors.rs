@@ -37,7 +37,9 @@ impl Display for LexError {
 pub enum ParseError {
 	LexError(LexError),
 	Unexpected(String),
+	General(&'static str),
 	EndOfToken,
+	NoMoreExpr,
 	TypeMismatch,
 	NotPunct,
 	NotKeyword,
@@ -53,7 +55,9 @@ impl Display for ParseError {
 				&s
 			}
 			ParseError::Unexpected(s) => s.as_str(),
+			ParseError::General(s) => s,
 			ParseError::EndOfToken => "EndOfToken",
+			ParseError::NoMoreExpr => "NoMoreExpr",
 			ParseError::TypeMismatch => "TypeMismatch",
 			ParseError::NotPunct => "NotPunct",
 			ParseError::NotIdentifier => "NotIdentifier",

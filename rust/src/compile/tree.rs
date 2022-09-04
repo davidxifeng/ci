@@ -4,7 +4,10 @@ use console::style;
 
 use crate::compile::token::{Const, Token};
 
-use super::{token::{Punct, TokenList}, errors::ParseError};
+use super::{
+	errors::ParseError,
+	token::{Punct, TokenList},
+};
 
 fn calc(op: &Punct, a: i64, b: i64) -> i64 {
 	match op {
@@ -299,19 +302,23 @@ fn parse_leaf<'a>(iter: &mut impl Iterator<Item = &'a Token>, cop: &mut Option<P
 	}
 }
 
-fn parse_expr_tree<'a>(iter: &mut impl Iterator<Item = &'a Token>, mp: i8, cop: &mut Option<Punct>) -> EvalResultTree {
-	let mut lhs = parse_leaf(iter, cop)?;
+fn parse_expr_tree<'a>(
+	iter: &mut impl Iterator<Item = &'a Token>,
+	mp: i8,
+	maybe_current_op: &mut Option<Punct>,
+) -> EvalResultTree {
+	let mut lhs = parse_leaf(iter, maybe_current_op)?;
 
-	*cop = match iter.next() {
+	*maybe_current_op = match iter.next() {
 		Some(Token::Punct(mop)) => Some(*mop),
 		None => None,
 		_ => unreachable!(),
 	};
 
-	while let Some(op) = *cop {
-		if Punct::ParentheseR != op && op_info(&op) >= mp {
-			let next_mp = op_info(&op) + if op == Punct::Xor { 0 } else { 1 };
-			lhs = ExprTree::tree(op, lhs, parse_expr_tree(iter, next_mp, cop)?);
+	while let Some(current_op) = *maybe_current_op {
+		if Punct::ParentheseR != current_op && op_info(&current_op) >= mp {
+			let next_mp = op_info(&current_op) + if current_op == Punct::Xor { 0 } else { 1 };
+			lhs = ExprTree::tree(current_op, lhs, parse_expr_tree(iter, next_mp, maybe_current_op)?);
 		} else {
 			break;
 		}
@@ -323,7 +330,7 @@ fn parse_expr_tree<'a>(iter: &mut impl Iterator<Item = &'a Token>, mp: i8, cop: 
 pub fn build_tree(input: &str) -> EvalResultTree {
 	match input.parse::<TokenList>() {
 		Ok(r) => {
-			let mut iter = r.token_list.iter();
+			let mut iter = r.data.iter();
 			let mut cop = None;
 			parse_expr_tree(&mut iter, 1, &mut cop)
 		}
