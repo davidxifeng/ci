@@ -187,7 +187,7 @@ fn print_expr_tree(this: &Expr, s: &mut String, prev: &str, pos: &NodePos) {
 
 			print_op(s, prev, pos, "? :");
 
-			let next_prefix = prev.to_owned() + if pos.is_top() { "│   " } else { "    " };
+			let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
 			print_expr_tree(&left, s, &next_prefix, &NodePos::Middle);
 			print_expr_tree(&right, s, &next_prefix, &NodePos::Bottom);
 		}

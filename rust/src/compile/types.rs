@@ -73,6 +73,9 @@ impl Expr {
 	pub fn new_comma(left: Self, right: Self) -> Self {
 		Expr::CommaExpr(CommaExpr { left: Box::new(left), right: Box::new(right) })
 	}
+	pub fn new_cond(cond: Self, left: Self, right: Self) -> Self {
+		Expr::CondExpr(CondExpr { cond: Box::new(cond), left: Box::new(left), right: Box::new(right) })
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

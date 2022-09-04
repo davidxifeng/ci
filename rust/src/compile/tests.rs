@@ -93,6 +93,12 @@ fn test_expr_parse() {
 	test_expr("(i) = (1)");
 	test_expr("i = 1 + 2 + 3");
 	test_expr("i = 1 + 2 * 3 + 4 * 5");
+	test_expr("i = (1 + 2) * 3 + 4 * 5");
 	test_expr("2, 3, i = 1 + 2, c = 3");
+	test_expr("a ? t : f ");
+	test_expr("a ? t + 1: f + 2");
+	test_expr("a ? t : f = 2 ");
+	test_expr("a ? t : (f = 2) ");
+	test_expr("a ? t ? x : y : (f = 2) ");
 	// test_expr("i = 1; j = 1 + 2;");
 }

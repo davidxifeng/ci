@@ -231,7 +231,7 @@ impl Parser {
 
 		while let Some(ntk) = self.peek() {
 			let ntk_precedence = token_info(&ntk);
-			println!("expr: \n{}next tk: {}, {:?}", first, ntk, ntk_precedence);
+			// println!("expr: \n{}next tk: {}, {:?}", first, ntk, ntk_precedence);
 			if ntk_precedence >= precedence {
 				self.advance();
 				match ntk {
@@ -247,6 +247,18 @@ impl Parser {
 						Punct::Comma => match self.parse_expr(ntk_precedence.next_level())? {
 							Some(second) => first = Expr::new_comma(first, second),
 							None => return Err(ParseError::NoMoreExpr),
+						},
+						Punct::Cond => match self.parse_expr(Precedence::P1Comma)? {
+							Some(left) => {
+								self.expect_punct(Punct::Colon)?;
+								match self.parse_expr(ntk_precedence.next_level())? {
+									Some(right) => {
+										first = Expr::new_cond(first, left, right);
+									}
+									None => return Err(ParseError::General("cond: missing false expr")),
+								}
+							}
+							None => return Err(ParseError::General("cond: missing true expr")),
 						},
 						_ => unimplemented!(),
 					},
