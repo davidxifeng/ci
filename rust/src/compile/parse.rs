@@ -47,7 +47,7 @@ fn expect_const<'a>(iter: &mut impl Iterator<Item = &'a Token>) -> Result<Const,
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
-	P0None,
+	P0Min,
 	P1Comma,
 	P2Assign,
 	P3Cond,
@@ -65,64 +65,82 @@ pub enum Precedence {
 	P15Post,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Associativity {
-	None,
-	LeftToRight,
-	RightToLeft,
+impl Precedence {
+	pub fn next_level(&self) -> Self {
+		match self {
+			Self::P0Min => Self::P0Min,
+			Self::P1Comma => Self::P2Assign,
+			Self::P2Assign => Self::P2Assign, // right to left
+			Self::P3Cond => Self::P3Cond,     // right to left
+			Self::P4LOr => Self::P5LAnd,
+			Self::P5LAnd => Self::P6BOr,
+			Self::P6BOr => Self::P7BXor,
+			Self::P7BXor => Self::P8BAnd,
+			Self::P8BAnd => Self::P9Eq,
+			Self::P9Eq => Self::P10Cmp,
+			Self::P10Cmp => Self::P11BShift,
+			Self::P11BShift => Self::P12Add,
+			Self::P12Add => Self::P13Mul,
+			Self::P13Mul => Self::P14Unary,
+			Self::P14Unary => Self::P14Unary, // right to left
+			Self::P15Post => Self::P15Post,
+		}
+	}
 }
 
-fn token_info(token: &Token) -> (Precedence, Associativity) {
+fn token_info(token: &Token) -> Precedence {
 	match token {
-		Token::Const(_) => (Precedence::P0None, Associativity::None),
-		Token::Id(_) => (Precedence::P0None, Associativity::None),
-		Token::StringLiteral(_) => (Precedence::P0None, Associativity::None),
+		Token::Const(_) => Precedence::P0Min,
+		Token::Id(_) => Precedence::P0Min,
+		Token::StringLiteral(_) => Precedence::P0Min,
 
-		Token::Keyword(Keyword::SizeOf) => (Precedence::P14Unary, Associativity::RightToLeft),
-		Token::Keyword(_) => (Precedence::P0None, Associativity::None),
+		Token::Keyword(Keyword::SizeOf) => Precedence::P14Unary,
+		Token::Keyword(_) => Precedence::P0Min,
 
-		Token::Punct(Punct::Comma) => (Precedence::P1Comma, Associativity::LeftToRight),
+		Token::Punct(Punct::Comma) => Precedence::P1Comma,
 
-		Token::Punct(Punct::Assign) => (Precedence::P2Assign, Associativity::RightToLeft),
-		Token::Punct(Punct::AssignAdd) => (Precedence::P2Assign, Associativity::RightToLeft),
-		Token::Punct(Punct::AssignSub) => (Precedence::P2Assign, Associativity::RightToLeft),
-		Token::Punct(Punct::AssignMul) => (Precedence::P2Assign, Associativity::RightToLeft),
-		Token::Punct(Punct::AssignDiv) => (Precedence::P2Assign, Associativity::RightToLeft),
-		Token::Punct(Punct::AssignMod) => (Precedence::P2Assign, Associativity::RightToLeft),
+		// right to left
+		Token::Punct(Punct::Assign) => Precedence::P2Assign,
+		Token::Punct(Punct::AssignAdd) => Precedence::P2Assign,
+		Token::Punct(Punct::AssignSub) => Precedence::P2Assign,
+		Token::Punct(Punct::AssignMul) => Precedence::P2Assign,
+		Token::Punct(Punct::AssignDiv) => Precedence::P2Assign,
+		Token::Punct(Punct::AssignMod) => Precedence::P2Assign,
 
-		Token::Punct(Punct::Cond) => (Precedence::P3Cond, Associativity::RightToLeft),
+		// right to left
+		Token::Punct(Punct::Cond) => Precedence::P3Cond,
 
-		Token::Punct(Punct::Lor) => (Precedence::P4LOr, Associativity::LeftToRight),
-		Token::Punct(Punct::Lan) => (Precedence::P5LAnd, Associativity::LeftToRight),
-		Token::Punct(Punct::Or) => (Precedence::P6BOr, Associativity::LeftToRight),
-		Token::Punct(Punct::Xor) => (Precedence::P7BXor, Associativity::LeftToRight),
-		Token::Punct(Punct::And) => (Precedence::P8BAnd, Associativity::LeftToRight),
+		Token::Punct(Punct::Lor) => Precedence::P4LOr,
+		Token::Punct(Punct::Lan) => Precedence::P5LAnd,
+		Token::Punct(Punct::Or) => Precedence::P6BOr,
+		Token::Punct(Punct::Xor) => Precedence::P7BXor,
+		Token::Punct(Punct::And) => Precedence::P8BAnd,
 
-		Token::Punct(Punct::Eq) => (Precedence::P9Eq, Associativity::LeftToRight),
-		Token::Punct(Punct::Ne) => (Precedence::P9Eq, Associativity::LeftToRight),
+		Token::Punct(Punct::Eq) => Precedence::P9Eq,
+		Token::Punct(Punct::Ne) => Precedence::P9Eq,
 
-		Token::Punct(Punct::Lt) => (Precedence::P10Cmp, Associativity::LeftToRight),
-		Token::Punct(Punct::Le) => (Precedence::P10Cmp, Associativity::LeftToRight),
-		Token::Punct(Punct::Gt) => (Precedence::P10Cmp, Associativity::LeftToRight),
-		Token::Punct(Punct::Ge) => (Precedence::P10Cmp, Associativity::LeftToRight),
+		Token::Punct(Punct::Lt) => Precedence::P10Cmp,
+		Token::Punct(Punct::Le) => Precedence::P10Cmp,
+		Token::Punct(Punct::Gt) => Precedence::P10Cmp,
+		Token::Punct(Punct::Ge) => Precedence::P10Cmp,
 
-		Token::Punct(Punct::Shl) => (Precedence::P11BShift, Associativity::LeftToRight),
-		Token::Punct(Punct::Shr) => (Precedence::P11BShift, Associativity::LeftToRight),
+		Token::Punct(Punct::Shl) => Precedence::P11BShift,
+		Token::Punct(Punct::Shr) => Precedence::P11BShift,
 
-		Token::Punct(Punct::Add) => (Precedence::P12Add, Associativity::LeftToRight),
-		Token::Punct(Punct::Sub) => (Precedence::P12Add, Associativity::LeftToRight),
+		Token::Punct(Punct::Add) => Precedence::P12Add,
+		Token::Punct(Punct::Sub) => Precedence::P12Add,
 
-		Token::Punct(Punct::Mul) => (Precedence::P13Mul, Associativity::LeftToRight),
-		Token::Punct(Punct::Div) => (Precedence::P13Mul, Associativity::LeftToRight),
-		Token::Punct(Punct::Mod) => (Precedence::P13Mul, Associativity::LeftToRight),
+		Token::Punct(Punct::Mul) => Precedence::P13Mul,
+		Token::Punct(Punct::Div) => Precedence::P13Mul,
+		Token::Punct(Punct::Mod) => Precedence::P13Mul,
 
-		Token::Punct(Punct::Not) => (Precedence::P14Unary, Associativity::RightToLeft),
+		Token::Punct(Punct::Not) => Precedence::P14Unary, // right to left
 
-		Token::Punct(Punct::BrakL) => (Precedence::P15Post, Associativity::LeftToRight),
+		Token::Punct(Punct::BrakL) => Precedence::P15Post,
 
 		// 一些运算符有多种含义, 比如 & 是 位运算与 和 取地址运算符
 		// - + 既是 一元运算符,又是二元运算符, 这些需要放到语法中处理
-		Token::Punct(_) => (Precedence::P0None, Associativity::None),
+		Token::Punct(_) => Precedence::P0Min,
 	}
 }
 
@@ -212,23 +230,23 @@ impl Parser {
 		};
 
 		while let Some(ntk) = self.peek() {
-			let next_token_info = token_info(&ntk);
-			println!("expr: \n{}next tk: {}, {:?}", first, ntk, next_token_info);
-			if next_token_info.0 >= precedence {
+			let ntk_precedence = token_info(&ntk);
+			println!("expr: \n{}next tk: {}, {:?}", first, ntk, ntk_precedence);
+			if ntk_precedence >= precedence {
 				self.advance();
 				match ntk {
 					Token::Punct(p) => match p {
-						Punct::Add | Punct::Sub => match self.parse_expr(Precedence::P13Mul)? {
-							None => return Err(ParseError::NoMoreExpr),
+						_ if p.is_binary_op() => match self.parse_expr(ntk_precedence.next_level())? {
 							Some(second) => first = Expr::new_binary(first, p, second),
-						},
-						Punct::Mul | Punct::Div | Punct::Mod => match self.parse_expr(Precedence::P14Unary)? {
 							None => return Err(ParseError::NoMoreExpr),
-							Some(second) => first = Expr::new_binary(first, p, second),
 						},
 						_ if p.is_assign() => match self.parse_expr(Precedence::P2Assign)? {
-							None => return Err(ParseError::NoMoreExpr),
 							Some(second) => first = Expr::new_assign(first, p, second),
+							None => return Err(ParseError::NoMoreExpr),
+						},
+						Punct::Comma => match self.parse_expr(ntk_precedence.next_level())? {
+							Some(second) => first = Expr::new_comma(first, second),
+							None => return Err(ParseError::NoMoreExpr),
 						},
 						_ => unimplemented!(),
 					},

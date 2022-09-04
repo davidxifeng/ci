@@ -24,6 +24,29 @@ impl Token {
 }
 
 impl Punct {
+	pub fn is_binary_op(&self) -> bool {
+		match self {
+			Punct::Add
+			| Punct::Sub
+			| Punct::Mul
+			| Punct::Div
+			| Punct::Mod
+			| Punct::Shl
+			| Punct::Shr
+			| Punct::And
+			| Punct::Or
+			| Punct::Xor
+			| Punct::Lan
+			| Punct::Lor
+			| Punct::Lt
+			| Punct::Le
+			| Punct::Ge
+			| Punct::Gt
+			| Punct::Eq
+			| Punct::Ne => true,
+			_ => false,
+		}
+	}
 	pub fn is_assign(&self) -> bool {
 		match self {
 			Punct::Assign

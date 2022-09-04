@@ -53,7 +53,7 @@ pub enum Expr {
 	Const(Const),
 	Id(String),
 	StringLiteral(String),
-	SimplePostfix(PostfixOP),
+	Postfix(PostfixOP),
 	UnaryOp(UnaryOp),
 	BinOp(BinOp),
 	CondExpr(CondExpr),
@@ -68,6 +68,10 @@ impl Expr {
 
 	pub fn new_binary(left: Self, op: Punct, right: Self) -> Self {
 		Expr::BinOp(BinOp { left: Box::new(left), op, right: Box::new(right) })
+	}
+
+	pub fn new_comma(left: Self, right: Self) -> Self {
+		Expr::CommaExpr(CommaExpr { left: Box::new(left), right: Box::new(right) })
 	}
 }
 
@@ -108,7 +112,8 @@ pub struct AssignExpr {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommaExpr {
-	pub expr: Vec<Expr>,
+	pub left: Box<Expr>,
+	pub right: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -151,21 +151,21 @@ fn print_binary_node(s: &mut String, prev: &str, pos: &NodePos, v: impl Display,
 	print_expr_tree(right, s, &(prev.to_owned() + next_prefix), &NodePos::Bottom);
 }
 
-fn print_multi_node(s: &mut String, prev: &str, pos: &NodePos, v: impl Display, expr: &Vec<Expr>) {
-	if let Some((first, elems)) = expr.split_first() {
-		let prefix_str = if pos.is_top() || pos.is_init() { "    " } else { "│   " };
-		print_expr_tree(first, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
-		print_op(s, prev, pos, v);
+// fn print_multi_node(s: &mut String, prev: &str, pos: &NodePos, v: impl Display, expr: &Vec<Expr>) {
+// 	if let Some((first, elems)) = expr.split_first() {
+// 		let prefix_str = if pos.is_top() || pos.is_init() { "    " } else { "│   " };
+// 		print_expr_tree(first, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
+// 		print_op(s, prev, pos, v);
 
-		if let Some((last, elems)) = elems.split_last() {
-			let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
-			for e in elems {
-				print_expr_tree(e, s, &next_prefix, &NodePos::Middle);
-			}
-			print_expr_tree(last, s, &next_prefix, &NodePos::Bottom);
-		}
-	}
-}
+// 		if let Some((last, elems)) = elems.split_last() {
+// 			let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
+// 			for e in elems {
+// 				print_expr_tree(e, s, &next_prefix, &NodePos::Middle);
+// 			}
+// 			print_expr_tree(last, s, &next_prefix, &NodePos::Bottom);
+// 		}
+// 	}
+// }
 
 fn print_expr_tree(this: &Expr, s: &mut String, prev: &str, pos: &NodePos) {
 	match this {
@@ -179,7 +179,7 @@ fn print_expr_tree(this: &Expr, s: &mut String, prev: &str, pos: &NodePos) {
 
 		Expr::AssignExpr(AssignExpr { left, assign, right }) => print_binary_node(s, prev, pos, assign, left, right),
 
-		Expr::CommaExpr(CommaExpr { expr }) => print_multi_node(s, prev, pos, ",", expr),
+		Expr::CommaExpr(CommaExpr { left, right }) => print_binary_node(s, prev, pos, ",", left, right),
 
 		Expr::CondExpr(CondExpr { cond, left, right }) => {
 			let prefix_str = if pos.is_top() || prev.is_empty() { "    " } else { "│   " };
@@ -191,7 +191,7 @@ fn print_expr_tree(this: &Expr, s: &mut String, prev: &str, pos: &NodePos) {
 			print_expr_tree(&left, s, &next_prefix, &NodePos::Middle);
 			print_expr_tree(&right, s, &next_prefix, &NodePos::Bottom);
 		}
-		Expr::SimplePostfix(PostfixOP { op, expr }) => {
+		Expr::Postfix(PostfixOP { op, expr }) => {
 			print_op(s, prev, pos, op);
 
 			let next_prefix = prev.to_owned() + if pos.is_top() { "│   " } else { "    " };
