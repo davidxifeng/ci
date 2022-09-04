@@ -100,5 +100,18 @@ fn test_expr_parse() {
 	test_expr("a ? t : f = 2 ");
 	test_expr("a ? t : (f = 2) ");
 	test_expr("a ? t ? x : y : (f = 2) ");
+	test_expr("1 + 2 == 3 || 1 + 2 > 3");
+	test_expr("a ? c : a >= 1 && b <= 2 || c && d");
+	test_expr("++i");
+	test_expr("-1 + ++i");
+	test_expr("sizeof i");
+	test_expr("- - ! ~ 1  ");
+	test_expr("i++ + ++i");
+	test_expr("i[1]");
+	test_expr("i[1 + 2]");
+	test_expr("i[1 + 2] + 2");
+	test_expr("i[a.b + c.d] + 2");
+	test_expr("x &= i[a.b + c.d] + 2");
+	test_expr("y >>= i[a.b + c.d] + 2");
 	// test_expr("i = 1; j = 1 + 2;");
 }

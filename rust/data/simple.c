@@ -2,7 +2,7 @@
 
 int fn(int i) {
 	printf("i is %d\n", i);
-	return i * 2;
+	return - - - i * 2;
 }
 
 int i = 1;

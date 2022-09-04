@@ -63,6 +63,7 @@ pub enum Punct {
 	Lan,
 	Or,
 	Xor,
+	/// &
 	And,
 	Eq,
 	Ne,
@@ -74,6 +75,7 @@ pub enum Punct {
 	Shr,
 	Add,
 	Sub,
+	/// *
 	Mul,
 	Div,
 	Mod,
@@ -83,13 +85,24 @@ pub enum Punct {
 	Dec,
 	/// [
 	BrakL,
+	/// ]
+	BrakR,
 
 	AssignAdd,
 	AssignSub,
 	AssignMul,
 	AssignDiv,
 	AssignMod,
+	AssignShl,
+	AssignShr,
+	AssignBAnd,
+	AssignBOr,
+	AssignBXor,
 
+	/// .
+	Dot,
+	/// ->
+	Arrow,
 	/// !
 	Not,
 	/// ;
@@ -98,8 +111,6 @@ pub enum Punct {
 	ParentheseL,
 	/// )
 	ParentheseR,
-	/// ]
-	BrakR,
 	/// }
 	BracesR,
 	/// {

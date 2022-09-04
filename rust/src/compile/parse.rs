@@ -97,50 +97,48 @@ fn token_info(token: &Token) -> Precedence {
 		Token::Keyword(Keyword::SizeOf) => Precedence::P14Unary,
 		Token::Keyword(_) => Precedence::P0Min,
 
-		Token::Punct(Punct::Comma) => Precedence::P1Comma,
+		Token::Punct(punct) => match punct {
+			Punct::Comma => Precedence::P1Comma,
 
-		// right to left
-		Token::Punct(Punct::Assign) => Precedence::P2Assign,
-		Token::Punct(Punct::AssignAdd) => Precedence::P2Assign,
-		Token::Punct(Punct::AssignSub) => Precedence::P2Assign,
-		Token::Punct(Punct::AssignMul) => Precedence::P2Assign,
-		Token::Punct(Punct::AssignDiv) => Precedence::P2Assign,
-		Token::Punct(Punct::AssignMod) => Precedence::P2Assign,
+			// right to left
+			Punct::Assign
+			| Punct::AssignAdd
+			| Punct::AssignSub
+			| Punct::AssignMul
+			| Punct::AssignDiv
+			| Punct::AssignMod
+			| Punct::AssignBAnd
+			| Punct::AssignBOr
+			| Punct::AssignBXor
+			| Punct::AssignShl
+			| Punct::AssignShr => Precedence::P2Assign,
 
-		// right to left
-		Token::Punct(Punct::Cond) => Precedence::P3Cond,
+			// right to left
+			Punct::Cond => Precedence::P3Cond,
 
-		Token::Punct(Punct::Lor) => Precedence::P4LOr,
-		Token::Punct(Punct::Lan) => Precedence::P5LAnd,
-		Token::Punct(Punct::Or) => Precedence::P6BOr,
-		Token::Punct(Punct::Xor) => Precedence::P7BXor,
-		Token::Punct(Punct::And) => Precedence::P8BAnd,
+			Punct::Lor => Precedence::P4LOr,
+			Punct::Lan => Precedence::P5LAnd,
+			Punct::Or => Precedence::P6BOr,
+			Punct::Xor => Precedence::P7BXor,
+			Punct::And => Precedence::P8BAnd,
 
-		Token::Punct(Punct::Eq) => Precedence::P9Eq,
-		Token::Punct(Punct::Ne) => Precedence::P9Eq,
+			Punct::Eq | Punct::Ne => Precedence::P9Eq,
 
-		Token::Punct(Punct::Lt) => Precedence::P10Cmp,
-		Token::Punct(Punct::Le) => Precedence::P10Cmp,
-		Token::Punct(Punct::Gt) => Precedence::P10Cmp,
-		Token::Punct(Punct::Ge) => Precedence::P10Cmp,
+			Punct::Lt | Punct::Le | Punct::Gt | Punct::Ge => Precedence::P10Cmp,
 
-		Token::Punct(Punct::Shl) => Precedence::P11BShift,
-		Token::Punct(Punct::Shr) => Precedence::P11BShift,
+			Punct::Shl | Punct::Shr => Precedence::P11BShift,
 
-		Token::Punct(Punct::Add) => Precedence::P12Add,
-		Token::Punct(Punct::Sub) => Precedence::P12Add,
+			Punct::Add | Punct::Sub => Precedence::P12Add,
 
-		Token::Punct(Punct::Mul) => Precedence::P13Mul,
-		Token::Punct(Punct::Div) => Precedence::P13Mul,
-		Token::Punct(Punct::Mod) => Precedence::P13Mul,
+			Punct::Mul | Punct::Div | Punct::Mod => Precedence::P13Mul,
 
-		Token::Punct(Punct::Not) => Precedence::P14Unary, // right to left
+			// 一元运算符不会调用此函数获取优先级
+			Punct::Not | Punct::Tilde => unreachable!("unary"),
 
-		Token::Punct(Punct::BrakL) => Precedence::P15Post,
+			Punct::Inc | Punct::Dec | Punct::BrakL | Punct::Dot | Punct::Arrow => Precedence::P15Post,
 
-		// 一些运算符有多种含义, 比如 & 是 位运算与 和 取地址运算符
-		// - + 既是 一元运算符,又是二元运算符, 这些需要放到语法中处理
-		Token::Punct(_) => Precedence::P0Min,
+			_ => Precedence::P0Min,
+		},
 	}
 }
 
@@ -162,14 +160,17 @@ impl Parser {
 		Ok(expr_list)
 	}
 
+	#[inline]
 	fn peek(&self) -> Option<Token> {
-		self.token_list.get(self.index).map(|x| x.clone())
+		self.token_list.get(self.index).cloned()
 	}
 
+	#[inline]
 	fn advance(&mut self) {
 		self.index += 1;
 	}
 
+	#[inline]
 	fn next(&mut self) -> Result<Token, ParseError> {
 		let r = self.token_list.get(self.index);
 		self.index += 1;
@@ -177,12 +178,23 @@ impl Parser {
 	}
 
 	fn expect_punct(&mut self, punct: Punct) -> Result<(), ParseError> {
-		match self.peek() {
-			Some(Token::Punct(p)) if p == punct => {
-				self.advance();
-				Ok(())
-			}
+		match self.next()? {
+			Token::Punct(p) if p == punct => Ok(()),
 			_ => Err(ParseError::Unexpected(format!("expecting {}", punct))),
+		}
+	}
+
+	fn expect_identifier(&mut self) -> Result<String, ParseError> {
+		match self.next()? {
+			Token::Id(id) => Ok(id),
+			_ => Err(ParseError::NotIdentifier),
+		}
+	}
+
+	fn expect_expr(&mut self, precedence: Precedence) -> Result<Expr, ParseError> {
+		match self.parse_expr(precedence)? {
+			Some(expr) => Ok(expr),
+			None => Err(ParseError::NoMoreExpr),
 		}
 	}
 
@@ -208,14 +220,26 @@ impl Parser {
 						}
 						None => Err(ParseError::General("(expr) failed")),
 					},
-					Punct::Semicolon => unimplemented!(),
-					_ => unimplemented!(),
+					Punct::Inc
+					| Punct::Dec
+					| Punct::Add
+					| Punct::Sub
+					| Punct::Not
+					| Punct::Tilde
+					| Punct::And
+					| Punct::Mul => {
+						let expr = self.expect_expr(Precedence::P14Unary)?;
+						Ok(Some(Expr::new_unary(punct, expr)))
+					}
+					_ => Ok(None),
 				},
 				Token::Keyword(keyword) => match keyword {
 					Keyword::SizeOf => {
-						unimplemented!()
+						let expr = self.expect_expr(Precedence::P14Unary)?;
+						// sizeof -> ?
+						Ok(Some(Expr::new_unary(Punct::Cond, expr)))
 					}
-					_ => unimplemented!(),
+					_ => Ok(None),
 				},
 			}
 		} else {
@@ -231,16 +255,31 @@ impl Parser {
 
 		while let Some(ntk) = self.peek() {
 			let ntk_precedence = token_info(&ntk);
-			// println!("expr: \n{}next tk: {}, {:?}", first, ntk, ntk_precedence);
 			if ntk_precedence >= precedence {
 				self.advance();
 				match ntk {
 					Token::Punct(p) => match p {
+						Punct::Inc | Punct::Dec => first = Expr::new_postfix(p, first),
+						Punct::Dot => {
+							let id = self.expect_identifier()?;
+							first = Expr::new_member_access(first, id)
+						}
+						Punct::Arrow => {
+							let id = self.expect_identifier()?;
+							first = Expr::new_member_access_p(first, id)
+						}
+						Punct::BrakL => match self.parse_expr(Precedence::P1Comma)? {
+							Some(second) => {
+								self.expect_punct(Punct::BrakR)?;
+								first = Expr::new_binary(first, p, second)
+							}
+							None => return Err(ParseError::NoMoreExpr),
+						},
 						_ if p.is_binary_op() => match self.parse_expr(ntk_precedence.next_level())? {
 							Some(second) => first = Expr::new_binary(first, p, second),
 							None => return Err(ParseError::NoMoreExpr),
 						},
-						_ if p.is_assign() => match self.parse_expr(Precedence::P2Assign)? {
+						_ if p.is_assign() => match self.parse_expr(ntk_precedence.next_level())? {
 							Some(second) => first = Expr::new_assign(first, p, second),
 							None => return Err(ParseError::NoMoreExpr),
 						},
@@ -268,6 +307,7 @@ impl Parser {
 				break;
 			}
 		}
+
 		Ok(Some(first))
 	}
 }

@@ -54,6 +54,8 @@ pub enum Expr {
 	Id(String),
 	StringLiteral(String),
 	Postfix(PostfixOP),
+	MemberAccess(Box<Expr>, String),
+	MemberAccessP(Box<Expr>, String),
 	UnaryOp(UnaryOp),
 	BinOp(BinOp),
 	CondExpr(CondExpr),
@@ -62,6 +64,14 @@ pub enum Expr {
 }
 
 impl Expr {
+	pub fn new_member_access(expr: Self, id: String) -> Self {
+		Expr::MemberAccess(Box::new(expr), id)
+	}
+
+	pub fn new_member_access_p(expr: Self, id: String) -> Self {
+		Expr::MemberAccessP(Box::new(expr), id)
+	}
+
 	pub fn new_assign(left: Self, op: Punct, right: Self) -> Self {
 		Expr::AssignExpr(AssignExpr { left: Box::new(left), assign: op, right: Box::new(right) })
 	}
@@ -73,8 +83,17 @@ impl Expr {
 	pub fn new_comma(left: Self, right: Self) -> Self {
 		Expr::CommaExpr(CommaExpr { left: Box::new(left), right: Box::new(right) })
 	}
+
 	pub fn new_cond(cond: Self, left: Self, right: Self) -> Self {
 		Expr::CondExpr(CondExpr { cond: Box::new(cond), left: Box::new(left), right: Box::new(right) })
+	}
+
+	pub fn new_unary(op: Punct, expr: Self) -> Self {
+		Expr::UnaryOp(UnaryOp { op, expr: Box::new(expr) })
+	}
+
+	pub fn new_postfix(op: Punct, expr: Self) -> Self {
+		Expr::Postfix(PostfixOP { op, expr: Box::new(expr) })
 	}
 }
 

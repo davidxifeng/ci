@@ -25,38 +25,36 @@ impl Token {
 
 impl Punct {
 	pub fn is_binary_op(&self) -> bool {
-		match self {
+		matches!(
+			self,
 			Punct::Add
-			| Punct::Sub
-			| Punct::Mul
-			| Punct::Div
-			| Punct::Mod
-			| Punct::Shl
-			| Punct::Shr
-			| Punct::And
-			| Punct::Or
-			| Punct::Xor
-			| Punct::Lan
-			| Punct::Lor
-			| Punct::Lt
-			| Punct::Le
-			| Punct::Ge
-			| Punct::Gt
-			| Punct::Eq
-			| Punct::Ne => true,
-			_ => false,
-		}
+				| Punct::Sub | Punct::Mul
+				| Punct::Div | Punct::Mod
+				| Punct::Shl | Punct::Shr
+				| Punct::And | Punct::Or
+				| Punct::Xor | Punct::Lan
+				| Punct::Lor | Punct::Lt
+				| Punct::Le | Punct::Ge
+				| Punct::Gt | Punct::Eq
+				| Punct::Ne
+		)
 	}
+
 	pub fn is_assign(&self) -> bool {
-		match self {
+		matches!(
+			self,
 			Punct::Assign
-			| Punct::AssignAdd
-			| Punct::AssignSub
-			| Punct::AssignMul
-			| Punct::AssignDiv
-			| Punct::AssignMod => true,
-			_ => false,
-		}
+				| Punct::AssignAdd
+				| Punct::AssignSub
+				| Punct::AssignMul
+				| Punct::AssignDiv
+				| Punct::AssignMod
+				| Punct::AssignShl
+				| Punct::AssignShr
+				| Punct::AssignBAnd
+				| Punct::AssignBOr
+				| Punct::AssignBXor
+		)
 	}
 }
 
@@ -101,6 +99,13 @@ impl Display for Punct {
 			Self::AssignMul => "*=",
 			Self::AssignDiv => "/=",
 			Self::AssignMod => "%=",
+			Self::AssignShl => "<<=",
+			Self::AssignShr => ">>=",
+			Self::AssignBAnd => "&=",
+			Self::AssignBOr => "|=",
+			Self::AssignBXor => "^=",
+			Self::Dot => ".",
+			Self::Arrow => "->",
 		};
 		if f.alternate() {
 			f.write_str(&style(s).blue().bold().to_string())
@@ -266,17 +271,15 @@ impl Display for TokenList {
 			} else {
 				Ok(())
 			}
-		} else {
-			if let Some((first, elems)) = self.data.split_first() {
-				write!(f, "{}", first)?;
-				for tk in elems {
-					f.write_str(&style(" ◦ ").dim().to_string())?;
-					write!(f, "{}", tk)?
-				}
-				f.write_char('\n')
-			} else {
-				Ok(())
+		} else if let Some((first, elems)) = self.data.split_first() {
+			write!(f, "{}", first)?;
+			for tk in elems {
+				f.write_str(&style(" ◦ ").dim().to_string())?;
+				write!(f, "{}", tk)?
 			}
+			f.write_char('\n')
+		} else {
+			Ok(())
 		}
 	}
 }

@@ -156,7 +156,6 @@ fn print_binary_node(s: &mut String, prev: &str, pos: &NodePos, v: impl Display,
 // 		let prefix_str = if pos.is_top() || pos.is_init() { "    " } else { "│   " };
 // 		print_expr_tree(first, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
 // 		print_op(s, prev, pos, v);
-
 // 		if let Some((last, elems)) = elems.split_last() {
 // 			let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
 // 			for e in elems {
@@ -183,25 +182,36 @@ fn print_expr_tree(this: &Expr, s: &mut String, prev: &str, pos: &NodePos) {
 
 		Expr::CondExpr(CondExpr { cond, left, right }) => {
 			let prefix_str = if pos.is_top() || prev.is_empty() { "    " } else { "│   " };
-			print_expr_tree(&cond, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
+			print_expr_tree(cond, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
 
 			print_op(s, prev, pos, "? :");
 
 			let next_prefix = prev.to_owned() + if pos.is_top() || pos.is_middle() { "│   " } else { "    " };
-			print_expr_tree(&left, s, &next_prefix, &NodePos::Middle);
-			print_expr_tree(&right, s, &next_prefix, &NodePos::Bottom);
+			print_expr_tree(left, s, &next_prefix, &NodePos::Middle);
+			print_expr_tree(right, s, &next_prefix, &NodePos::Bottom);
 		}
 		Expr::Postfix(PostfixOP { op, expr }) => {
 			print_op(s, prev, pos, op);
 
 			let next_prefix = prev.to_owned() + if pos.is_top() { "│   " } else { "    " };
-			print_expr_tree(expr, s, &next_prefix, &NodePos::Middle);
+			print_expr_tree(expr, s, &next_prefix, &NodePos::Bottom);
 		}
 		Expr::UnaryOp(UnaryOp { op, expr }) => {
 			print_op(s, prev, pos, op);
-
 			let next_prefix = prev.to_owned() + if pos.is_top() { "│   " } else { "    " };
-			print_expr_tree(&expr, s, &next_prefix, &NodePos::Bottom);
+			print_expr_tree(expr, s, &next_prefix, &NodePos::Bottom);
+		}
+		Expr::MemberAccess(expr, field) => {
+			let prefix_str = if pos.is_top() || prev.is_empty() { "    " } else { "│   " };
+			print_expr_tree(expr, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
+			let op = ".".to_owned() + field;
+			print_op(s, prev, pos, &op);
+		}
+		Expr::MemberAccessP(expr, field) => {
+			let prefix_str = if pos.is_top() || prev.is_empty() { "    " } else { "│   " };
+			print_expr_tree(expr, s, &(prev.to_owned() + prefix_str), &NodePos::Top);
+			let op = "->".to_owned() + field;
+			print_op(s, prev, pos, &op);
 		}
 	}
 }
