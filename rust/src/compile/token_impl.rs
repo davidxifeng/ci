@@ -252,7 +252,7 @@ impl FromStr for TokenList {
 	type Err = LexError;
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match TokenApi::parse_all(s) {
-			Ok(token_list) => Ok(TokenList { data: token_list }),
+			Ok(data) => Ok(TokenList { data }),
 			Err(e) => Err(e),
 		}
 	}

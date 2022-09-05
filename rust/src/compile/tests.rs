@@ -92,6 +92,7 @@ fn test_expr_parse() {
 	test_expr("i = 1 + 2 + 3");
 	test_expr("i = 1 + 2 * 3 + 4 * 5");
 	test_expr("i = (1 + 2) * 3 + 4 * 5");
+	test_expr("i = j = k = 1 + 2 * 3 || 1 + 2");
 	test_expr("2, 3, i = 1 + 2, c = 3");
 	test_expr("a ? t : f ");
 	test_expr("a ? t + 1: f + 2");
