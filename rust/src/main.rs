@@ -6,8 +6,6 @@ use std::time::Duration;
 
 use clap::Parser;
 
-use compile::parse::*;
-
 use crate::compile::token::{Punct, TokenList};
 use crate::compile::tree::{build_tree, ExprTree, VisitOrder};
 
@@ -115,7 +113,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 			if debug {
 				println!("{}\n\n\n", src);
-				println!("{}", compile(src.as_str())?);
 			}
 
 			match compile::parse::Parser::test(src.as_str()) {

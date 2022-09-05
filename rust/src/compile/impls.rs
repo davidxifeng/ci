@@ -2,35 +2,11 @@ use std::fmt::Display;
 
 use console::style;
 
-use super::{
-	token::{Const, Keyword},
-	types::*,
-};
+use super::{token::Const, types::*};
 
 impl From<Vec<Declaration>> for DeclarationList {
 	fn from(l: Vec<Declaration>) -> Self {
 		DeclarationList { list: (l) }
-	}
-}
-
-impl Display for DeclarationList {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		for v in &self.list {
-			write!(f, "{}", v)?;
-		}
-		Ok(())
-	}
-}
-
-impl Display for CType {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.write_str(match self {
-			Self::BaseType(kw) => match kw {
-				Keyword::Char => "char",
-				Keyword::Int => "int",
-				_ => "<error>",
-			},
-		})
 	}
 }
 
@@ -43,35 +19,15 @@ impl Display for Declarator {
 	}
 }
 
-impl Display for Declaration {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::Variable(v) => {
-				write!(f, "{}", v.ctype)?;
-
-				if !v.list.is_empty() {
-					write!(f, " {}", v.list[0])?;
-				}
-				for v in v.list.iter().skip(1) {
-					f.write_str(", ")?;
-					write!(f, "{}", v)?;
-				}
-				writeln!(f, ";")
-			}
-			Self::Function(func) => write!(f, "{}", func),
-		}
-	}
-}
-
 impl Display for Parameter {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{} {}", self.ctype, self.name)
+		write!(f, "{}", self.name)
 	}
 }
 
 impl Display for FunctionDefinition {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{} {} (", self.ctype, self.name)?;
+		write!(f, "{} (", self.name)?;
 		if !self.params.is_empty() {
 			write!(f, "{}", self.params[0])?;
 		}

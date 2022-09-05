@@ -6,22 +6,10 @@ use std::{
 use console::style;
 
 use super::{
-	errors::{LexError, ParseError},
+	errors::LexError,
 	lex::TokenApi,
 	token::{Const, Keyword, Punct, Token, TokenList},
 };
-
-impl Token {
-	pub fn try_basetype_keyword(&self) -> Option<Keyword> {
-		match self {
-			Token::Keyword(kw) => match kw {
-				Keyword::Char | Keyword::Int => Some(*kw),
-				_ => None,
-			},
-			_ => None,
-		}
-	}
-}
 
 impl Punct {
 	pub fn is_binary_op(&self) -> bool {
@@ -122,27 +110,6 @@ impl Display for Punct {
 //      constant: int, float, enum, char
 //      string-literal
 //      punctuator
-impl Const {
-	pub fn check_type_match(self, kw: &Keyword) -> Result<Self, ParseError> {
-		match self {
-			Self::Empty => Ok(self),
-			Self::Character(_) => {
-				if *kw == Keyword::Char {
-					Ok(self)
-				} else {
-					Err(ParseError::TypeMismatch)
-				}
-			}
-			Self::Integer(_) => {
-				if *kw == Keyword::Int {
-					Ok(self)
-				} else {
-					Err(ParseError::TypeMismatch)
-				}
-			}
-		}
-	}
-}
 
 impl Display for Const {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

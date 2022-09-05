@@ -40,9 +40,6 @@ pub enum ParseError {
 	General(&'static str),
 	EndOfToken,
 	NoMoreExpr,
-	TypeMismatch,
-	NotPunct,
-	NotKeyword,
 	NotIdentifier,
 }
 
@@ -58,19 +55,9 @@ impl Display for ParseError {
 			ParseError::General(s) => s,
 			ParseError::EndOfToken => "EndOfToken",
 			ParseError::NoMoreExpr => "NoMoreExpr",
-			ParseError::TypeMismatch => "TypeMismatch",
-			ParseError::NotPunct => "NotPunct",
 			ParseError::NotIdentifier => "NotIdentifier",
-			ParseError::NotKeyword => "NotKeyword",
 		})
 	}
 }
 
 impl std::error::Error for ParseError {}
-
-impl ParseError {
-	pub fn expecting_but(es: &mut [String], g: &str) -> ParseError {
-		es.sort();
-		ParseError::Unexpected(format!("expecting: {} got: {}", es.join(" "), g))
-	}
-}

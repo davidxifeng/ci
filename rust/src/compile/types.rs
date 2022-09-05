@@ -1,10 +1,4 @@
-use super::token::{Const, Keyword, Punct};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CType {
-	BaseType(Keyword),
-	// CiEnum(String),
-}
+use super::token::{Const, Punct};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Declarator {
@@ -16,16 +10,12 @@ pub struct Declarator {
 /// 变量定义+初始化
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VariableDeclaration {
-	pub ctype: CType,
 	pub list: Vec<Declarator>,
 }
 
 /// 函数定义
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionDefinition {
-	/// 函数返回值类型
-	pub ctype: CType,
-
 	/// 函数名
 	pub name: String,
 
@@ -36,7 +26,6 @@ pub struct FunctionDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parameter {
-	pub ctype: CType, // TODO
 	pub name: String,
 }
 
@@ -44,8 +33,6 @@ pub struct Parameter {
 pub enum Statement {
 	#[default]
 	Empty,
-	// ReturnStmt(Expr),
-	// ExprStmt(Expr),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,7 +62,7 @@ impl Expr {
 		Expr::MemberAccessP(Box::new(expr), id)
 	}
 
-	pub fn new_func_call(expr: Self, args: Vec<Expr>) -> Self{
+	pub fn new_func_call(expr: Self, args: Vec<Expr>) -> Self {
 		Expr::FunctionCall(Box::new(expr), args)
 	}
 
@@ -146,10 +133,7 @@ pub struct CommaExpr {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Declaration {
-	Variable(VariableDeclaration),
-	Function(FunctionDefinition),
-}
+pub enum Declaration {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DeclarationList {
