@@ -4,6 +4,46 @@ use console::style;
 
 use super::{token::Const, types::*};
 
+impl Display for Type {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		fn show_ptr(this: &Type) -> String {
+			match this {
+				Type::Ptr(Ptr { base_type }) => format!("pointer to: < {} >", show_ptr(&base_type)),
+				_ => format!("{}", this),
+			}
+		}
+
+		let mut s: String;
+		f.write_str(match self {
+			Self::Void => "void",
+			Self::Bool => "bool",
+			Self::Char => "char",
+			Self::Int => "int",
+			Self::Ptr(Ptr { base_type: _ }) => {
+				s = show_ptr(self);
+				&s
+			}
+			Self::Array(Array { length, base_type }) => {
+				s = format!("array of < {} > with size {}", base_type, length);
+				&s
+			}
+			Self::Func(Func { return_type, param_list, is_variadic: _ }) => {
+				s = format!("function returning < {} >", return_type);
+				if let Some((first, left)) = param_list.split_first() {
+					s.push_str(" with parameters: (");
+					s.push_str(first.to_string().as_str());
+					for p in left {
+						s.push_str(", ");
+						s.push_str(p.to_string().as_str());
+					}
+					s.push(')');
+				}
+				&s
+			}
+		})
+	}
+}
+
 impl From<Vec<Declaration>> for DeclarationList {
 	fn from(l: Vec<Declaration>) -> Self {
 		DeclarationList { list: (l) }

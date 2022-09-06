@@ -8,6 +8,7 @@ use clap::Parser;
 
 use crate::compile::token::{Punct, TokenList};
 use crate::compile::tree::{build_tree, ExprTree, VisitOrder};
+use crate::compile::types::avoid_warnings;
 
 #[derive(clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -113,6 +114,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 			if debug {
 				println!("{}\n\n\n", src);
+				avoid_warnings();
 			}
 
 			match compile::parse::Parser::test(src.as_str()) {

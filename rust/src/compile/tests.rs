@@ -1,4 +1,10 @@
 use crate::compile::parse::*;
+use crate::compile::types::*;
+
+#[test]
+fn test_types() {
+	avoid_warnings();
+}
 
 fn test_expr(input: &str) {
 	println!("\t[ok]\n{}", input);
@@ -11,6 +17,7 @@ fn test_expr(input: &str) {
 }
 
 #[test]
+#[ignore = "done"]
 fn test_expr_parse() {
 	test_expr("");
 	test_expr("i");
