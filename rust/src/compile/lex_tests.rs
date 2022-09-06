@@ -149,7 +149,14 @@ fn punct_and_ordering() {
 	assert_eq!(TokenApi::parse_all(";"), Ok(vec![Token::Punct(Punct::Semicolon)]));
 	assert_eq!(TokenApi::parse_all(","), Ok(vec![Token::Punct(Punct::Comma)]));
 	assert_eq!(TokenApi::parse_all("."), Ok(vec![Token::Punct(Punct::Dot)]));
+	assert_eq!(TokenApi::parse_all(".."), Ok(vec![Token::Punct(Punct::Dot), Token::Punct(Punct::Dot)]));
+	assert_eq!(TokenApi::parse_all("..."), Ok(vec![Token::Punct(Punct::VARARG)]));
 	assert_eq!(TokenApi::parse_all("->"), Ok(vec![Token::Punct(Punct::Arrow)]));
+	assert_eq!(TokenApi::parse_all(":"), Ok(vec![Token::Punct(Punct::Colon)]));
+	assert_eq!(TokenApi::parse_all("<:"), Ok(vec![Token::Punct(Punct::BrakL)]));
+	assert_eq!(TokenApi::parse_all(":>"), Ok(vec![Token::Punct(Punct::BrakR)]));
+	assert_eq!(TokenApi::parse_all("<%"), Ok(vec![Token::Punct(Punct::BracesL)]));
+	assert_eq!(TokenApi::parse_all("%>"), Ok(vec![Token::Punct(Punct::BracesR)]));
 
 	assert_eq!(TokenApi::parse_all(">>="), Ok(vec![Token::Punct(Punct::AssignShr)]));
 	assert_eq!(TokenApi::parse_all("<<="), Ok(vec![Token::Punct(Punct::AssignShl)]));
@@ -161,12 +168,4 @@ fn punct_and_ordering() {
 	assert_eq!(TokenApi::parse_all("&="), Ok(vec![Token::Punct(Punct::AssignBAnd)]));
 	assert_eq!(TokenApi::parse_all("|="), Ok(vec![Token::Punct(Punct::AssignBOr)]));
 	assert_eq!(TokenApi::parse_all("^="), Ok(vec![Token::Punct(Punct::AssignBXor)]));
-
-	let ol = Punct::Assign..=Punct::BrakL;
-	assert!(!ol.is_empty());
-	assert!(ol.contains(&Punct::Assign));
-	assert!(ol.contains(&Punct::BrakL));
-
-	assert!(Punct::Assign < Punct::Cond);
-	assert!(Punct::Cond > Punct::Assign);
 }

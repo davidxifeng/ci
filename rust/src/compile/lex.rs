@@ -238,6 +238,12 @@ impl TokenApi {
 							} else {
 								return Some(Ok(Token::Punct(Punct::Shl)));
 							}
+						} else if nc == ':' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::BrakL)));
+						} else if nc == '%' {
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::BracesL)));
 						} else {
 							return Some(Ok(Token::Punct(Punct::Lt)));
 						}
@@ -247,24 +253,30 @@ impl TokenApi {
 				}
 				'>' => {
 					let mut ti = iter.clone();
-					if let Some(nc) = ti.next() {
+					return Some(Ok(Token::Punct(if let Some(nc) = ti.next() {
 						if nc == '=' {
 							iter.next();
-							return Some(Ok(Token::Punct(Punct::Ge)));
+							Punct::Ge
 						} else if nc == '>' {
 							iter.next();
 							if let Some('=') = ti.next() {
 								iter.next();
-								return Some(Ok(Token::Punct(Punct::AssignShr)));
+								Punct::AssignShr
 							} else {
-								return Some(Ok(Token::Punct(Punct::Shr)));
+								Punct::Shr
 							}
+						} else if nc == ':' {
+							iter.next();
+							Punct::BrakR
+						} else if nc == '%' {
+							iter.next();
+							Punct::BracesR
 						} else {
-							return Some(Ok(Token::Punct(Punct::Gt)));
+							Punct::Gt
 						}
 					} else {
-						return Some(Ok(Token::Punct(Punct::Gt)));
-					}
+						Punct::Gt
+					})));
 				}
 				'|' => {
 					if let Some(nc) = iter.clone().next() {
@@ -309,11 +321,19 @@ impl TokenApi {
 					}
 				}
 				'%' => {
-					if iter.peeking_take_while(|&x| x == '=').next().is_some() {
-						return Some(Ok(Token::Punct(Punct::AssignMod)));
+					return Some(Ok(Token::Punct(if let Some(c) = iter.clone().next() {
+						if c == '=' {
+							iter.next();
+							Punct::AssignMod
+						} else if c == '>' {
+							iter.next();
+							Punct::BracesR
+						} else {
+							Punct::Mod
+						}
 					} else {
-						return Some(Ok(Token::Punct(Punct::Mod)));
-					}
+						Punct::Mod
+					})));
 				}
 				'*' => {
 					return Some(Ok(Token::Punct(if iter.peeking_take_while(|&x| x == '=').next().is_some() {
@@ -322,18 +342,35 @@ impl TokenApi {
 						Punct::Mul
 					})));
 				}
+				'.' => {
+					let mut ti = iter.clone();
+					if let Some('.') = ti.next() {
+						if let Some('.') = ti.next() {
+							iter.next();
+							iter.next();
+							return Some(Ok(Token::Punct(Punct::VARARG)));
+						}
+					}
+					return Some(Ok(Token::Punct(Punct::Dot)));
+				}
 				'[' => return Some(Ok(Token::Punct(Punct::BrakL))),
+				']' => return Some(Ok(Token::Punct(Punct::BrakR))),
 				'?' => return Some(Ok(Token::Punct(Punct::Cond))),
-				';' => return Some(Ok(Token::Punct(Punct::Semicolon))),
-				',' => return Some(Ok(Token::Punct(Punct::Comma))),
 				'{' => return Some(Ok(Token::Punct(Punct::BracesL))),
 				'}' => return Some(Ok(Token::Punct(Punct::BracesR))),
-				']' => return Some(Ok(Token::Punct(Punct::BrakR))),
 				'(' => return Some(Ok(Token::Punct(Punct::ParentheseL))),
 				')' => return Some(Ok(Token::Punct(Punct::ParentheseR))),
-				':' => return Some(Ok(Token::Punct(Punct::Colon))),
+				':' => {
+					return Some(Ok(Token::Punct(if let Some('>') = iter.clone().next() {
+						iter.next();
+						Punct::BrakR
+					} else {
+						Punct::Colon
+					})));
+				}
 				'~' => return Some(Ok(Token::Punct(Punct::Tilde))),
-				'.' => return Some(Ok(Token::Punct(Punct::Dot))),
+				',' => return Some(Ok(Token::Punct(Punct::Comma))),
+				';' => return Some(Ok(Token::Punct(Punct::Semicolon))),
 
 				'"' => return self.try_string_literal(iter),
 				'\'' => return self.try_char(iter),

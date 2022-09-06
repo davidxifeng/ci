@@ -119,6 +119,8 @@ pub enum Punct {
 	Colon,
 	/// ~
 	Tilde,
+	/// ...
+	VARARG,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

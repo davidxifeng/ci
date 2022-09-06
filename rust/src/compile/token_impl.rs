@@ -94,6 +94,7 @@ impl Display for Punct {
 			Self::AssignBXor => "^=",
 			Self::Dot => ".",
 			Self::Arrow => "->",
+			Self::VARARG => "...",
 		};
 		if f.alternate() {
 			f.write_str(&style(s).blue().bold().to_string())
