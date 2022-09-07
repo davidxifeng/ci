@@ -24,23 +24,24 @@ pub const TYPE_CHAR: Type = Type::Char;
 pub const TYPE_INT: Type = Type::Int;
 
 pub fn avoid_warnings() {
-	println!("basic types: {} {} {} {}", TYPE_VOID, TYPE_BOOL, TYPE_CHAR, TYPE_INT);
+	println!("{} {} {} {}", TYPE_VOID, TYPE_BOOL, TYPE_CHAR, TYPE_INT);
 	let ptr_to_void = Type::Ptr(Ptr { base_type: Box::new(TYPE_VOID) });
 	let ptr_to_int = Type::Ptr(Ptr { base_type: Box::new(TYPE_INT) });
-	println!("ptrs: {} {}", ptr_to_int, ptr_to_void);
+	println!("{}\n{:#}", ptr_to_int, ptr_to_void);
 	let ptr_to_ptr = Type::Ptr(Ptr { base_type: Box::new(ptr_to_int) });
-	println!("ptrs: {}", ptr_to_ptr);
+	println!("{}\n{:#}", ptr_to_ptr, ptr_to_ptr);
 
 	let array = Type::Array(Array { base_type: Box::new(ptr_to_ptr), length: 8 });
-	println!("array: {}", array);
+	println!("{}\n{:#}", array, array);
 	let array = Type::Array(Array { base_type: Box::new(TYPE_BOOL), length: 8 });
-	println!("array: {}", array);
+	let array = Type::Array(Array { base_type: Box::new(array), length: 8 });
+	println!("{}\n{:#}", array, array);
 
 	let func = Type::Func(Func { is_variadic: false, param_list: vec![], return_type: Box::new(TYPE_BOOL) });
-	println!("func: {}", func);
+	println!("{}\n{:#}", func, func);
 	let func =
-		Type::Func(Func { is_variadic: false, param_list: vec![TYPE_INT, TYPE_INT], return_type: Box::new(TYPE_INT) });
-	println!("func: {}", func);
+		Type::Func(Func { is_variadic: false, param_list: vec![func.clone(), TYPE_INT], return_type: Box::new(func) });
+	println!("{}\n{:#}", func, func);
 }
 
 pub trait TypeSizeAlign {

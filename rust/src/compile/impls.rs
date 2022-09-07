@@ -6,37 +6,47 @@ use super::{token::Const, types::*};
 
 impl Display for Type {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		fn show_ptr(this: &Type) -> String {
-			match this {
-				Type::Ptr(Ptr { base_type }) => format!("pointer to: < {} >", show_ptr(&base_type)),
-				_ => format!("{}", this),
-			}
-		}
-
 		let mut s: String;
 		f.write_str(match self {
 			Self::Void => "void",
 			Self::Bool => "bool",
 			Self::Char => "char",
 			Self::Int => "int",
-			Self::Ptr(Ptr { base_type: _ }) => {
-				s = show_ptr(self);
+			Self::Ptr(Ptr { base_type }) => {
+				if f.alternate() {
+					s = format!("pointer to: < {:#} >", base_type);
+				} else {
+					s = format!("pointer to: ---> {}", base_type);
+				}
 				&s
 			}
 			Self::Array(Array { length, base_type }) => {
-				s = format!("array of < {} > with size {}", base_type, length);
+				if f.alternate() {
+					s = format!("array of < {:#} > with size {}", base_type, length);
+				} else {
+					s = format!("array [size: {}] of ---> {}", length, base_type);
+				}
 				&s
 			}
 			Self::Func(Func { return_type, param_list, is_variadic: _ }) => {
-				s = format!("function returning < {} >", return_type);
-				if let Some((first, left)) = param_list.split_first() {
-					s.push_str(" with parameters: (");
-					s.push_str(first.to_string().as_str());
-					for p in left {
-						s.push_str(", ");
-						s.push_str(p.to_string().as_str());
+				if f.alternate() {
+					s = format!("function returning < {:#} > with parameters: (", return_type);
+					if let Some((first, remaining)) = param_list.split_first() {
+						s.push_str(&format!("{:#}", first));
+						for p in remaining {
+							s.push_str(&format!(", {:#}", p));
+						}
 					}
 					s.push(')');
+				} else {
+					s = "function (".to_string();
+					if let Some((first, remaining)) = param_list.split_first() {
+						s.push_str(&format!("{}", first));
+						for p in remaining {
+							s.push_str(&format!(", {}", p));
+						}
+					}
+					s.push_str(&format!(") returning ---> {}", return_type));
 				}
 				&s
 			}
