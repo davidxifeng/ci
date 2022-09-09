@@ -40,6 +40,7 @@ pub enum ParseError {
 	General(&'static str),
 	EndOfToken,
 	NoMoreExpr,
+	NotType,
 	NotIdentifier,
 }
 
@@ -56,6 +57,7 @@ impl Display for ParseError {
 			ParseError::EndOfToken => "EndOfToken",
 			ParseError::NoMoreExpr => "NoMoreExpr",
 			ParseError::NotIdentifier => "NotIdentifier",
+			ParseError::NotType => "NotType",
 		})
 	}
 }

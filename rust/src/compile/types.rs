@@ -8,12 +8,14 @@ pub enum Object {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Variable {
-	next: Option<Box<Object>>,
+	pub next: Option<Box<Object>>,
+	pub name: Option<String>,
+	pub ctype: Type,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Function {
-	next: Option<Box<Object>>,
+	pub next: Option<Box<Object>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,26 +41,21 @@ pub const TYPE_BOOL: Type = Type::Bool;
 pub const TYPE_CHAR: Type = Type::Char;
 pub const TYPE_INT: Type = Type::Int;
 
-pub fn avoid_warnings() {
-	println!("{} {} {} {}", TYPE_VOID, TYPE_BOOL, TYPE_CHAR, TYPE_INT);
-	let ptr_to_void = Type::Ptr(Ptr { base_type: Box::new(TYPE_VOID) });
-	let ptr_to_int = Type::Ptr(Ptr { base_type: Box::new(TYPE_INT) });
-	println!("{}\n{:#}", ptr_to_int, ptr_to_void);
-	let ptr_to_ptr = Type::Ptr(Ptr { base_type: Box::new(ptr_to_int) });
-	println!("{}\n{:#}", ptr_to_ptr, ptr_to_ptr);
+impl Type {
+	pub fn to_pointer(self) -> Self {
+		Type::Ptr(Ptr { base_type: Box::new(self) })
+	}
 
-	let array = Type::Array(Array { base_type: Box::new(ptr_to_ptr), length: 8 });
-	println!("{}\n{:#}", array, array);
-	let array = Type::Array(Array { base_type: Box::new(TYPE_BOOL), length: 8 });
-	let array = Type::Array(Array { base_type: Box::new(array), length: 8 });
-	println!("{}\n{:#}", array, array);
-
-	let func = Type::Func(Func { is_variadic: false, param_list: vec![], return_type: Box::new(TYPE_BOOL) });
-	println!("{}\n{:#}", func, func);
-	let func =
-		Type::Func(Func { is_variadic: false, param_list: vec![func.clone(), TYPE_INT], return_type: Box::new(func) });
-	println!("{}\n{:#}", func, func);
+	pub fn to_array(self, expr: Option<Expr>) -> Self {
+		let length = match expr {
+			Some(Expr::Const(Const::Integer(ref i))) => i.parse().unwrap(),
+			_ => 0,
+		};
+		Type::Array(Array { base_type: Box::new(self), length, size_expr: expr })
+	}
 }
+
+pub fn avoid_warnings() {}
 
 pub trait TypeSizeAlign {
 	fn size(&self) -> usize;
@@ -72,7 +69,7 @@ impl TypeSizeAlign for Type {
 			Self::Bool => 1,
 			Self::Char => 1,
 			Self::Int => 4,
-			Self::Array(Array { base_type, length }) => base_type.size() * length,
+			Self::Array(Array { base_type, length, size_expr: _ }) => base_type.size() * length,
 			Self::Ptr(_) => 8,
 			Self::Func(_) => 8,
 		}
@@ -83,7 +80,7 @@ impl TypeSizeAlign for Type {
 			Self::Bool => 1,
 			Self::Char => 1,
 			Self::Int => 4,
-			Self::Array(Array { base_type, length: _ }) => base_type.align(),
+			Self::Array(Array { base_type, length: _, size_expr: _ }) => base_type.align(),
 			Self::Ptr(_) => 8,
 			Self::Func(_) => 8,
 		}
@@ -97,6 +94,7 @@ pub struct Ptr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Array {
 	pub length: usize,
+	pub size_expr: Option<Expr>,
 	pub base_type: Box<Type>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,17 +1,25 @@
-use crate::compile::parse::*;
+use crate::compile::{parse::*, types::Object};
+
+fn test_declspec(input: &str) {
+	println!("------\n{}", input);
+	match Parser::from_str(input).and_then(|mut x| x.test_global_variable()) {
+		Ok(Some(Object::Variable(var))) => println!("{:?} type: {}", var.name, var.ctype),
+		Ok(Some(Object::Function(func))) => println!("{:?}", func),
+		Ok(None) => println!("none"),
+		Err(e) => println!("\t[error]\t{}", e),
+	}
+}
 
 #[test]
 fn test_types() {
-	test_declspec("int");
-}
-
-fn test_declspec(input: &str) {
-	println!("{}\n", input);
-	match Parser::from_str(input).and_then(|mut x| x.declspec()) {
-		Ok(Some(expr)) => println!("------\n{}", expr),
-		Ok(None) => println!("none"),
-		Err(e) => println!("\t[error]\n{}", e),
-	}
+	test_declspec("int i");
+	test_declspec("int *i");
+	test_declspec("int **i");
+	test_declspec("int i[1]");
+	test_declspec("int i[1][2]");
+	test_declspec("int i[]");
+	test_declspec("int *i[8]");
+	test_declspec("int **i[8][2]");
 }
 
 fn test_expr(input: &str) {

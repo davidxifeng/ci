@@ -10,19 +10,21 @@ and this project adheres to [Semantic Versioning].
 
 ### TODO
 
-- [ ] 指针类型处理
 - [ ] 枚举解析
 - [ ] 函数定义
 
 ### Added
 
-- 
+- [x] C表达式解析
+- [x] 简化版的C声明类型解析: 指针 数组.
 
 ### Changed
 
 ### Removed
 
 ### Fixed
+
+- parse expr改成使用peek,读取不到表达式时,不修改指针.
 
 ## [0.0.2] - 2022-08-27
 
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning].
 - 参照已有算法,实现了两个表达式树的pretty print算法; 其中中缀版本一开始直接翻译的C++代码, 实现
   得比较艰难.
 - 解析声明的代码结构调整,初步实现递归下降语法解析的结构
+
 ### Fixed
 
 - peek迭代器的使用bug

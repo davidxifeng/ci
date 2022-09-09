@@ -20,7 +20,7 @@ impl Display for Type {
 				}
 				&s
 			}
-			Self::Array(Array { length, base_type }) => {
+			Self::Array(Array { length, base_type, size_expr: _ }) => {
 				if f.alternate() {
 					s = format!("array of < {:#} > with size {}", base_type, length);
 				} else {
