@@ -115,6 +115,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 			if debug {
 				println!("{}\n\n\n", src);
 				avoid_warnings();
+
+				match compile::parse::Parser::from_str(src.as_str()).and_then(|mut p| p.declspec()) {
+					Ok(Some(declspec)) => println!("------\n{}", declspec),
+					Ok(None) => println!("------\nNone\n"),
+					Err(e) => println!("\t[error]\n{}", e),
+				}
 			}
 
 			match compile::parse::Parser::test(src.as_str()) {

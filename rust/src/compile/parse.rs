@@ -106,11 +106,12 @@ fn token_info(token: &Token) -> Precedence {
 pub struct Parser {
 	token_list: Vec<Token>,
 	index: usize,
+	globals: Option<Object>,
 }
 
 impl Parser {
 	pub fn new(token_list: TokenList) -> Self {
-		Parser { token_list: token_list.data, index: 0 }
+		Parser { token_list: token_list.data, index: 0, globals: None }
 	}
 
 	pub fn from_str(input: &str) -> Result<Self, ParseError> {
@@ -119,6 +120,14 @@ impl Parser {
 
 	pub fn parse(&mut self) -> Result<Option<Expr>, ParseError> {
 		self.parse_expr(Precedence::P1Comma)
+	}
+
+	pub fn declspec(&mut self) -> Result<Option<Type>, ParseError> {
+		Ok(None)
+	}
+
+	pub fn test_global_variable(&mut self) -> Result<Option<Object>, ParseError> {
+		Ok(None)
 	}
 
 	pub fn test(input: &str) -> Result<Expr, ParseError> {

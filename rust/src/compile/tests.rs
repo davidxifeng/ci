@@ -1,17 +1,24 @@
 use crate::compile::parse::*;
-use crate::compile::types::*;
 
 #[test]
 fn test_types() {
-	avoid_warnings();
+	test_declspec("int");
+}
+
+fn test_declspec(input: &str) {
+	println!("{}\n", input);
+	match Parser::from_str(input).and_then(|mut x| x.declspec()) {
+		Ok(Some(expr)) => println!("------\n{}", expr),
+		Ok(None) => println!("none"),
+		Err(e) => println!("\t[error]\n{}", e),
+	}
 }
 
 fn test_expr(input: &str) {
 	println!("\t[ok]\n{}", input);
-	match Parser::from_str(input).map(|mut x| x.parse()) {
-		Ok(Ok(Some(expr))) => println!("------\n{}", expr),
-		Ok(Ok(None)) => println!("none"),
-		Ok(Err(e)) => println!("\t[error]\n{}", e),
+	match Parser::from_str(input).and_then(|mut x| x.parse()) {
+		Ok(Some(expr)) => println!("------\n{}", expr),
+		Ok(None) => println!("none"),
 		Err(e) => println!("\t[error]\n{}", e),
 	}
 }

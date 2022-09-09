@@ -1,6 +1,22 @@
 use super::token::{Const, Punct};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Object {
+	Variable(Variable),
+	Function(Function),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Variable {
+	next: Option<Box<Object>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Function {
+	next: Option<Box<Object>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
 	Void,
 	Bool,
