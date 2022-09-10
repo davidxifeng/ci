@@ -1,3 +1,5 @@
+use console::style;
+
 use super::{
 	errors::*,
 	token::{Keyword, Precedence, Punct, Token, TokenList},
@@ -5,14 +7,80 @@ use super::{
 };
 
 pub struct Parser {
-	token_list: Vec<Token>,
+	token_list: TokenList,
 	index: usize,
 	globals: Option<Object>,
 }
 
 impl Parser {
+	fn skip_after_matching(&mut self) -> Result<(), ParseError> {
+		let mut level = 1;
+		while let Ok(token) = self.next() {
+			match token {
+				Token::Punct(Punct::ParentheseL) => level += 1,
+				Token::Punct(Punct::ParentheseR) => {
+					level -= 1;
+					if level == 0 {
+						return Ok(());
+					}
+				}
+				_ => (),
+			}
+		}
+		Err(ParseError::NoMatchFound)
+	}
+
+	#[inline]
+	fn peek_next_n(&self, n: usize) -> Option<Token> {
+		self.token_list.data.get(self.index + n).cloned()
+	}
+
+	#[inline]
+	fn advance_by_n(&mut self, n: usize) {
+		self.index += n;
+	}
+
+	#[inline]
+	fn seek_to(&mut self, n: usize) {
+		self.index = n;
+	}
+
+	#[inline]
+	fn peek_next(&self) -> Option<Token> {
+		self.token_list.data.get(self.index).cloned()
+	}
+
+	#[inline]
+	fn advance(&mut self) -> usize {
+		self.index += 1;
+		self.index
+	}
+
+	#[inline]
+	fn next(&mut self) -> Result<Token, ParseError> {
+		let r = self.token_list.data.get(self.index);
+		self.index += 1;
+		r.map_or(Err(ParseError::EndOfToken), |x| Ok(x.clone()))
+	}
+
+	fn expect_punct(&mut self, punct: Punct) -> Result<(), ParseError> {
+		match self.next()? {
+			Token::Punct(p) if p == punct => Ok(()),
+			other => Err(ParseError::Unexpected(format!("expecting {}, but {}", punct, other))),
+		}
+	}
+
+	fn expect_identifier(&mut self) -> Result<String, ParseError> {
+		match self.next()? {
+			Token::Id(id) => Ok(id),
+			_ => Err(ParseError::NotIdentifier),
+		}
+	}
+}
+
+impl Parser {
 	pub fn new(token_list: TokenList) -> Self {
-		Parser { token_list: token_list.data, index: 0, globals: None }
+		Parser { token_list, index: 0, globals: None }
 	}
 
 	pub fn from_str(input: &str) -> Result<Self, ParseError> {
@@ -34,6 +102,27 @@ impl Parser {
 			Some(expr) => Ok(expr),
 			None => Err(ParseError::EndOfToken),
 		}
+	}
+
+	pub fn show_parse_state(&self) {
+		let (a, b) = self.token_list.data.split_at(self.index);
+
+		if let Some((first, elems)) = a.split_first() {
+			print!("{}", first);
+			for tk in elems {
+				print!("{}", style(" ◦ ").dim().to_string());
+				print!("{}", tk);
+			}
+		}
+		if let Some((first, elems)) = b.split_first() {
+			print!("{}", style(" ^ ").red().to_string());
+			print!("{}", first);
+			for tk in elems {
+				print!("{}", style(" ◦ ").dim().to_string());
+				print!("{}", tk);
+			}
+		}
+		print!("\n");
 	}
 
 	fn declspec(&mut self) -> Result<Type, ParseError> {
@@ -97,7 +186,6 @@ impl Parser {
 	}
 
 	fn declarator(&mut self, mut base_type: Type) -> Result<Type, ParseError> {
-
 		while let Some(Token::Punct(Punct::Mul)) = self.peek_next() {
 			self.advance();
 			base_type = base_type.into_pointer();
@@ -107,7 +195,7 @@ impl Parser {
 			if token == Token::Punct(Punct::ParentheseL) {
 				let pos1 = self.advance();
 
-				self.skip_after_matching();
+				self.skip_after_matching()?;
 
 				base_type = self.type_suffix(base_type)?;
 				let pos2 = self.index;
@@ -128,72 +216,6 @@ impl Parser {
 			}
 		} else {
 			Err(ParseError::EndOfToken)
-		}
-	}
-
-	fn skip_after_matching(&mut self) {
-		let mut level = 1;
-		while let Some(token) = self.peek_next() {
-			self.advance();
-			match token {
-				Token::Punct(Punct::ParentheseL) => {
-					level += 1;
-				}
-				Token::Punct(Punct::ParentheseR) => {
-					level -= 1;
-					if level == 0 {
-						break;
-					}
-				}
-				_ => {}
-			}
-		}
-	}
-
-	#[inline]
-	fn peek_next_n(&self, n: usize) -> Option<Token> {
-		self.token_list.get(self.index + n).cloned()
-	}
-
-	#[inline]
-	fn advance_by_n(&mut self, n: usize) {
-		self.index += n;
-	}
-
-	#[inline]
-	fn seek_to(&mut self, n: usize) {
-		self.index = n;
-	}
-
-	#[inline]
-	fn peek_next(&self) -> Option<Token> {
-		self.token_list.get(self.index).cloned()
-	}
-
-	#[inline]
-	fn advance(&mut self) -> usize {
-		self.index += 1;
-		self.index
-	}
-
-	#[inline]
-	fn next(&mut self) -> Result<Token, ParseError> {
-		let r = self.token_list.get(self.index);
-		self.index += 1;
-		r.map_or(Err(ParseError::EndOfToken), |x| Ok(x.clone()))
-	}
-
-	fn expect_punct(&mut self, punct: Punct) -> Result<(), ParseError> {
-		match self.next()? {
-			Token::Punct(p) if p == punct => Ok(()),
-			other => Err(ParseError::Unexpected(format!("expecting {}, but {}", punct, other))),
-		}
-	}
-
-	fn expect_identifier(&mut self) -> Result<String, ParseError> {
-		match self.next()? {
-			Token::Id(id) => Ok(id),
-			_ => Err(ParseError::NotIdentifier),
 		}
 	}
 
@@ -324,9 +346,9 @@ impl Parser {
 							}
 							None => return Err(ParseError::General("cond: missing true expr")),
 						},
-						_ => unimplemented!(),
+						_ => unreachable!(),
 					},
-					_ => unimplemented!(),
+					_ => unreachable!(),
 				}
 			} else {
 				break;

@@ -1,9 +1,13 @@
 use crate::compile::parse::*;
 
 fn test_declaration(input: &str) {
-	println!("------\n{}", input);
-	match Parser::from_str(input).and_then(|mut x| x.declaration()) {
-		Ok(obj) => println!("type: {}", obj),
+	println!("\n------");
+	match Parser::from_str(input).and_then(|mut p| {
+		let r = p.declaration();
+		p.show_parse_state();
+		r
+	}) {
+		Ok(r) => println!("{}", r),
 		Err(e) => println!("\t[error]\t{}", e),
 	}
 }
@@ -39,9 +43,13 @@ fn test_types() {
 }
 
 fn test_expr(input: &str) {
-	println!("\t[ok]\n{}", input);
-	match Parser::from_str(input).and_then(|mut x| x.parse()) {
-		Ok(Some(expr)) => println!("------\n{}", expr),
+	println!("------\n{}", input);
+	match Parser::from_str(input).and_then(|mut x| {
+		let r = x.parse();
+		x.show_parse_state();
+		r
+	}) {
+		Ok(Some(expr)) => println!("{}", expr),
 		Ok(None) => println!("none"),
 		Err(e) => println!("\t[error]\n{}", e),
 	}

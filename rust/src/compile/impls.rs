@@ -9,15 +9,28 @@ impl Display for Type {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let mut s: String;
 		f.write_str(match self {
-			Self::Void => "void",
-			Self::Bool => "bool",
-			Self::Char => "char",
-			Self::Int => "int",
+			Self::Void => {
+				s = style("void").green().to_string();
+				&s
+			}
+			Self::Bool => {
+				s = style("bool").green().to_string();
+				&s
+			}
+			Self::Char => {
+				s = style("char").green().to_string();
+				&s
+			}
+			Self::Int => {
+				s = style("int").green().to_string();
+				&s
+			}
 			Self::Ptr(Ptr { base_type }) => {
 				if f.alternate() {
 					s = format!("pointer to: < {:#} >", base_type);
 				} else {
-					s = format!("pointer to: ---> {}", base_type);
+					// s = format!("pointer to: ---> {}", base_type);
+					s = format!("* -> {}", base_type);
 				}
 				&s
 			}
@@ -25,7 +38,12 @@ impl Display for Type {
 				if f.alternate() {
 					s = format!("array of < {:#} > with size {}", base_type, length);
 				} else {
-					s = format!("array [size: {}] of ---> {}", length, base_type);
+					// s = format!("array [size: {}] of ---> {}", length, base_type);
+					if *length == 0 {
+						s = format!("[] -> {}", base_type);
+					} else {
+						s = format!("[{}] -> {}", length, base_type);
+					}
 				}
 				&s
 			}
@@ -40,14 +58,14 @@ impl Display for Type {
 					}
 					s.push(')');
 				} else {
-					s = "function (".to_string();
+					s = "func (".to_string();
 					if let Some((first, remaining)) = param_list.split_first() {
 						write!(s, "{}", first)?;
 						for p in remaining {
 							write!(s, ", {}", p)?;
 						}
 					}
-					write!(s, ") returning ---> {}", return_type)?;
+					write!(s, "): {}", return_type)?;
 				}
 				&s
 			}
