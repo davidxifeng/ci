@@ -42,11 +42,11 @@ pub const TYPE_CHAR: Type = Type::Char;
 pub const TYPE_INT: Type = Type::Int;
 
 impl Type {
-	pub fn to_pointer(self) -> Self {
+	pub fn into_pointer(self) -> Self {
 		Type::Ptr(Ptr { base_type: Box::new(self) })
 	}
 
-	pub fn to_array(self, expr: Option<Expr>) -> Self {
+	pub fn into_array(self, expr: Option<Expr>) -> Self {
 		let length = match expr {
 			Some(Expr::Const(Const::Integer(ref i))) => i.parse().unwrap(),
 			_ => 0,
@@ -54,11 +54,11 @@ impl Type {
 		Type::Array(Array { base_type: Box::new(self), length, size_expr: expr })
 	}
 
-	pub fn to_function(self) -> Self {
+	pub fn into_function(self) -> Self {
 		Type::Func(Func { return_type: Box::new(self), param_list: vec![], is_variadic: false })
 	}
 
-	pub fn to_function_with_param(self, param_list: Vec<Type>) -> Self {
+	pub fn into_function_with_param(self, param_list: Vec<Type>) -> Self {
 		Type::Func(Func { return_type: Box::new(self), param_list, is_variadic: false })
 	}
 }

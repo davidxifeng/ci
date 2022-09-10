@@ -348,7 +348,7 @@ impl TokenApi {
 						if let Some('.') = ti.next() {
 							iter.next();
 							iter.next();
-							return Some(Ok(Token::Punct(Punct::VARARG)));
+							return Some(Ok(Token::Punct(Punct::VarArg)));
 						}
 					}
 					return Some(Ok(Token::Punct(Punct::Dot)));

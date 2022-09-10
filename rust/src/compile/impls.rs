@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::fmt::Write;
 
 use console::style;
 
@@ -32,21 +33,21 @@ impl Display for Type {
 				if f.alternate() {
 					s = format!("function returning < {:#} > with parameters: (", return_type);
 					if let Some((first, remaining)) = param_list.split_first() {
-						s.push_str(&format!("{:#}", first));
+						write!(s, "{:#}", first)?;
 						for p in remaining {
-							s.push_str(&format!(", {:#}", p));
+							write!(s, ", {:#}", p)?;
 						}
 					}
 					s.push(')');
 				} else {
 					s = "function (".to_string();
 					if let Some((first, remaining)) = param_list.split_first() {
-						s.push_str(&format!("{}", first));
+						write!(s, "{}", first)?;
 						for p in remaining {
-							s.push_str(&format!(", {}", p));
+							write!(s, ", {}", p)?;
 						}
 					}
-					s.push_str(&format!(") returning ---> {}", return_type));
+					write!(s, ") returning ---> {}", return_type)?;
 				}
 				&s
 			}

@@ -50,7 +50,7 @@ impl Parser {
 		if let Some(Token::Keyword(Keyword::Void)) = self.peek_next() {
 			if let Some(Token::Punct(Punct::ParentheseR)) = self.peek_next_n(1) {
 				self.advance_by_n(2);
-				return Ok(base_type.to_function());
+				return Ok(base_type.into_function());
 			}
 		}
 
@@ -68,14 +68,14 @@ impl Parser {
 			}
 		}
 
-		Ok(base_type.to_function_with_param(params))
+		Ok(base_type.into_function_with_param(params))
 	}
 
 	fn array_dimensions(&mut self, mut base_type: Type) -> Result<Type, ParseError> {
 		let maybe_expr = self.parse_expr(Precedence::P2Assign)?;
 		self.expect_punct(Punct::BrakR)?;
 		base_type = self.type_suffix(base_type)?;
-		Ok(base_type.to_array(maybe_expr))
+		Ok(base_type.into_array(maybe_expr))
 	}
 
 	fn type_suffix(&mut self, base_type: Type) -> Result<Type, ParseError> {
@@ -100,7 +100,7 @@ impl Parser {
 
 		while let Some(Token::Punct(Punct::Mul)) = self.peek_next() {
 			self.advance();
-			base_type = base_type.to_pointer();
+			base_type = base_type.into_pointer();
 		}
 
 		if let Some(token) = self.peek_next() {
@@ -118,7 +118,7 @@ impl Parser {
 
 				Ok(base_type)
 			} else {
-				let name = token.to_identifier();
+				let name = token.into_identifier();
 				if name.is_some() {
 					self.advance();
 				}

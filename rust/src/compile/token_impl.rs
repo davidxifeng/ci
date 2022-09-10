@@ -94,7 +94,7 @@ impl Display for Punct {
 			Self::AssignBXor => "^=",
 			Self::Dot => ".",
 			Self::Arrow => "->",
-			Self::VARARG => "...",
+			Self::VarArg => "...",
 		};
 		if f.alternate() {
 			f.write_str(&style(s).blue().bold().to_string())
@@ -276,7 +276,7 @@ impl Precedence {
 }
 
 impl Token {
-	pub fn to_identifier(self) -> Option<String> {
+	pub fn into_identifier(self) -> Option<String> {
 		match self {
 			Token::Id(id) => Some(id),
 			_ => None,

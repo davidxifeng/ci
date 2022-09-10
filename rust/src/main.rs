@@ -113,9 +113,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 			if debug {
 				println!("{}\n\n\n", src);
-				match compile::parse::Parser::from_str(src.as_str()).and_then(|mut p| p.declaration())? {
-					data => println!("------\n{}", data),
-				}
+				let data = compile::parse::Parser::from_str(src.as_str()).and_then(|mut p| p.declaration())?;
+				println!("------\n{}", data);
 			}
 
 			match compile::parse::Parser::test(src.as_str()) {

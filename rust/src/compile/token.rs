@@ -120,7 +120,7 @@ pub enum Punct {
 	/// ~
 	Tilde,
 	/// ...
-	VARARG,
+	VarArg,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

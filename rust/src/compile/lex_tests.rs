@@ -150,7 +150,7 @@ fn punct_and_ordering() {
 	assert_eq!(TokenApi::parse_all(","), Ok(vec![Token::Punct(Punct::Comma)]));
 	assert_eq!(TokenApi::parse_all("."), Ok(vec![Token::Punct(Punct::Dot)]));
 	assert_eq!(TokenApi::parse_all(".."), Ok(vec![Token::Punct(Punct::Dot), Token::Punct(Punct::Dot)]));
-	assert_eq!(TokenApi::parse_all("..."), Ok(vec![Token::Punct(Punct::VARARG)]));
+	assert_eq!(TokenApi::parse_all("..."), Ok(vec![Token::Punct(Punct::VarArg)]));
 	assert_eq!(TokenApi::parse_all("->"), Ok(vec![Token::Punct(Punct::Arrow)]));
 	assert_eq!(TokenApi::parse_all(":"), Ok(vec![Token::Punct(Punct::Colon)]));
 	assert_eq!(TokenApi::parse_all("<:"), Ok(vec![Token::Punct(Punct::BrakL)]));
