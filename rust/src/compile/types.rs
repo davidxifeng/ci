@@ -8,14 +8,21 @@ pub enum Object {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Variable {
-	pub next: Option<Box<Object>>,
-	pub name: Option<String>,
+	pub name: String,
 	pub ctype: Type,
+
+	pub is_local: bool,
+	pub is_tentative: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Function {
-	pub next: Option<Box<Object>>,
+	pub name: String,
+	pub ctype: Func,
+	pub locals: Vec<Object>,
+	pub stmts: Vec<Statement>,
+	pub stack_size: usize,
+	pub is_definition: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,23 +30,46 @@ pub enum Type {
 	Void,
 	Bool,
 	Char,
-	// Short(Short),
 	Int,
-	// Long(Long),
-	// Float(Float),
-	// Double(Double),
 	Ptr(Ptr),
 	Array(Array),
-	// Enum(Enum),
-	// Struct(Struct),
-	// Union(Union),
 	Func(Func),
+	// Enum(Enum), // Struct(Struct), // Union(Union),
+	// Short(Short), // Long(Long), // Float(Float), // Double(Double),
 }
 
 pub const TYPE_VOID: Type = Type::Void;
 pub const TYPE_BOOL: Type = Type::Bool;
 pub const TYPE_CHAR: Type = Type::Char;
 pub const TYPE_INT: Type = Type::Int;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeIdentifier {
+	pub name: Option<String>,
+	pub ctype: Type,
+}
+
+impl TypeIdentifier {
+	pub fn from_type(ctype: Type) -> Self {
+		TypeIdentifier { name: None, ctype }
+	}
+
+	pub fn from_type_name(ctype: Type, name: String) -> Self {
+		TypeIdentifier { name: Some(name), ctype }
+	}
+
+	pub fn new(ctype: Type, name: Option<String>) -> Self {
+		TypeIdentifier { name, ctype }
+	}
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct VarAttr {
+	pub is_typedef: bool,
+	pub is_static: bool,
+	pub is_extern: bool,
+	pub is_inline: bool,
+}
 
 impl Type {
 	pub fn into_pointer(self) -> Self {
@@ -48,7 +78,7 @@ impl Type {
 
 	pub fn into_array(self, expr: Option<Expr>) -> Self {
 		let length = match expr {
-			Some(Expr::Const(Const::Integer(ref i))) => i.parse().unwrap(),
+			Some(Expr::Const(Const::Integer(ref i))) => i.parse().unwrap_or_default(),
 			_ => 0,
 		};
 		Type::Array(Array { base_type: Box::new(self), length, size_expr: expr })
@@ -58,7 +88,7 @@ impl Type {
 		Type::Func(Func { return_type: Box::new(self), param_list: vec![], is_variadic: false })
 	}
 
-	pub fn into_function_with_param(self, param_list: Vec<Type>) -> Self {
+	pub fn into_function_with_param(self, param_list: Vec<TypeIdentifier>) -> Self {
 		Type::Func(Func { return_type: Box::new(self), param_list, is_variadic: false })
 	}
 }
@@ -106,7 +136,7 @@ pub struct Array {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Func {
 	pub return_type: Box<Type>,
-	pub param_list: Vec<Type>,
+	pub param_list: Vec<TypeIdentifier>,
 	pub is_variadic: bool,
 }
 
@@ -143,6 +173,8 @@ pub struct Parameter {
 pub enum Statement {
 	#[default]
 	Empty,
+	ExprStmt(Expr),
+	ReturnStmt(Expr),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -240,12 +272,4 @@ pub struct AssignExpr {
 pub struct CommaExpr {
 	pub left: Box<Expr>,
 	pub right: Box<Expr>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Declaration {}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct DeclarationList {
-	pub list: Vec<Declaration>,
 }

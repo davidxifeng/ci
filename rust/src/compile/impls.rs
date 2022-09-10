@@ -51,18 +51,18 @@ impl Display for Type {
 				if f.alternate() {
 					s = format!("function returning < {:#} > with parameters: (", return_type);
 					if let Some((first, remaining)) = param_list.split_first() {
-						write!(s, "{:#}", first)?;
+						write!(s, "{:#}", first.ctype)?;
 						for p in remaining {
-							write!(s, ", {:#}", p)?;
+							write!(s, ", {:#}", p.ctype)?;
 						}
 					}
 					s.push(')');
 				} else {
 					s = "func (".to_string();
 					if let Some((first, remaining)) = param_list.split_first() {
-						write!(s, "{}", first)?;
+						write!(s, "{}", first.ctype)?;
 						for p in remaining {
-							write!(s, ", {}", p)?;
+							write!(s, ", {}", p.ctype)?;
 						}
 					}
 					write!(s, "): {}", return_type)?;
@@ -70,12 +70,6 @@ impl Display for Type {
 				&s
 			}
 		})
-	}
-}
-
-impl From<Vec<Declaration>> for DeclarationList {
-	fn from(l: Vec<Declaration>) -> Self {
-		DeclarationList { list: (l) }
 	}
 }
 
@@ -115,8 +109,8 @@ impl Display for Statement {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Self::Empty => writeln!(f, ";"),
-			// Self::ExprStmt(expr) => writeln!(f, "{};", expr),
-			// Self::ReturnStmt(expr) => writeln!(f, "return\n{};", expr),
+			Self::ExprStmt(expr) => writeln!(f, "{};", expr),
+			Self::ReturnStmt(expr) => writeln!(f, "return\n{};", expr),
 		}
 	}
 }

@@ -9,7 +9,7 @@ use super::{
 pub struct Parser {
 	token_list: TokenList,
 	index: usize,
-	globals: Option<Object>,
+	globals: Vec<Object>,
 }
 
 impl Parser {
@@ -39,6 +39,8 @@ impl Parser {
 	fn advance_by_n(&mut self, n: usize) {
 		self.index += n;
 	}
+
+	// pub fn reset(&mut self) { self.index = 0; }
 
 	#[inline]
 	fn seek_to(&mut self, n: usize) {
@@ -79,29 +81,21 @@ impl Parser {
 }
 
 impl Parser {
-	pub fn new(token_list: TokenList) -> Self {
-		Parser { token_list, index: 0, globals: None }
+	fn new(token_list: TokenList) -> Self {
+		Parser { token_list, index: 0, globals: vec![] }
 	}
 
 	pub fn from_str(input: &str) -> Result<Self, ParseError> {
 		input.parse().map_err(ParseError::LexError).map(Self::new)
 	}
 
-	pub fn parse(&mut self) -> Result<Option<Expr>, ParseError> {
-		self.parse_expr(Precedence::P1Comma)
+	pub fn compile(&mut self) -> Result<Vec<Object>, ParseError> {
+		Ok(vec![])
 	}
 
-	pub fn declaration(&mut self) -> Result<Type, ParseError> {
+	pub fn declaration(&mut self) -> Result<TypeIdentifier, ParseError> {
 		let base_type = self.declspec()?;
-		let result = self.declarator(base_type)?;
-		Ok(result)
-	}
-
-	pub fn test(input: &str) -> Result<Expr, ParseError> {
-		match Self::from_str(input)?.parse()? {
-			Some(expr) => Ok(expr),
-			None => Err(ParseError::EndOfToken),
-		}
+		Ok(self.declarator(base_type)?)
 	}
 
 	pub fn show_parse_state(&self) {
@@ -125,14 +119,24 @@ impl Parser {
 		print!("\n");
 	}
 
+	fn enter_scope(&mut self) {}
+
+	fn leave_scope(&mut self) {}
+
 	fn declspec(&mut self) -> Result<Type, ParseError> {
-		match self.next()? {
-			Token::Keyword(Keyword::Void) => Ok(TYPE_VOID),
-			Token::Keyword(Keyword::Bool) => Ok(TYPE_BOOL),
-			Token::Keyword(Keyword::Char) => Ok(TYPE_CHAR),
-			Token::Keyword(Keyword::Int) => Ok(TYPE_INT),
-			_ => Err(ParseError::NotType),
+		while let Some(token) = self.peek_next() {
+			if token.is_type_keyword() {
+				self.advance();
+				return match token {
+					Token::Keyword(Keyword::Void) => Ok(TYPE_VOID),
+					Token::Keyword(Keyword::Bool) => Ok(TYPE_BOOL),
+					Token::Keyword(Keyword::Char) => Ok(TYPE_CHAR),
+					Token::Keyword(Keyword::Int) => Ok(TYPE_INT),
+					_ => Err(ParseError::NotType),
+				};
+			}
 		}
+		Err(ParseError::NotType)
 	}
 
 	fn func_params(&mut self, base_type: Type) -> Result<Type, ParseError> {
@@ -185,7 +189,7 @@ impl Parser {
 		}
 	}
 
-	fn declarator(&mut self, mut base_type: Type) -> Result<Type, ParseError> {
+	fn declarator(&mut self, mut base_type: Type) -> Result<TypeIdentifier, ParseError> {
 		while let Some(Token::Punct(Punct::Mul)) = self.peek_next() {
 			self.advance();
 			base_type = base_type.into_pointer();
@@ -201,7 +205,7 @@ impl Parser {
 				let pos2 = self.index;
 
 				self.seek_to(pos1);
-				base_type = self.declarator(base_type)?;
+				let base_type = self.declarator(base_type)?;
 				self.seek_to(pos2);
 
 				Ok(base_type)
@@ -212,7 +216,8 @@ impl Parser {
 				}
 
 				base_type = self.type_suffix(base_type)?;
-				Ok(base_type)
+
+				Ok(TypeIdentifier::new(base_type, name))
 			}
 		} else {
 			Err(ParseError::EndOfToken)
@@ -281,7 +286,7 @@ impl Parser {
 		}
 	}
 
-	fn parse_expr(&mut self, precedence: Precedence) -> Result<Option<Expr>, ParseError> {
+	pub fn parse_expr(&mut self, precedence: Precedence) -> Result<Option<Expr>, ParseError> {
 		let mut first = match self.parse_leaf()? {
 			Some(leaf) => leaf,
 			None => return Ok(None),

@@ -118,12 +118,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 					p.show_parse_state();
 					r
 				})?;
-				println!("------\n{}", data);
+				println!("------\n{}: {}", data.name.unwrap_or_default(), data.ctype);
 			}
 
-			match compile::parse::Parser::test(src.as_str()) {
-				Ok(expr) => println!("------\n{}", expr),
-				Err(e) => println!("\t[error]\n{}", e),
+			let objs = compile::parse::Parser::from_str(src.as_str()).and_then(|mut p| p.compile())?;
+			for obj in objs {
+				println!("------\n{:?}", obj);
 			}
 		}
 

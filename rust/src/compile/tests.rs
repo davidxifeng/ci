@@ -7,12 +7,13 @@ fn test_declaration(input: &str) {
 		p.show_parse_state();
 		r
 	}) {
-		Ok(r) => println!("{}", r),
+		Ok(r) => println!("{}: {}", r.name.unwrap_or_default(), r.ctype),
 		Err(e) => println!("\t[error]\t{}", e),
 	}
 }
 
 #[test]
+#[ignore = "done"]
 fn test_types() {
 	test_declaration("int i, j");
 	test_declaration("int *i");
@@ -45,7 +46,7 @@ fn test_types() {
 fn test_expr(input: &str) {
 	println!("------\n{}", input);
 	match Parser::from_str(input).and_then(|mut x| {
-		let r = x.parse();
+		let r = x.parse_expr(crate::compile::token::Precedence::P1Comma);
 		x.show_parse_state();
 		r
 	}) {
@@ -95,4 +96,26 @@ fn test_expr_parse() {
 	// example from N1256, 说明f1-f4的求值顺序可以任意,标准没有规定;
 	// 所有副作用在函数调用前完成
 	test_expr("(*pf[f1()]) (f2(), f3() + f4())");
+}
+
+fn compile(input: &str) {
+	println!("\n------");
+	match Parser::from_str(input).and_then(|mut p| {
+		let r = p.compile();
+		p.show_parse_state();
+		r
+	}) {
+		Ok(r) => {
+			for obj in r {
+				println!("{:?}", obj);
+			}
+		}
+
+		Err(e) => println!("\t[error]\t{}", e),
+	}
+}
+
+#[test]
+fn test_compile() {
+	compile("int i;");
 }

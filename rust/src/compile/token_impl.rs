@@ -283,6 +283,27 @@ impl Token {
 		}
 	}
 
+	pub fn is_type_keyword(&self) -> bool {
+		match self {
+			Token::Keyword(keyword) => matches!(
+				keyword,
+				Keyword::Void
+					| Keyword::Bool | Keyword::Char
+					| Keyword::Short | Keyword::Int
+					| Keyword::Long | Keyword::Signed
+					| Keyword::Unsigned | Keyword::Float
+					| Keyword::Double | Keyword::Struct
+					| Keyword::Union | Keyword::Enum
+					| Keyword::Auto | Keyword::Register
+					| Keyword::Const | Keyword::Volatile
+					| Keyword::Restrict | Keyword::Typedef
+					| Keyword::Inline | Keyword::Static
+					| Keyword::Extern
+			),
+			_ => false,
+		}
+	}
+
 	pub fn precedence(&self) -> Precedence {
 		match self {
 			Token::Const(_) => Precedence::P0Min,
