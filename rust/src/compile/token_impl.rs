@@ -8,7 +8,7 @@ use console::style;
 use super::{
 	errors::LexError,
 	lex::TokenApi,
-	token::{Const, Keyword, Punct, Token, TokenList},
+	token::{Const, Keyword, Precedence, Punct, Token, TokenList},
 };
 
 impl Punct {
@@ -248,6 +248,94 @@ impl Display for TokenList {
 			f.write_char('\n')
 		} else {
 			Ok(())
+		}
+	}
+}
+
+impl Precedence {
+	pub fn next_level(&self) -> Self {
+		match self {
+			Self::P0Min => Self::P0Min,
+			Self::P1Comma => Self::P2Assign,
+			Self::P2Assign => Self::P2Assign, // right to left
+			Self::P3Cond => Self::P3Cond,     // right to left
+			Self::P4LOr => Self::P5LAnd,
+			Self::P5LAnd => Self::P6BOr,
+			Self::P6BOr => Self::P7BXor,
+			Self::P7BXor => Self::P8BAnd,
+			Self::P8BAnd => Self::P9Eq,
+			Self::P9Eq => Self::P10Cmp,
+			Self::P10Cmp => Self::P11BShift,
+			Self::P11BShift => Self::P12Add,
+			Self::P12Add => Self::P13Mul,
+			Self::P13Mul => Self::P14Unary,
+			Self::P14Unary => Self::P14Unary, // right to left
+			Self::P15Post => Self::P15Post,
+		}
+	}
+}
+
+impl Token {
+	pub fn to_identifier(self) -> Option<String> {
+		match self {
+			Token::Id(id) => Some(id),
+			_ => None,
+		}
+	}
+
+	pub fn precedence(&self) -> Precedence {
+		match self {
+			Token::Const(_) => Precedence::P0Min,
+			Token::Id(_) => Precedence::P0Min,
+			Token::StringLiteral(_) => Precedence::P0Min,
+
+			Token::Keyword(Keyword::SizeOf) => Precedence::P14Unary,
+			Token::Keyword(_) => Precedence::P0Min,
+
+			Token::Punct(punct) => match punct {
+				Punct::Comma => Precedence::P1Comma,
+
+				// right to left
+				Punct::Assign
+				| Punct::AssignAdd
+				| Punct::AssignSub
+				| Punct::AssignMul
+				| Punct::AssignDiv
+				| Punct::AssignMod
+				| Punct::AssignBAnd
+				| Punct::AssignBOr
+				| Punct::AssignBXor
+				| Punct::AssignShl
+				| Punct::AssignShr => Precedence::P2Assign,
+
+				// right to left
+				Punct::Cond => Precedence::P3Cond,
+
+				Punct::Lor => Precedence::P4LOr,
+				Punct::Lan => Precedence::P5LAnd,
+				Punct::Or => Precedence::P6BOr,
+				Punct::Xor => Precedence::P7BXor,
+				Punct::And => Precedence::P8BAnd,
+
+				Punct::Eq | Punct::Ne => Precedence::P9Eq,
+
+				Punct::Lt | Punct::Le | Punct::Gt | Punct::Ge => Precedence::P10Cmp,
+
+				Punct::Shl | Punct::Shr => Precedence::P11BShift,
+
+				Punct::Add | Punct::Sub => Precedence::P12Add,
+
+				Punct::Mul | Punct::Div | Punct::Mod => Precedence::P13Mul,
+
+				// 一元运算符不会调用此函数获取优先级
+				Punct::Not | Punct::Tilde => unreachable!("unary"),
+
+				Punct::Inc | Punct::Dec | Punct::ParentheseL | Punct::BrakL | Punct::Dot | Punct::Arrow => {
+					Precedence::P15Post
+				}
+
+				_ => Precedence::P0Min,
+			},
 		}
 	}
 }

@@ -1,25 +1,41 @@
-use crate::compile::{parse::*, types::Object};
+use crate::compile::parse::*;
 
-fn test_declspec(input: &str) {
+fn test_declaration(input: &str) {
 	println!("------\n{}", input);
-	match Parser::from_str(input).and_then(|mut x| x.test_global_variable()) {
-		Ok(Some(Object::Variable(var))) => println!("{:?} type: {}", var.name, var.ctype),
-		Ok(Some(Object::Function(func))) => println!("{:?}", func),
-		Ok(None) => println!("none"),
+	match Parser::from_str(input).and_then(|mut x| x.declaration()) {
+		Ok(obj) => println!("type: {}", obj),
 		Err(e) => println!("\t[error]\t{}", e),
 	}
 }
 
 #[test]
 fn test_types() {
-	test_declspec("int i");
-	test_declspec("int *i");
-	test_declspec("int **i");
-	test_declspec("int i[1]");
-	test_declspec("int i[1][2]");
-	test_declspec("int i[]");
-	test_declspec("int *i[8]");
-	test_declspec("int **i[8][2]");
+	test_declaration("int i, j");
+	test_declaration("int *i");
+	test_declaration("int **i");
+	test_declaration("int i[1]");
+	test_declaration("int i[1][2]");
+	test_declaration("int i[]");
+	test_declaration("int *i[8]");
+	test_declaration("int **i[8][2]");
+	test_declaration("int i(void)");
+	test_declaration("int *i(void)");
+	test_declaration("int *i[2](void)");
+	test_declaration("int i(int i, int j)");
+
+	// int i(int , int (*)(void))
+	// declare i as function (int, pointer to function (void) returning int) returning int
+	test_declaration("int i(int i, int j(void))");
+
+	// declare i as function (pointer to function (pointer to function (void) returning int) returning int) returning int
+	test_declaration("int i(int (*)(int (*)(void)))");
+
+	test_declaration("int (*x())()");
+	test_declaration("int (*x[])()");
+	test_declaration("int *x[][]");
+	test_declaration("int x[1][2][3]");
+
+	test_declaration("void (*signal(int, void (*)(int)))(int);");
 }
 
 fn test_expr(input: &str) {

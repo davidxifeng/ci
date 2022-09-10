@@ -130,3 +130,23 @@ pub enum Const {
 	Integer(String),
 	Character(char),
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Precedence {
+	P0Min,
+	P1Comma,
+	P2Assign,
+	P3Cond,
+	P4LOr,
+	P5LAnd,
+	P6BOr,
+	P7BXor,
+	P8BAnd,
+	P9Eq,
+	P10Cmp,
+	P11BShift,
+	P12Add,
+	P13Mul,
+	P14Unary,
+	P15Post,
+}

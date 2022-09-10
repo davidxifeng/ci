@@ -53,9 +53,15 @@ impl Type {
 		};
 		Type::Array(Array { base_type: Box::new(self), length, size_expr: expr })
 	}
-}
 
-pub fn avoid_warnings() {}
+	pub fn to_function(self) -> Self {
+		Type::Func(Func { return_type: Box::new(self), param_list: vec![], is_variadic: false })
+	}
+
+	pub fn to_function_with_param(self, param_list: Vec<Type>) -> Self {
+		Type::Func(Func { return_type: Box::new(self), param_list, is_variadic: false })
+	}
+}
 
 pub trait TypeSizeAlign {
 	fn size(&self) -> usize;
