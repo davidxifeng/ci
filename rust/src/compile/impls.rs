@@ -1,6 +1,6 @@
+use console::style;
 use std::fmt::Display;
 use std::fmt::Write;
-use console::style;
 
 use super::types::*;
 
@@ -76,8 +76,19 @@ impl Display for Statement {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Self::Empty => writeln!(f, ";"),
-			Self::ExprStmt(expr) => writeln!(f, "{};", expr),
-			Self::ReturnStmt(expr) => writeln!(f, "return\n{};", expr),
+			Self::ExprStmt(expr) => write!(f, "<expr>\n{}", expr),
+			Self::ReturnStmt(expr) => write!(f, "return \n{}", expr),
+			Self::IfStmt(expr, then_stmt, else_stmt) => match else_stmt {
+				None => write!(f, "if (\n{}) {}", expr, then_stmt),
+				Some(es) => write!(f, "if (\n{}) {} else {}", expr, then_stmt, es),
+			},
+			Self::CompoundStmt(stmts) => {
+				writeln!(f, "{{")?;
+				for stmt in stmts {
+					write!(f, "{}", stmt)?;
+				}
+				write!(f, "}}")
+			}
 		}
 	}
 }

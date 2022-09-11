@@ -61,6 +61,11 @@ impl Parser {
 	}
 
 	#[inline]
+	fn must_peek_next(&self) -> Result<Token, ParseError> {
+		self.token_list.data.get(self.index).map_or(Err(ParseError::EndOfToken), |x| Ok(x.clone()))
+	}
+
+	#[inline]
 	fn advance(&mut self) -> usize {
 		self.index += 1;
 		assert!(self.index <= self.token_list.data.len());
@@ -172,13 +177,31 @@ impl Parser {
 	}
 
 	fn parse_function(&mut self, name: String, return_type: Func) -> Result<Object, ParseError> {
+		let stmts = self.parse_stmt()?;
+
+		Ok(Object::Function(Function {
+			name,
+			ctype: return_type,
+			locals: vec![],
+			stmts,
+			stack_size: 0,
+			is_definition: true,
+		}))
+	}
+
+	fn parse_stmt(&mut self) -> Result<Statement, ParseError> {
 		// skip {
-		self.advance();
+		// self.advance();
+		self.expect_punct(Punct::BracesL)?;
 
 		let mut stmts = vec![];
 
-		while let Some(token) = self.peek_next() {
+		loop {
+			let token = self.must_peek_next()?;
 			match token {
+				Token::Punct(Punct::BracesL) => {
+					stmts.push(self.parse_stmt()?);
+				}
 				Token::Punct(Punct::BracesR) => {
 					self.advance();
 					break;
@@ -196,6 +219,25 @@ impl Parser {
 					self.advance();
 					stmts.push(Statement::Empty);
 				}
+				Token::Keyword(Keyword::If) => {
+					self.advance();
+					self.expect_punct(Punct::ParentheseL)?;
+					let cond = self.expect_expr(Precedence::P1Comma)?;
+					self.expect_punct(Punct::ParentheseR)?;
+					let then_stmt = self.parse_stmt()?;
+					let m_else_stmt = if let Some(next) = self.peek_next() {
+						match next {
+							Token::Keyword(Keyword::Else) => {
+								self.advance();
+								Some(Box::new(self.parse_stmt()?))
+							}
+							_ => None,
+						}
+					} else {
+						None
+					};
+					stmts.push(Statement::IfStmt(cond, Box::new(then_stmt), m_else_stmt))
+				}
 				_ => {
 					let expr = self.expect_expr(Precedence::P1Comma)?;
 					self.expect_punct(Punct::Semicolon)?;
@@ -204,14 +246,7 @@ impl Parser {
 			};
 		}
 
-		Ok(Object::Function(Function {
-			name,
-			ctype: return_type,
-			locals: vec![],
-			stmts,
-			stack_size: 0,
-			is_definition: true,
-		}))
+		Ok(Statement::CompoundStmt(stmts))
 	}
 
 	pub fn declaration(&mut self) -> Result<TypeIdentifier, ParseError> {
@@ -274,9 +309,7 @@ impl Parser {
 		println!();
 	}
 
-	fn enter_scope(&mut self) {}
-
-	fn leave_scope(&mut self) {}
+	// fn enter_scope(&mut self) {} fn leave_scope(&mut self) {}
 
 	fn declspec(&mut self) -> Result<Type, ParseError> {
 		while let Some(token) = self.peek_next() {

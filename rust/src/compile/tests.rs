@@ -138,6 +138,7 @@ fn parse(input: &str) {
 					}
 					Object::Function(func) => {
 						println!("name: {}\t\ttype: {}", func.name, Type::Func(func.ctype));
+						println!("stmts:\n{}", func.stmts);
 					}
 				}
 			}
@@ -152,4 +153,18 @@ fn test_parse() {
 	parse("int i; int j , k = i + 3, l = 2; char c, d;");
 	parse("int id(int arg) { return arg; }");
 	parse("int add_one(int arg) { arg = arg + 1; return arg; }");
+	parse(
+		r##"int max(int x, int y) {
+	if (x == 1) {
+		x += 1;
+	}
+
+	if (x > y) {
+		return x;
+	} else {
+		return y;
+	}
+}
+"##,
+	)
 }

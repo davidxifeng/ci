@@ -21,7 +21,7 @@ pub struct Function {
 	pub name: String,
 	pub ctype: Func,
 	pub locals: Vec<Object>,
-	pub stmts: Vec<Statement>,
+	pub stmts: Statement,
 	pub stack_size: usize,
 	pub is_definition: bool,
 }
@@ -145,6 +145,8 @@ pub enum Statement {
 	Empty,
 	ExprStmt(Expr),
 	ReturnStmt(Expr),
+	CompoundStmt(Vec<Statement>),
+	IfStmt(Expr, Box<Statement>, Option<Box<Statement>>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
