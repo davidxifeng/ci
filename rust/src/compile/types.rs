@@ -10,6 +10,7 @@ pub enum Object {
 pub struct Variable {
 	pub name: String,
 	pub ctype: Type,
+	pub init_value: Option<Expr>,
 
 	pub is_local: bool,
 	pub is_tentative: bool,
@@ -72,6 +73,13 @@ pub struct VarAttr {
 }
 
 impl Type {
+	pub fn get_func(&self) -> Option<Func> {
+		match self {
+			Type::Func(f) => Some(f.clone()),
+			_ => None
+		}
+	}
+
 	pub fn into_pointer(self) -> Self {
 		Type::Ptr(Ptr { base_type: Box::new(self) })
 	}

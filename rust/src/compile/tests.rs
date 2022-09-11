@@ -1,10 +1,12 @@
-use crate::compile::parse::*;
+use crate::compile::{parse::*, types::Object};
+
+use super::errors::{LexError, ParseError};
 
 fn test_declaration(input: &str) {
 	println!("\n------");
 	match Parser::from_str(input).and_then(|mut p| {
 		let r = p.declaration();
-		p.show_parse_state();
+		p.show_parse_state(0);
 		r
 	}) {
 		Ok(r) => println!("{}: {}", r.name.unwrap_or_default(), r.ctype),
@@ -47,7 +49,7 @@ fn test_expr(input: &str) {
 	println!("------\n{}", input);
 	match Parser::from_str(input).and_then(|mut x| {
 		let r = x.parse_expr(crate::compile::token::Precedence::P1Comma);
-		x.show_parse_state();
+		x.show_parse_state(0);
 		r
 	}) {
 		Ok(Some(expr)) => println!("{}", expr),
@@ -98,16 +100,41 @@ fn test_expr_parse() {
 	test_expr("(*pf[f1()]) (f2(), f3() + f4())");
 }
 
-fn compile(input: &str) {
+fn parse_error(input: &str, ee: ParseError) {
+	assert!(match Parser::from_str(input).and_then(|mut p| p.parse()) {
+		Ok(_) => false,
+		Err(e) => match e {
+			ParseError::General(_) => matches!(ee, ParseError::General(_)),
+			ParseError::LexError(_) => matches!(ee, ParseError::LexError(_)),
+			ParseError::Unexpected(_) => matches!(ee, ParseError::Unexpected(_)),
+			_ => e == ee,
+		},
+	})
+}
+
+#[test]
+#[ignore]
+fn test_parse_error() {
+	parse_error("int ; ", ParseError::General(""));
+	parse_error("int ; @", ParseError::LexError(LexError::InvalidChar('@')));
+}
+
+fn parse(input: &str) {
 	println!("\n------");
 	match Parser::from_str(input).and_then(|mut p| {
-		let r = p.compile();
-		p.show_parse_state();
+		let r = p.parse();
+		p.show_parse_state(0);
 		r
 	}) {
 		Ok(r) => {
 			for obj in r {
-				println!("{:?}", obj);
+				match obj {
+					Object::Variable(var) => {
+						println!("{}: {}", var.name, var.ctype);
+						var.init_value.map(|e| println!(" = \n{}", e));
+					}
+					Object::Function(func) => println!("{:?}", func),
+				}
 			}
 		}
 
@@ -116,6 +143,8 @@ fn compile(input: &str) {
 }
 
 #[test]
-fn test_compile() {
-	compile("int i;");
+fn test_parse() {
+	parse("int i; int j , k = i + 3, l = 2; char c, d;");
+	parse("int id(int arg) { return arg; }");
+	parse("int add_one(int arg) { arg = arg + 1; return arg; }");
 }

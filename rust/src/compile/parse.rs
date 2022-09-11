@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use console::style;
 
 use super::{
@@ -9,7 +11,7 @@ use super::{
 pub struct Parser {
 	token_list: TokenList,
 	index: usize,
-	globals: Vec<Object>,
+	globals: HashMap<String, Object>,
 }
 
 impl Parser {
@@ -38,12 +40,18 @@ impl Parser {
 	#[inline]
 	fn advance_by_n(&mut self, n: usize) {
 		self.index += n;
+		assert!(self.index <= self.token_list.data.len());
 	}
 
-	// pub fn reset(&mut self) { self.index = 0; }
+	// #[inline] fn back_n(&mut self, n: usize) { self.index -= n; }
+
+	// pub fn reset(&mut self) {
+	// 	self.index = 0;
+	// }
 
 	#[inline]
 	fn seek_to(&mut self, n: usize) {
+		assert!(n <= self.token_list.data.len());
 		self.index = n;
 	}
 
@@ -55,14 +63,35 @@ impl Parser {
 	#[inline]
 	fn advance(&mut self) -> usize {
 		self.index += 1;
+		assert!(self.index <= self.token_list.data.len());
 		self.index
 	}
 
 	#[inline]
 	fn next(&mut self) -> Result<Token, ParseError> {
-		let r = self.token_list.data.get(self.index);
-		self.index += 1;
-		r.map_or(Err(ParseError::EndOfToken), |x| Ok(x.clone()))
+		self.token_list.data.get(self.index).map_or(Err(ParseError::EndOfToken), |x| {
+			self.index += 1;
+			Ok(x.clone())
+		})
+	}
+
+	fn peek_next_punct(&self, punct: Punct) -> bool {
+		if let Some(Token::Punct(p)) = self.peek_next() {
+			if p == punct {
+				true
+			} else {
+				false
+			}
+		} else {
+			false
+		}
+	}
+
+	fn next_punct(&mut self) -> Result<Punct, ParseError> {
+		match self.next()? {
+			Token::Punct(p) => Ok(p),
+			_ => Err(ParseError::General("expecting punct")),
+		}
 	}
 
 	fn expect_punct(&mut self, punct: Punct) -> Result<(), ParseError> {
@@ -70,6 +99,10 @@ impl Parser {
 			Token::Punct(p) if p == punct => Ok(()),
 			other => Err(ParseError::Unexpected(format!("expecting {}, but {}", punct, other))),
 		}
+	}
+
+	fn is_not_eof(&self) -> bool {
+		self.index < self.token_list.data.len()
 	}
 
 	fn expect_identifier(&mut self) -> Result<String, ParseError> {
@@ -80,17 +113,112 @@ impl Parser {
 	}
 }
 
+fn expect_string(str: Option<String>) -> Result<String, ParseError> {
+	str.map_or(Err(ParseError::General("identifier should not be empty")), |n| Ok(n))
+}
+
 impl Parser {
 	fn new(token_list: TokenList) -> Self {
-		Parser { token_list, index: 0, globals: vec![] }
+		Parser { token_list, index: 0, globals: HashMap::new() }
 	}
 
 	pub fn from_str(input: &str) -> Result<Self, ParseError> {
 		input.parse().map_err(ParseError::LexError).map(Self::new)
 	}
 
-	pub fn compile(&mut self) -> Result<Vec<Object>, ParseError> {
-		Ok(vec![])
+	// translation-unit: external-declaration *
+	// ---
+	// external-declaration:
+	// 	function-definition
+	// 		declaration-specifiers declarator compound-statement
+	// 		// 去掉对早期C参数声明的支持
+	// 	declaration
+	// 		declaration-specifiers declarator [= initializer], ;
+	// 		declaration-specifiers init-declarator-list opt ;
+	// 			init-declarator-list: init-declarator,
+	// 			init-declarator: declarator = initializer
+	pub fn parse(&mut self) -> Result<Vec<Object>, ParseError> {
+		self.globals.clear();
+		while self.is_not_eof() {
+			self.show_parse_state(3);
+			let base_type = self.declspec()?;
+
+			// 不支持 可选的 declarator, 也就是说 `int ;`会报错.
+
+			let declarator = self.declarator(base_type.clone())?;
+
+			let is_compound_stmt_start = self.peek_next_punct(Punct::BracesL);
+
+			let maybe_func = declarator.ctype.get_func();
+			match maybe_func {
+				Some(func) if is_compound_stmt_start => {
+					let name = expect_string(declarator.name)?;
+					let func = self.parse_function(name.clone(), func)?;
+					self.globals.insert(name, func);
+				}
+				_ => {
+					self.new_global_declaration(declarator)?;
+					loop {
+						let punct = self.next_punct()?;
+						if punct == Punct::Semicolon {
+							break;
+						} else if punct == Punct::Comma {
+							let var = self.declarator(base_type.clone())?;
+							self.new_global_declaration(var)?;
+						} else {
+							return Err(ParseError::General("unexpected token"));
+						}
+					}
+				}
+			}
+		}
+
+		Ok(self.globals.values().cloned().collect())
+	}
+
+	fn parse_function(&mut self, name: String, return_type: Func) -> Result<Object, ParseError> {
+		self.show_parse_state(5);
+
+		// skip {
+		self.advance();
+
+		let mut stmts = vec![];
+
+		while let Some(token) = self.peek_next() {
+			match token {
+				Token::Punct(Punct::BracesR) => {
+					self.advance();
+					break;
+				}
+				Token::Keyword(Keyword::Return) => {
+					self.advance(); // skip return
+
+					let expr = self.expect_expr(Precedence::P1Comma)?;
+
+					self.expect_punct(Punct::Semicolon)?;
+
+					stmts.push(Statement::ReturnStmt(expr));
+				}
+				Token::Punct(Punct::Semicolon) => {
+					self.advance();
+					stmts.push(Statement::Empty);
+				}
+				_ => {
+					let expr = self.expect_expr(Precedence::P1Comma)?;
+					self.expect_punct(Punct::Semicolon)?;
+					stmts.push(Statement::ExprStmt(expr));
+				}
+			};
+		}
+
+		Ok(Object::Function(Function {
+			name,
+			ctype: return_type,
+			locals: vec![],
+			stmts,
+			stack_size: 0,
+			is_definition: true,
+		}))
 	}
 
 	pub fn declaration(&mut self) -> Result<TypeIdentifier, ParseError> {
@@ -98,18 +226,52 @@ impl Parser {
 		Ok(self.declarator(base_type)?)
 	}
 
-	pub fn show_parse_state(&self) {
-		let (a, b) = self.token_list.data.split_at(self.index);
+	fn get_optional_initializer(&mut self) -> Result<Option<Expr>, ParseError> {
+		Ok(if self.peek_next_punct(Punct::Assign) {
+			self.advance();
+			Some(self.expect_expr(Precedence::P2Assign)?)
+		} else {
+			None
+		})
+	}
 
-		if let Some((first, elems)) = a.split_first() {
+	fn new_global_declaration(&mut self, var: TypeIdentifier) -> Result<(), ParseError> {
+		let name = expect_string(var.name)?;
+		let gvar = Object::Variable(Variable {
+			ctype: var.ctype,
+			name: name.clone(),
+			init_value: self.get_optional_initializer()?,
+			is_local: false,
+			is_tentative: false,
+		});
+		self.globals.insert(name, gvar);
+		Ok(())
+	}
+
+	pub fn show_token_list(&self) {
+		self.show_parse_state(0);
+	}
+
+	pub fn show_parse_state(&self, context: usize) {
+		let (mut before, mut after) = self.token_list.data.split_at(self.index);
+		if context != 0 {
+			if before.len() > context {
+				before = &before[before.len() - context..];
+			}
+			if after.len() >= context {
+				after = &after[..context];
+			}
+		}
+
+		if let Some((first, elems)) = before.split_first() {
 			print!("{}", first);
 			for tk in elems {
 				print!("{}", style(" ◦ ").dim().to_string());
 				print!("{}", tk);
 			}
 		}
-		if let Some((first, elems)) = b.split_first() {
-			print!("{}", style(" ^ ").red().to_string());
+		print!("{}", style(" ▵ ").red().to_string());
+		if let Some((first, elems)) = after.split_first() {
 			print!("{}", first);
 			for tk in elems {
 				print!("{}", style(" ◦ ").dim().to_string());
