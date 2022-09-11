@@ -38,7 +38,6 @@ pub enum ParseError {
 	LexError(LexError),
 	Unexpected(String),
 	General(&'static str),
-	EmptyError,
 	EndOfToken,
 	NoMoreExpr,
 	NoMatchFound,
@@ -61,7 +60,6 @@ impl Display for ParseError {
 			ParseError::NotIdentifier => "NotIdentifier",
 			ParseError::NotType => "NotType",
 			ParseError::NoMatchFound => "NoMatchFound",
-			ParseError::EmptyError => "EmptyError",
 		})
 	}
 }

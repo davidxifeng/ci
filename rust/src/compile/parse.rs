@@ -77,11 +77,7 @@ impl Parser {
 
 	fn peek_next_punct(&self, punct: Punct) -> bool {
 		if let Some(Token::Punct(p)) = self.peek_next() {
-			if p == punct {
-				true
-			} else {
-				false
-			}
+			p == punct
 		} else {
 			false
 		}
@@ -114,7 +110,7 @@ impl Parser {
 }
 
 fn expect_string(str: Option<String>) -> Result<String, ParseError> {
-	str.map_or(Err(ParseError::General("identifier should not be empty")), |n| Ok(n))
+	str.map_or(Err(ParseError::General("identifier should not be empty")), Ok)
 }
 
 impl Parser {
@@ -140,7 +136,6 @@ impl Parser {
 	pub fn parse(&mut self) -> Result<Vec<Object>, ParseError> {
 		self.globals.clear();
 		while self.is_not_eof() {
-			self.show_parse_state(3);
 			let base_type = self.declspec()?;
 
 			// 不支持 可选的 declarator, 也就是说 `int ;`会报错.
@@ -177,8 +172,6 @@ impl Parser {
 	}
 
 	fn parse_function(&mut self, name: String, return_type: Func) -> Result<Object, ParseError> {
-		self.show_parse_state(5);
-
 		// skip {
 		self.advance();
 
@@ -223,7 +216,7 @@ impl Parser {
 
 	pub fn declaration(&mut self) -> Result<TypeIdentifier, ParseError> {
 		let base_type = self.declspec()?;
-		Ok(self.declarator(base_type)?)
+		self.declarator(base_type)
 	}
 
 	fn get_optional_initializer(&mut self) -> Result<Option<Expr>, ParseError> {
@@ -258,7 +251,7 @@ impl Parser {
 			if before.len() > context {
 				before = &before[before.len() - context..];
 			}
-			if after.len() >= context {
+			if context <= after.len() {
 				after = &after[..context];
 			}
 		}
@@ -266,19 +259,19 @@ impl Parser {
 		if let Some((first, elems)) = before.split_first() {
 			print!("{}", first);
 			for tk in elems {
-				print!("{}", style(" ◦ ").dim().to_string());
+				print!("{}", style(" ◦ ").dim());
 				print!("{}", tk);
 			}
 		}
-		print!("{}", style(" ▵ ").red().to_string());
+		print!("{}", style(" ▵ ").red());
 		if let Some((first, elems)) = after.split_first() {
 			print!("{}", first);
 			for tk in elems {
-				print!("{}", style(" ◦ ").dim().to_string());
+				print!("{}", style(" ◦ ").dim());
 				print!("{}", tk);
 			}
 		}
-		print!("\n");
+		println!();
 	}
 
 	fn enter_scope(&mut self) {}

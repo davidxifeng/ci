@@ -1,4 +1,7 @@
-use crate::compile::{parse::*, types::Object};
+use crate::compile::{
+	parse::*,
+	types::{Object, Type},
+};
 
 use super::errors::{LexError, ParseError};
 
@@ -133,7 +136,9 @@ fn parse(input: &str) {
 						println!("{}: {}", var.name, var.ctype);
 						var.init_value.map(|e| println!(" = \n{}", e));
 					}
-					Object::Function(func) => println!("{:?}", func),
+					Object::Function(func) => {
+						println!("name: {}\t\ttype: {}", func.name, Type::Func(func.ctype));
+					}
 				}
 			}
 		}

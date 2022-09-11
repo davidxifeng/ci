@@ -51,14 +51,6 @@ pub struct TypeIdentifier {
 }
 
 impl TypeIdentifier {
-	pub fn from_type(ctype: Type) -> Self {
-		TypeIdentifier { name: None, ctype }
-	}
-
-	pub fn from_type_name(ctype: Type, name: String) -> Self {
-		TypeIdentifier { name: Some(name), ctype }
-	}
-
 	pub fn new(ctype: Type, name: Option<String>) -> Self {
 		TypeIdentifier { name, ctype }
 	}
@@ -76,7 +68,7 @@ impl Type {
 	pub fn get_func(&self) -> Option<Func> {
 		match self {
 			Type::Func(f) => Some(f.clone()),
-			_ => None
+			_ => None,
 		}
 	}
 
@@ -149,37 +141,7 @@ pub struct Func {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Declarator {
-	pub name: String,
-	pub value: Const,
-	// idr: i32,
-}
-
-/// 变量定义+初始化
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VariableDeclaration {
-	pub list: Vec<Declarator>,
-}
-
-/// 函数定义
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FunctionDefinition {
-	/// 函数名
-	pub name: String,
-
-	pub params: Vec<Parameter>,
-
-	pub stmts: Vec<Statement>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Parameter {
-	pub name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Statement {
-	#[default]
 	Empty,
 	ExprStmt(Expr),
 	ReturnStmt(Expr),

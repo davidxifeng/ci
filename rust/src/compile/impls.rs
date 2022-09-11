@@ -1,9 +1,8 @@
 use std::fmt::Display;
 use std::fmt::Write;
-
 use console::style;
 
-use super::{token::Const, types::*};
+use super::types::*;
 
 impl Display for Type {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -70,38 +69,6 @@ impl Display for Type {
 				&s
 			}
 		})
-	}
-}
-
-impl Display for Declarator {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self.value {
-			Const::Empty => write!(f, "{}", self.name),
-			_ => write!(f, "{} = {}", self.name, self.value),
-		}
-	}
-}
-
-impl Display for Parameter {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}", self.name)
-	}
-}
-
-impl Display for FunctionDefinition {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{} (", self.name)?;
-		if !self.params.is_empty() {
-			write!(f, "{}", self.params[0])?;
-		}
-		for param in self.params.iter().skip(1) {
-			write!(f, ", {}", param)?;
-		}
-		writeln!(f, ");")?;
-		for stmt in self.stmts.iter() {
-			write!(f, "{}", stmt)?;
-		}
-		writeln!(f)
 	}
 }
 
