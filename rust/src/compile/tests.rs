@@ -18,7 +18,7 @@ fn test_declaration(input: &str) {
 }
 
 #[test]
-#[ignore = "done"]
+// #[ignore = "done"]
 fn test_types() {
 	test_declaration("int i, j");
 	test_declaration("int *i");

@@ -336,17 +336,17 @@ impl Parser {
 		}
 
 		let mut params = vec![];
-		while let Some(token) = self.peek_next() {
+		loop {
+			let token = self.must_peek_next()?;
 			if token == Token::Punct(Punct::ParentheseR) {
 				self.advance();
 				break;
-			}
-			let param_type = self.declspec()?;
-			params.push(self.declarator(param_type)?);
-
-			if let Some(Token::Punct(Punct::Comma)) = self.peek_next() {
+			} else if token == Token::Punct(Punct::Comma) {
 				self.advance();
 			}
+
+			let param_type = self.declspec()?;
+			params.push(self.declarator(param_type)?);
 		}
 
 		Ok(base_type.into_function_with_param(params))
