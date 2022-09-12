@@ -319,7 +319,7 @@ evaluated.
 >		for ( declaration expression <sub>opt</sub> ; expression <sub>opt</sub> ) statement
 >	```
 
-(不明白为何这样少了一个 ; expression <sub>opt</sub>, 或许只是不严谨?)
+(~不明白为何这样少了一个 ; expression <sub>opt</sub>, 或许只是不严谨?~ 原来是declaration的定义中已经包含了 `;`,原来如此!)
 
 `for ( clause-1 ; expression-2 ; expression-3 ) statement`
 1和3都可以省略. 表达式2省略的话,会被替换成非零的常量.
