@@ -90,7 +90,7 @@ impl Display for Statement {
 					"for (\n{};\n{};\n{}) {}",
 					match init {
 						Some(e) => e.to_string(),
-						None => String::new(),
+						None => String::default(),
 					},
 					cond,
 					end.as_ref().map(|e| e.to_string()).unwrap_or_default(),

@@ -574,3 +574,9 @@ impl Parser {
 		Ok(Some(first))
 	}
 }
+
+impl Parser {
+	pub fn eval(&mut self) -> Result<(), ParseError> {
+		Ok(())
+	}
+}

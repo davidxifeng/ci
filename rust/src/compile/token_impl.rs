@@ -232,7 +232,7 @@ impl Display for TokenList {
 			if let Some((first, elems)) = self.data.split_first() {
 				write!(f, "{:?}", first)?;
 				for tk in elems {
-					f.write_str(&style(" ◦ ").dim().to_string())?;
+					write!(f, "{}", style(" ◦ ").dim())?;
 					write!(f, "{:?}", tk)?
 				}
 				f.write_char('\n')
@@ -242,7 +242,7 @@ impl Display for TokenList {
 		} else if let Some((first, elems)) = self.data.split_first() {
 			write!(f, "{}", first)?;
 			for tk in elems {
-				f.write_str(&style(" ◦ ").dim().to_string())?;
+				write!(f, "{}", style(" ◦ ").dim())?;
 				write!(f, "{}", tk)?
 			}
 			f.write_char('\n')

@@ -149,6 +149,7 @@ fn parse(input: &str) {
 }
 
 #[test]
+#[ignore = ""]
 fn test_parse() {
 	parse("int i; int j , k = i + 3, l = 2; char c, d;");
 	parse("int id(int arg) { return arg; }");
@@ -188,6 +189,43 @@ fn test_parse() {
 	for (; ;) for (x = 1; x < y; x++) printf("%d\n",x);
 
 	for (; x < y; x++) { printf("%d\n",x); }
+}
+"##,
+	);
+}
+
+fn parse_eval(input: &str) {
+	println!("\n------");
+	match Parser::from_str(input).and_then(|mut p| {
+		let r = p.parse()?;
+		for obj in r {
+			match obj {
+				Object::Variable(var) => {
+					println!("{}: {}", var.name, var.ctype);
+					var.init_value.map(|e| println!(" = \n{}", e));
+				}
+				Object::Function(func) => {
+					println!("name: {}\t\ttype: {}", func.name, Type::Func(func.ctype));
+					println!("stmts:\n{}", func.stmts);
+				}
+			}
+		}
+		p.eval()
+	}) {
+		Ok(_) => println!("eval ok"),
+		Err(e) => println!("\t[error]\t{}", e),
+	}
+}
+
+#[test]
+fn test_parse_eval() {
+	parse_eval(
+		r##"
+int a, b = 1, c = 1 + 2;
+int main(void) {
+	a = c > b ? 1 : 2;
+	printf("a + b = %d\n", a + b);
+	return 0;
 }
 "##,
 	);

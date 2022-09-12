@@ -122,10 +122,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 				println!("------\n{}: {}", data.name.unwrap_or_default(), data.ctype);
 			}
 
-			let objs = compile::parse::Parser::from_str(src.as_str()).and_then(|mut p| p.parse())?;
-			for obj in objs {
-				println!("------\n{:?}", obj);
-			}
+			compile::parse::Parser::from_str(src.as_str()).and_then(|mut p| {
+				p.parse()?;
+				p.eval()
+			})?;
 		}
 
 		SubCommand::Http => {
