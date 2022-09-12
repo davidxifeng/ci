@@ -4,7 +4,7 @@ use console::style;
 
 use super::{
 	errors::*,
-	token::{Keyword, Precedence, Punct, Token, TokenList},
+	token::{Const, Keyword, Precedence, Punct, Token, TokenList},
 	types::*,
 };
 
@@ -203,11 +203,8 @@ impl Parser {
 			}
 			Token::Keyword(Keyword::Return) => {
 				self.advance(); // skip return
-
 				let expr = self.expect_expr(Precedence::P1Comma)?;
-
 				self.expect_punct(Punct::Semicolon)?;
-
 				Statement::ReturnStmt(expr)
 			}
 			Token::Punct(Punct::Semicolon) => {
@@ -232,6 +229,40 @@ impl Parser {
 					None
 				};
 				Statement::IfStmt(cond, Box::new(then_stmt), m_else_stmt)
+			}
+			Token::Keyword(Keyword::For) => {
+				self.advance();
+				self.expect_punct(Punct::ParentheseL)?;
+
+				let init = if Token::Punct(Punct::Semicolon) == self.must_peek_next()? {
+					self.advance();
+					None
+				} else {
+					let expr = self.expect_expr(Precedence::P1Comma)?;
+					self.expect_punct(Punct::Semicolon)?;
+					Some(expr)
+				};
+
+				let cond = if Token::Punct(Punct::Semicolon) == self.must_peek_next()? {
+					self.advance();
+					Expr::Const(Const::Integer("1".to_string()))
+				} else {
+					let expr = self.expect_expr(Precedence::P1Comma)?;
+					self.expect_punct(Punct::Semicolon)?;
+					expr
+				};
+
+				let end = if Token::Punct(Punct::ParentheseR) == self.must_peek_next()? {
+					self.advance();
+					None
+				} else {
+					let expr = self.expect_expr(Precedence::P1Comma)?;
+					self.expect_punct(Punct::ParentheseR)?;
+					Some(expr)
+				};
+
+				let stmt = self.parse_stmt()?;
+				Statement::ForStmt(init, cond, end, Box::new(stmt))
 			}
 			_ => {
 				let expr = self.expect_expr(Precedence::P1Comma)?;

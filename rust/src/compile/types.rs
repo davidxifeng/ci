@@ -145,8 +145,9 @@ pub enum Statement {
 	Empty,
 	ExprStmt(Expr),
 	ReturnStmt(Expr),
-	CompoundStmt(Vec<Statement>),
 	IfStmt(Expr, Box<Statement>, Option<Box<Statement>>),
+	ForStmt(Option<Expr>, Expr, Option<Expr>, Box<Statement>),
+	CompoundStmt(Vec<Statement>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

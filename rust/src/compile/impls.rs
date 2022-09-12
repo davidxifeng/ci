@@ -82,6 +82,19 @@ impl Display for Statement {
 				None => write!(f, "if (\n{}) {}", expr, then_stmt),
 				Some(es) => write!(f, "if (\n{}) {} else {}", expr, then_stmt, es),
 			},
+			Self::ForStmt(init, cond, end, stmt) => {
+				write!(
+					f,
+					"for (\n{};\n{};\n{}) {}",
+					match init {
+						Some(e) => e.to_string(),
+						None => String::new(),
+					},
+					cond,
+					end.as_ref().map(|e| e.to_string()).unwrap_or_default(),
+					stmt
+				)
+			}
 			Self::CompoundStmt(stmts) => {
 				writeln!(f, "{{")?;
 				for stmt in stmts {

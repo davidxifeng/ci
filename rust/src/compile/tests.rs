@@ -179,4 +179,16 @@ fn test_parse() {
 }
 "##,
 	);
+
+	parse(
+		r##"int max(int x, int y) {
+	for (; ;) ;
+	for (; ;) {}
+
+	for (; ;) for (x = 1; x < y; x++) printf("%d\n",x);
+
+	for (; x < y; x++) { printf("%d\n",x); }
+}
+"##,
+	);
 }
