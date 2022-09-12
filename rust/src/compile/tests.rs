@@ -18,7 +18,7 @@ fn test_declaration(input: &str) {
 }
 
 #[test]
-// #[ignore = "done"]
+#[ignore = "done"]
 fn test_types() {
 	test_declaration("int i, j");
 	test_declaration("int *i");
@@ -166,5 +166,17 @@ fn test_parse() {
 	}
 }
 "##,
-	)
+	);
+
+	parse(
+		r##"int max(int x, int y) {
+	if (x == 1) x += 1;
+
+	if (x > y) {
+		return x;
+	} else if (x == y ) return y;
+	 else return x + y;
+}
+"##,
+	);
 }

@@ -190,63 +190,55 @@ impl Parser {
 	}
 
 	fn parse_stmt(&mut self) -> Result<Statement, ParseError> {
-		// skip {
-		// self.advance();
-		self.expect_punct(Punct::BracesL)?;
-
-		let mut stmts = vec![];
-
-		loop {
-			let token = self.must_peek_next()?;
-			match token {
-				Token::Punct(Punct::BracesL) => {
-					stmts.push(self.parse_stmt()?);
+		Ok(match self.must_peek_next()? {
+			Token::Punct(Punct::BracesL) => {
+				self.advance();
+				let mut stmts = vec![];
+				while Token::Punct(Punct::BracesR) != self.must_peek_next()? {
+					let stmt = self.parse_stmt()?;
+					stmts.push(stmt);
 				}
-				Token::Punct(Punct::BracesR) => {
-					self.advance();
-					break;
-				}
-				Token::Keyword(Keyword::Return) => {
-					self.advance(); // skip return
+				self.advance();
+				Statement::CompoundStmt(stmts)
+			}
+			Token::Keyword(Keyword::Return) => {
+				self.advance(); // skip return
 
-					let expr = self.expect_expr(Precedence::P1Comma)?;
+				let expr = self.expect_expr(Precedence::P1Comma)?;
 
-					self.expect_punct(Punct::Semicolon)?;
+				self.expect_punct(Punct::Semicolon)?;
 
-					stmts.push(Statement::ReturnStmt(expr));
-				}
-				Token::Punct(Punct::Semicolon) => {
-					self.advance();
-					stmts.push(Statement::Empty);
-				}
-				Token::Keyword(Keyword::If) => {
-					self.advance();
-					self.expect_punct(Punct::ParentheseL)?;
-					let cond = self.expect_expr(Precedence::P1Comma)?;
-					self.expect_punct(Punct::ParentheseR)?;
-					let then_stmt = self.parse_stmt()?;
-					let m_else_stmt = if let Some(next) = self.peek_next() {
-						match next {
-							Token::Keyword(Keyword::Else) => {
-								self.advance();
-								Some(Box::new(self.parse_stmt()?))
-							}
-							_ => None,
+				Statement::ReturnStmt(expr)
+			}
+			Token::Punct(Punct::Semicolon) => {
+				self.advance();
+				Statement::Empty
+			}
+			Token::Keyword(Keyword::If) => {
+				self.advance();
+				self.expect_punct(Punct::ParentheseL)?;
+				let cond = self.expect_expr(Precedence::P1Comma)?;
+				self.expect_punct(Punct::ParentheseR)?;
+				let then_stmt = self.parse_stmt()?;
+				let m_else_stmt = if let Some(next) = self.peek_next() {
+					match next {
+						Token::Keyword(Keyword::Else) => {
+							self.advance();
+							Some(Box::new(self.parse_stmt()?))
 						}
-					} else {
-						None
-					};
-					stmts.push(Statement::IfStmt(cond, Box::new(then_stmt), m_else_stmt))
-				}
-				_ => {
-					let expr = self.expect_expr(Precedence::P1Comma)?;
-					self.expect_punct(Punct::Semicolon)?;
-					stmts.push(Statement::ExprStmt(expr));
-				}
-			};
-		}
-
-		Ok(Statement::CompoundStmt(stmts))
+						_ => None,
+					}
+				} else {
+					None
+				};
+				Statement::IfStmt(cond, Box::new(then_stmt), m_else_stmt)
+			}
+			_ => {
+				let expr = self.expect_expr(Precedence::P1Comma)?;
+				self.expect_punct(Punct::Semicolon)?;
+				Statement::ExprStmt(expr)
+			}
+		})
 	}
 
 	pub fn declaration(&mut self) -> Result<TypeIdentifier, ParseError> {
