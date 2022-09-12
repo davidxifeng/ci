@@ -8,7 +8,7 @@ extern enum Token tk;
 
 /*
 
-从stmt开始的expr调用, lev优先级从最低的assign开始
+从 stmt 开始的expr调用, lev优先级从最低的assign开始
 
 */
 

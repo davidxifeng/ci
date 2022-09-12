@@ -195,7 +195,7 @@ impl Display for Token {
 }
 
 #[inline]
-fn simple_unescape(c: &char) -> Option<&'static str> {
+pub fn simple_unescape(c: &char) -> Option<&'static str> {
 	// Rust中的转义:
 	// https://doc.rust-lang.org/reference/tokens.html
 	// (6.4.4.4) simple-escape-sequence:

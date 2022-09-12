@@ -1,7 +1,9 @@
 use console::style;
+use itertools::Itertools;
 use std::fmt::Display;
 use std::fmt::Write;
 
+use super::token_impl::simple_unescape;
 use super::types::*;
 
 impl Display for Type {
@@ -142,6 +144,23 @@ fn print_op(s: &mut String, prev: &str, pos: &NodePos, v: impl Display) {
 	s.push('\n');
 }
 
+fn print_leaf_str(s: &mut String, prev: &str, pos: &NodePos, v: &String) {
+	s.push_str(&style(prev).dim().to_string());
+	s.push_str(&style(pos.node_prelude()).dim().to_string());
+	s.push_str(
+		&style(
+			v.chars()
+				.map(|c| match simple_unescape(&c) {
+					Some(s) => s.to_string(),
+					None => c.to_string(),
+				})
+				.join(""),
+		)
+		.green()
+		.to_string(),
+	);
+	s.push('\n');
+}
 fn print_leaf(s: &mut String, prev: &str, pos: &NodePos, v: impl Display) {
 	// if prev.is_empty() { s.push_str(&style(v.to_string().as_str()).green().to_string()); } else {
 	s.push_str(&style(prev).dim().to_string());
@@ -175,7 +194,7 @@ fn print_expr_tree(this: &Expr, s: &mut String, prev: &str, pos: &NodePos) {
 	match this {
 		Expr::Const(v) => print_leaf(s, prev, pos, v),
 
-		Expr::StringLiteral(v) => print_leaf(s, prev, pos, v),
+		Expr::StringLiteral(v) => print_leaf_str(s, prev, pos, v),
 
 		Expr::Id(v) => print_leaf(s, prev, pos, v),
 
