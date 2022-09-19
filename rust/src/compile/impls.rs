@@ -144,7 +144,7 @@ fn print_op(s: &mut String, prev: &str, pos: &NodePos, v: impl Display) {
 	s.push('\n');
 }
 
-fn print_leaf_str(s: &mut String, prev: &str, pos: &NodePos, v: &String) {
+fn print_leaf_str(s: &mut String, prev: &str, pos: &NodePos, v: &str) {
 	s.push_str(&style(prev).dim().to_string());
 	s.push_str(&style(pos.node_prelude()).dim().to_string());
 	s.push_str(

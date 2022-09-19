@@ -1,9 +1,5 @@
-use crate::compile::{
-	parse::*,
-	types::{Object, Type},
-};
-
 use super::errors::{LexError, ParseError};
+use crate::compile::parse::*;
 
 fn test_declaration(input: &str) {
 	println!("\n------");
@@ -124,28 +120,13 @@ fn test_parse_error() {
 
 fn parse(input: &str) {
 	println!("\n------");
-	match Parser::from_str(input).and_then(|mut p| {
-		let r = p.parse();
-		p.show_parse_state(0);
-		r
-	}) {
-		Ok(r) => {
-			for obj in r {
-				match obj {
-					Object::Variable(var) => {
-						println!("{}: {}", var.name, var.ctype);
-						var.init_value.map(|e| println!(" = \n{}", e));
-					}
-					Object::Function(func) => {
-						println!("name: {}\t\ttype: {}", func.name, Type::Func(func.ctype));
-						println!("stmts:\n{}", func.stmts);
-					}
-				}
-			}
-		}
 
-		Err(e) => println!("\t[error]\t{}", e),
-	}
+	Parser::from_str(input)
+		.and_then(|mut p| {
+			p.parse()?;
+			Ok(p.display())
+		})
+		.unwrap_or(())
 }
 
 #[test]
@@ -197,20 +178,10 @@ fn test_parse() {
 fn parse_eval(input: &str) {
 	println!("\n------");
 	match Parser::from_str(input).and_then(|mut p| {
-		let r = p.parse()?;
-		for obj in r {
-			match obj {
-				Object::Variable(var) => {
-					println!("{}: {}", var.name, var.ctype);
-					var.init_value.map(|e| println!(" = \n{}", e));
-				}
-				Object::Function(func) => {
-					println!("name: {}\t\ttype: {}", func.name, Type::Func(func.ctype));
-					println!("stmts:\n{}", func.stmts);
-				}
-			}
-		}
-		p.eval()
+		p.parse()?;
+		p.display();
+		let (mut env, vm) = p.into_vm();
+		vm.eval(&mut env)
 	}) {
 		Ok(_) => println!("eval ok"),
 		Err(e) => println!("\t[error]\t{}", e),

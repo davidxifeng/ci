@@ -4,6 +4,7 @@ use console::style;
 
 use super::{
 	errors::*,
+	eval::{Env, VM},
 	token::{Const, Keyword, Precedence, Punct, Token, TokenList},
 	types::*,
 };
@@ -11,7 +12,8 @@ use super::{
 pub struct Parser {
 	token_list: TokenList,
 	index: usize,
-	globals: HashMap<String, Object>,
+	global_variables: HashMap<String, Variable>,
+	functions: HashMap<String, Function>,
 }
 
 impl Parser {
@@ -120,7 +122,7 @@ fn expect_string(str: Option<String>) -> Result<String, ParseError> {
 
 impl Parser {
 	fn new(token_list: TokenList) -> Self {
-		Parser { token_list, index: 0, globals: HashMap::new() }
+		Parser { token_list, index: 0, global_variables: HashMap::new(), functions: HashMap::new() }
 	}
 
 	pub fn from_str(input: &str) -> Result<Self, ParseError> {
@@ -138,8 +140,10 @@ impl Parser {
 	// 		declaration-specifiers init-declarator-list opt ;
 	// 			init-declarator-list: init-declarator,
 	// 			init-declarator: declarator = initializer
-	pub fn parse(&mut self) -> Result<Vec<Object>, ParseError> {
-		self.globals.clear();
+	pub fn parse(&mut self) -> Result<(), ParseError> {
+		self.global_variables.clear();
+		self.functions.clear();
+
 		while self.is_not_eof() {
 			let base_type = self.declspec()?;
 
@@ -154,7 +158,7 @@ impl Parser {
 				Some(func) if is_compound_stmt_start => {
 					let name = expect_string(declarator.name)?;
 					let func = self.parse_function(name.clone(), func)?;
-					self.globals.insert(name, func);
+					self.functions.insert(name, func);
 				}
 				_ => {
 					self.new_global_declaration(declarator)?;
@@ -173,20 +177,13 @@ impl Parser {
 			}
 		}
 
-		Ok(self.globals.values().cloned().collect())
+		Ok(())
 	}
 
-	fn parse_function(&mut self, name: String, return_type: Func) -> Result<Object, ParseError> {
+	fn parse_function(&mut self, name: String, return_type: Func) -> Result<Function, ParseError> {
 		let stmts = self.parse_stmt()?;
 
-		Ok(Object::Function(Function {
-			name,
-			ctype: return_type,
-			locals: vec![],
-			stmts,
-			stack_size: 0,
-			is_definition: true,
-		}))
+		Ok(Function { name, ctype: return_type, locals: vec![], stmts, stack_size: 0, is_definition: true })
 	}
 
 	fn parse_stmt(&mut self) -> Result<Statement, ParseError> {
@@ -288,14 +285,11 @@ impl Parser {
 
 	fn new_global_declaration(&mut self, var: TypeIdentifier) -> Result<(), ParseError> {
 		let name = expect_string(var.name)?;
-		let gvar = Object::Variable(Variable {
-			ctype: var.ctype,
-			name: name.clone(),
-			init_value: self.get_optional_initializer()?,
-			is_local: false,
-			is_tentative: false,
-		});
-		self.globals.insert(name, gvar);
+		let init_value = self.get_optional_initializer()?;
+		self.global_variables.insert(
+			name.clone(),
+			Variable { ctype: var.ctype, name, init_value, is_local: false, is_tentative: false },
+		);
 		Ok(())
 	}
 
@@ -576,7 +570,22 @@ impl Parser {
 }
 
 impl Parser {
-	pub fn eval(&mut self) -> Result<(), ParseError> {
-		Ok(())
+	pub fn display(&self) {
+		for var in self.global_variables.values() {
+			println!("{}: {}", var.name, var.ctype);
+			if let Some(e) = var.init_value.as_ref() {
+				println!(" = \n{}", e)
+			}
+		}
+		for func in self.functions.values() {
+			println!("name: {}\t\ttype: {}", func.name, Type::Func(func.ctype.clone()));
+			println!("stmts:\n{}", func.stmts);
+		}
+	}
+
+	pub fn into_vm(self) -> (Env, VM) {
+		let env = Env { global_variables: self.global_variables };
+		let vm = VM::new(self.functions);
+		(env, vm)
 	}
 }

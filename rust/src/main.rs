@@ -124,7 +124,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 			compile::parse::Parser::from_str(src.as_str()).and_then(|mut p| {
 				p.parse()?;
-				p.eval()
+				p.display();
+				let (mut env, vm) = p.into_vm();
+				vm.eval(&mut env)
 			})?;
 		}
 

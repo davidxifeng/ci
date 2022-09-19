@@ -12,3 +12,4 @@ pub mod token_impl;
 mod lex_tests;
 #[cfg(test)]
 mod tests;
+pub mod eval;

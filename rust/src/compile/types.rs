@@ -1,12 +1,6 @@
 use super::token::{Const, Punct};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Object {
-	Variable(Variable),
-	Function(Function),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Variable {
 	pub name: String,
 	pub ctype: Type,
@@ -20,7 +14,7 @@ pub struct Variable {
 pub struct Function {
 	pub name: String,
 	pub ctype: Func,
-	pub locals: Vec<Object>,
+	pub locals: Vec<Variable>,
 	pub stmts: Statement,
 	pub stack_size: usize,
 	pub is_definition: bool,
